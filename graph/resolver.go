@@ -1,5 +1,3 @@
-//go:generate go tool gqlgen generate
-
 package graph
 
 import (

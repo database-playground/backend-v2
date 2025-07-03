@@ -156,7 +156,7 @@ models:
   # do not need to worry about interoperability and only expect small numbers.
   Int:
     model:
-      - github.com/99designs/gqlgen/graphql.Int32
+      - github.com/99designs/gqlgen/graphql.Int
   Int64:
     model:
       - github.com/99designs/gqlgen/graphql.Int

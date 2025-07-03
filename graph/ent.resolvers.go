@@ -7,6 +7,7 @@ package graph
 import (
 	"context"
 
+	"entgo.io/contrib/entgql"
 	"github.com/database-playground/backend-v2/ent"
 )
 
@@ -21,8 +22,8 @@ func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, erro
 }
 
 // Users is the resolver for the users field.
-func (r *queryResolver) Users(ctx context.Context) ([]*ent.User, error) {
-	return r.client.User.Query().All(ctx)
+func (r *queryResolver) Users(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int) (*ent.UserConnection, error) {
+	return r.client.User.Query().Paginate(ctx, after, first, before, last)
 }
 
 // Query returns QueryResolver implementation.

@@ -80,7 +80,27 @@ type Query {
     """
     ids: [ID!]!
   ): [Node]!
-  users: [User!]!
+  users(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+  ): UserConnection!
 }
 type User implements Node {
   id: ID!
@@ -89,4 +109,34 @@ type User implements Node {
   deletedAt: Time
   name: String!
   email: String!
+}
+"""
+A connection to a list of items.
+"""
+type UserConnection {
+  """
+  A list of edges.
+  """
+  edges: [UserEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type UserEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: User
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
 }
