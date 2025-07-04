@@ -26,11 +26,10 @@ func WithTokenExpire(expire time.Duration) RedisStorageOption {
 }
 
 const redisTokenPrefix = "auth:token:"
-const defaultTokenExpire = 8 * 60 * 60 // 8 hr
 
 // NewRedisStorage creates a new RedisStorage.
 func NewRedisStorage(redis rueidis.Client, opts ...RedisStorageOption) *TestRedisStorage {
-	s := &RedisStorage{redis: redis, tokenExpire: defaultTokenExpire}
+	s := &RedisStorage{redis: redis, tokenExpire: DefaultTokenExpire}
 	for _, opt := range opts {
 		opt(s)
 	}

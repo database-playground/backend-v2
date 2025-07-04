@@ -43,3 +43,6 @@ type TokenInfo struct {
 
 	Scopes []string `json:"scopes"` // the scopes that the user has
 }
+
+// DefaultTokenExpire is the default expiration time of the token in seconds.
+const DefaultTokenExpire = 8 * 60 * 60 // 8 hr
