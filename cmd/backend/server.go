@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"entgo.io/ent/dialect"
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -48,7 +49,19 @@ func main() {
 		log.Fatal("opening ent client", err)
 	}
 
-	srv := handler.New(graph.NewSchema(client))
+	redisClient, err := rueidis.NewClient(rueidis.ClientOption{
+		InitAddress: strings.Split(os.Getenv("REDIS_ADDRESSES"), ","),
+		Username:    os.Getenv("REDIS_USERNAME"),
+		Password:    os.Getenv("REDIS_PASSWORD"),
+	})
+	if err != nil {
+		log.Fatal("opening redis client", err)
+	}
+
+	storage := auth.NewRedisStorage(redisClient)
+	authMiddleware := auth.Middleware(storage)
+
+	srv := handler.New(graph.NewSchema(client, storage))
 
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
@@ -63,20 +76,58 @@ func main() {
 
 	srv.SetErrorPresenter(graph.NewErrorPresenter())
 
-	redisClient, err := rueidis.NewClient(rueidis.ClientOption{
-		InitAddress: strings.Split(os.Getenv("REDIS_ADDRESSES"), ","),
-		Username:    os.Getenv("REDIS_USERNAME"),
-		Password:    os.Getenv("REDIS_PASSWORD"),
-	})
-	if err != nil {
-		log.Fatal("opening redis client", err)
-	}
-
-	storage := auth.NewRedisStorage(redisClient)
-	authMiddleware := auth.Middleware(storage)
-
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", authMiddleware(srv))
+
+	// FIXME: IT MUST BE DELETED IN PRODUCTION!!
+	http.HandleFunc("POST /auth-as-admin", func(w http.ResponseWriter, r *http.Request) {
+		token, err := storage.Create(r.Context(), auth.TokenInfo{
+			Machine: "admin",
+			User:    "admin",
+			Scopes:  []string{"*"},
+		})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:     "auth-token",
+			Value:    token,
+			Path:     "/",
+			MaxAge:   auth.DefaultTokenExpire, // 8 hours
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+		})
+
+		w.WriteHeader(http.StatusOK)
+	})
+
+	http.HandleFunc("POST /logout", func(w http.ResponseWriter, r *http.Request) {
+		// get auth-token from cookie
+		cookie, err := r.Cookie("auth-token")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		err = storage.Delete(r.Context(), cookie.Value)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:     "auth-token",
+			Value:    "",
+			Path:     "/",
+			Expires:  time.Now().Add(-time.Second),
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+		})
+	})
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
