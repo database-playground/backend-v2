@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"testing"
 	"time"
 
@@ -16,7 +18,14 @@ func TestRedisStorage_CreateAndGet(t *testing.T) {
 	storage := NewRedisStorage(redisClient)
 	ctx := context.Background()
 
-	info := TokenInfo{Machine: "machine1", User: "user1"}
+	info := TokenInfo{
+		Machine: "machine1",
+		User:    "user1",
+		Scopes:  []string{"*"},
+		Meta: map[string]string{
+			"key": "value",
+		},
+	}
 	token, err := storage.Create(ctx, info)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
@@ -34,6 +43,12 @@ func TestRedisStorage_CreateAndGet(t *testing.T) {
 	}
 	if got.User != info.User {
 		t.Errorf("Get returned wrong user: got %s, want %s", got.User, info.User)
+	}
+	if !slices.Equal(got.Scopes, info.Scopes) {
+		t.Errorf("Get returned wrong scopes: got %v, want %v", got.Scopes, info.Scopes)
+	}
+	if !maps.Equal(got.Meta, info.Meta) {
+		t.Errorf("Get returned wrong meta: got %v, want %v", got.Meta, info.Meta)
 	}
 }
 

@@ -41,7 +41,8 @@ type TokenInfo struct {
 	Machine string `json:"machine"` // the machine that associated with the token
 	User    string `json:"user"`    // the user that associated with the machine
 
-	Scopes []string `json:"scopes"` // the scopes that the user has
+	Scopes []string          `json:"scopes"` // the scopes that the user has
+	Meta   map[string]string `json:"meta"`   // the meta data of the token
 }
 
 // DefaultTokenExpire is the default expiration time of the token in seconds.
