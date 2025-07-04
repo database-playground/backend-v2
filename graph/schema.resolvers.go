@@ -8,6 +8,9 @@ import (
 	"context"
 
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/ent/user"
+	"github.com/database-playground/backend-v2/internal/auth"
 )
 
 // CreateUser is the resolver for the createUser field.
@@ -128,6 +131,38 @@ func (r *mutationResolver) CreateAdmin(ctx context.Context, input ent.CreateUser
 	}
 
 	return user, nil
+}
+
+// AdminToken is the resolver for the adminToken field.
+func (r *queryResolver) AdminToken(ctx context.Context) (string, error) {
+	// find if there is an admin user
+	user, err := r.ent.User.Query().
+		Where(user.HasGroupWith(group.Name("admin"))).
+		First(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	// list all scope sets
+	var scopes []string
+	for _, scopeSet := range user.Edges.Group.Edges.ScopeSet {
+		scopes = append(scopes, scopeSet.Scopes...)
+	}
+
+	// construct TokenInfo
+	userInfo := auth.TokenInfo{
+		User:    user.Email,
+		Machine: "admin_graphql_api",
+		Scopes:  scopes,
+	}
+
+	// create token
+	token, err := r.auth.Create(ctx, userInfo)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }
 
 // Mutation returns MutationResolver implementation.

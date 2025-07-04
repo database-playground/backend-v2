@@ -17,3 +17,7 @@ type Mutation {
   createAdmin(input: CreateUserInput!): User
 }
 
+extend type Query {
+  # FIXME: IT MUST BE DELETED IN PRODUCTION!!
+  adminToken: String!
+}

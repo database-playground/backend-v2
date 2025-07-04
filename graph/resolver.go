@@ -8,6 +8,7 @@ import (
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/graph/directive"
+	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
@@ -16,12 +17,15 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 // Resolver is the resolver root.
-type Resolver struct{ client *ent.Client }
+type Resolver struct {
+	ent  *ent.Client
+	auth auth.Storage
+}
 
 // NewSchema creates a graphql executable schema.
-func NewSchema(client *ent.Client) graphql.ExecutableSchema {
+func NewSchema(ent *ent.Client, auth auth.Storage) graphql.ExecutableSchema {
 	return NewExecutableSchema(Config{
-		Resolvers: &Resolver{client},
+		Resolvers: &Resolver{ent, auth},
 		Directives: DirectiveRoot{
 			Scope: directive.ScopeDirective,
 		},
