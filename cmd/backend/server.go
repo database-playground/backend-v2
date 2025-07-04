@@ -61,6 +61,8 @@ func main() {
 		Cache: lru.New[string](100),
 	})
 
+	srv.SetErrorPresenter(graph.NewErrorPresenter())
+
 	redisClient, err := rueidis.NewClient(rueidis.ClientOption{
 		InitAddress: strings.Split(os.Getenv("REDIS_ADDRESSES"), ","),
 		Username:    os.Getenv("REDIS_USERNAME"),
