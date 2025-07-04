@@ -60,9 +60,13 @@ var _ auth.Storage = &failTokenStorage{}
 func TestExtractToken(t *testing.T) {
 	t.Run("no token", func(t *testing.T) {
 		r := http.Request{}
-		_, err := auth.ExtractToken(&r, nil)
-		if !errors.Is(err, auth.ErrNoToken) {
-			t.Fatalf("expected no token error, got %v", err)
+		ctx, err := auth.ExtractToken(&r, nil)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if ctx != r.Context() {
+			t.Fatalf("expected context to be the same, got %v", ctx)
 		}
 	})
 
@@ -124,7 +128,10 @@ func TestMiddleware(t *testing.T) {
 	t.Run("no token", func(t *testing.T) {
 		storage := &baseTokenStorage{}
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			t.Fatal("handler should not be called")
+			_, ok := auth.GetUser(r.Context())
+			if ok {
+				t.Fatal("expected no user, got one")
+			}
 		})
 
 		middleware := auth.Middleware(storage)
@@ -136,14 +143,6 @@ func TestMiddleware(t *testing.T) {
 		rr := httptest.NewRecorder()
 
 		wrappedHandler.ServeHTTP(rr, req)
-
-		if status := rr.Code; status != http.StatusUnauthorized {
-			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusUnauthorized)
-		}
-
-		if !strings.Contains(rr.Body.String(), auth.ErrNoToken.Error()) {
-			t.Errorf("expected error message to contain %q, got %q", auth.ErrNoToken.Error(), rr.Body.String())
-		}
 	})
 
 	t.Run("bad token format", func(t *testing.T) {

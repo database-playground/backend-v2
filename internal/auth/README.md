@@ -14,7 +14,7 @@
 
 ## HTTP Middleware
 
-auth 中的 `Middleware` 會嘗試擷取所有經此 Middleware 的 HTTP request 中的 Bearer token。如果驗證失敗（無論是無 token、錯誤 token 格式，還是無效 token），均會回傳 HTTP 401。如果驗證成功，則將此 token 對應的使用者資訊 (`UserInfo`) 寫入請求情境鏈 (Context) 中。
+auth 中的 `Middleware` 會嘗試擷取所有經此 Middleware 的 HTTP request 中的 Bearer token。如果驗證失敗（無論錯誤的 token 格式，還是無效 token），均會回傳 HTTP 401。如果驗證成功，則將此 token 對應的使用者資訊 (`UserInfo`) 寫入請求情境鏈 (Context) 中。如果沒有帶入 Token，則不帶任何資訊進情境鏈中。
 
 ### Context
 

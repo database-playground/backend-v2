@@ -26,9 +26,6 @@ func Middleware(storage Storage) func(http.Handler) http.Handler {
 }
 
 var (
-	// ErrNoToken is returned when the Authorization header is empty.
-	ErrNoToken = errors.New("no token")
-
 	// ErrBadTokenFormat is returned when the Authorization header is not in the correct Bearer format.
 	ErrBadTokenFormat = errors.New("bad token format")
 )
@@ -36,10 +33,11 @@ var (
 // ExtractToken extracts the token from the Authorization header and returns the user information.
 //
 // It will return an error if the token is invalid.
+// It adds nothing to the context if the token is not present.
 func ExtractToken(r *http.Request, storage Storage) (context.Context, error) {
 	authHeaderContent := r.Header.Get("Authorization")
 	if authHeaderContent == "" {
-		return nil, ErrNoToken
+		return r.Context(), nil
 	}
 
 	token, ok := strings.CutPrefix(authHeaderContent, "Bearer ")
