@@ -13,27 +13,27 @@ import (
 
 // Node is the resolver for the node field.
 func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
-	return r.client.Noder(ctx, id)
+	return r.ent.Noder(ctx, id)
 }
 
 // Nodes is the resolver for the nodes field.
 func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, error) {
-	return r.client.Noders(ctx, ids)
+	return r.ent.Noders(ctx, ids)
 }
 
 // Groups is the resolver for the groups field.
 func (r *queryResolver) Groups(ctx context.Context) ([]*ent.Group, error) {
-	return r.client.Group.Query().All(ctx)
+	return r.ent.Group.Query().All(ctx)
 }
 
 // ScopeSets is the resolver for the scopeSets field.
 func (r *queryResolver) ScopeSets(ctx context.Context) ([]*ent.ScopeSet, error) {
-	return r.client.ScopeSet.Query().All(ctx)
+	return r.ent.ScopeSet.Query().All(ctx)
 }
 
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int) (*ent.UserConnection, error) {
-	return r.client.User.Query().Paginate(ctx, after, first, before, last)
+	return r.ent.User.Query().Paginate(ctx, after, first, before, last)
 }
 
 // Query returns QueryResolver implementation.

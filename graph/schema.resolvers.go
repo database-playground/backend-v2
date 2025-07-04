@@ -12,7 +12,7 @@ import (
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input ent.CreateUserInput) (*ent.User, error) {
-	user, err := r.client.User.Create().SetInput(input).Save(ctx)
+	user, err := r.ent.User.Create().SetInput(input).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +22,7 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input ent.CreateUserI
 
 // UpdateUser is the resolver for the updateUser field.
 func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.UpdateUserInput) (*ent.User, error) {
-	user, err := r.client.User.UpdateOneID(id).SetInput(input).Save(ctx)
+	user, err := r.ent.User.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +32,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.Upd
 
 // DeleteUser is the resolver for the deleteUser field.
 func (r *mutationResolver) DeleteUser(ctx context.Context, id int) (bool, error) {
-	err := r.client.User.DeleteOneID(id).Exec(ctx)
+	err := r.ent.User.DeleteOneID(id).Exec(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -42,7 +42,7 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id int) (bool, error)
 
 // CreateScopeSet is the resolver for the createScopeSet field.
 func (r *mutationResolver) CreateScopeSet(ctx context.Context, input ent.CreateScopeSetInput) (*ent.ScopeSet, error) {
-	scopeSet, err := r.client.ScopeSet.Create().SetInput(input).Save(ctx)
+	scopeSet, err := r.ent.ScopeSet.Create().SetInput(input).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (r *mutationResolver) CreateScopeSet(ctx context.Context, input ent.CreateS
 
 // UpdateScopeSet is the resolver for the updateScopeSet field.
 func (r *mutationResolver) UpdateScopeSet(ctx context.Context, id int, input ent.UpdateScopeSetInput) (*ent.ScopeSet, error) {
-	scopeSet, err := r.client.ScopeSet.UpdateOneID(id).SetInput(input).Save(ctx)
+	scopeSet, err := r.ent.ScopeSet.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (r *mutationResolver) UpdateScopeSet(ctx context.Context, id int, input ent
 
 // DeleteScopeSet is the resolver for the deleteScopeSet field.
 func (r *mutationResolver) DeleteScopeSet(ctx context.Context, id int) (bool, error) {
-	err := r.client.ScopeSet.DeleteOneID(id).Exec(ctx)
+	err := r.ent.ScopeSet.DeleteOneID(id).Exec(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -72,7 +72,7 @@ func (r *mutationResolver) DeleteScopeSet(ctx context.Context, id int) (bool, er
 
 // CreateGroup is the resolver for the createGroup field.
 func (r *mutationResolver) CreateGroup(ctx context.Context, input ent.CreateGroupInput) (*ent.Group, error) {
-	group, err := r.client.Group.Create().SetInput(input).Save(ctx)
+	group, err := r.ent.Group.Create().SetInput(input).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (r *mutationResolver) CreateGroup(ctx context.Context, input ent.CreateGrou
 
 // UpdateGroup is the resolver for the updateGroup field.
 func (r *mutationResolver) UpdateGroup(ctx context.Context, id int, input ent.UpdateGroupInput) (*ent.Group, error) {
-	group, err := r.client.Group.UpdateOneID(id).SetInput(input).Save(ctx)
+	group, err := r.ent.Group.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (r *mutationResolver) UpdateGroup(ctx context.Context, id int, input ent.Up
 
 // DeleteGroup is the resolver for the deleteGroup field.
 func (r *mutationResolver) DeleteGroup(ctx context.Context, id int) (bool, error) {
-	err := r.client.Group.DeleteOneID(id).Exec(ctx)
+	err := r.ent.Group.DeleteOneID(id).Exec(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -103,7 +103,7 @@ func (r *mutationResolver) DeleteGroup(ctx context.Context, id int) (bool, error
 // CreateAdmin is the resolver for the createAdmin field.
 func (r *mutationResolver) CreateAdmin(ctx context.Context, input ent.CreateUserInput) (*ent.User, error) {
 	// create admin scopeset
-	scopeset, err := r.client.ScopeSet.Create().
+	scopeset, err := r.ent.ScopeSet.Create().
 		SetSlug("admin").
 		SetScopes([]string{"*"}).
 		Save(ctx)
@@ -112,7 +112,7 @@ func (r *mutationResolver) CreateAdmin(ctx context.Context, input ent.CreateUser
 	}
 
 	// create admin group
-	group, err := r.client.Group.Create().
+	group, err := r.ent.Group.Create().
 		SetName("admin").
 		AddScopeSet(scopeset).
 		Save(ctx)
@@ -120,9 +120,9 @@ func (r *mutationResolver) CreateAdmin(ctx context.Context, input ent.CreateUser
 		return nil, err
 	}
 
-	input.GroupIDs = []int{group.ID}
+	input.GroupID = group.ID
 
-	user, err := r.client.User.Create().SetInput(input).Save(ctx)
+	user, err := r.ent.User.Create().SetInput(input).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
