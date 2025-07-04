@@ -6,10 +6,9 @@ package graph
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/database-playground/backend-v2/ent"
-	"github.com/database-playground/backend-v2/ent/group"
-	"github.com/database-playground/backend-v2/ent/user"
 	"github.com/database-playground/backend-v2/internal/auth"
 )
 
@@ -133,36 +132,19 @@ func (r *mutationResolver) CreateAdmin(ctx context.Context, input ent.CreateUser
 	return user, nil
 }
 
-// AdminToken is the resolver for the adminToken field.
-func (r *queryResolver) AdminToken(ctx context.Context) (string, error) {
-	// find if there is an admin user
-	user, err := r.ent.User.Query().
-		Where(user.HasGroupWith(group.Name("admin"))).
-		First(ctx)
+// LogoutAll is the resolver for the logoutAll field.
+func (r *mutationResolver) LogoutAll(ctx context.Context) (bool, error) {
+	user, ok := auth.GetUser(ctx)
+	if !ok {
+		return false, fmt.Errorf("user not found")
+	}
+
+	err := r.auth.DeleteByUser(ctx, user.User)
 	if err != nil {
-		return "", err
+		return false, err
 	}
 
-	// list all scope sets
-	var scopes []string
-	for _, scopeSet := range user.Edges.Group.Edges.ScopeSet {
-		scopes = append(scopes, scopeSet.Scopes...)
-	}
-
-	// construct TokenInfo
-	userInfo := auth.TokenInfo{
-		User:    user.Email,
-		Machine: "admin_graphql_api",
-		Scopes:  scopes,
-	}
-
-	// create token
-	token, err := r.auth.Create(ctx, userInfo)
-	if err != nil {
-		return "", err
-	}
-
-	return token, nil
+	return true, nil
 }
 
 // Mutation returns MutationResolver implementation.

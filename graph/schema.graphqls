@@ -15,9 +15,9 @@ type Mutation {
 
   # FIXME: IT MUST BE DELETED IN PRODUCTION!!
   createAdmin(input: CreateUserInput!): User
-}
 
-extend type Query {
-  # FIXME: IT MUST BE DELETED IN PRODUCTION!!
-  adminToken: String!
+  """
+  Logout from all the devices of the current user.
+  """
+  logoutAll: Boolean! @scope(scope: "user:write")
 }
