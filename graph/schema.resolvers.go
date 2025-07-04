@@ -6,9 +6,9 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/internal/auth"
 )
 
@@ -136,7 +136,8 @@ func (r *mutationResolver) CreateAdmin(ctx context.Context, input ent.CreateUser
 func (r *mutationResolver) LogoutAll(ctx context.Context) (bool, error) {
 	user, ok := auth.GetUser(ctx)
 	if !ok {
-		return false, fmt.Errorf("user not found")
+		// this should never happen since we have set proper scope
+		return false, defs.ErrUnauthorized
 	}
 
 	err := r.auth.DeleteByUser(ctx, user.User)
