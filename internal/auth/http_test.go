@@ -2,10 +2,10 @@ package auth_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/database-playground/backend-v2/internal/auth"
@@ -167,8 +167,38 @@ func TestMiddleware(t *testing.T) {
 			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusUnauthorized)
 		}
 
-		if !strings.Contains(rr.Body.String(), auth.ErrBadTokenFormat.Error()) {
-			t.Errorf("expected error message to contain %q, got %q", auth.ErrBadTokenFormat.Error(), rr.Body.String())
+		// Check content type
+		contentType := rr.Header().Get("Content-Type")
+		if contentType != "application/json" {
+			t.Errorf("expected Content-Type %q, got %q", "application/json", contentType)
+		}
+
+		// Verify error response format
+		var response struct {
+			Errors []struct {
+				Message string   `json:"message"`
+				Path    []string `json:"path"`
+			} `json:"errors"`
+			Data *struct{} `json:"data"`
+		}
+		if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+			t.Fatalf("failed to decode response: %v", err)
+		}
+
+		if len(response.Errors) != 1 {
+			t.Fatalf("expected 1 error, got %d", len(response.Errors))
+		}
+
+		if response.Errors[0].Message != auth.ErrBadTokenFormat.Error() {
+			t.Errorf("expected error message %q, got %q", auth.ErrBadTokenFormat.Error(), response.Errors[0].Message)
+		}
+
+		if len(response.Errors[0].Path) != 0 {
+			t.Errorf("expected empty path, got %v", response.Errors[0].Path)
+		}
+
+		if response.Data != nil {
+			t.Error("expected data to be null")
 		}
 	})
 
@@ -194,8 +224,38 @@ func TestMiddleware(t *testing.T) {
 			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusUnauthorized)
 		}
 
-		if !strings.Contains(rr.Body.String(), errFailTokenStorage.Error()) {
-			t.Errorf("expected error message to contain %q, got %q", errFailTokenStorage.Error(), rr.Body.String())
+		// Check content type
+		contentType := rr.Header().Get("Content-Type")
+		if contentType != "application/json" {
+			t.Errorf("expected Content-Type %q, got %q", "application/json", contentType)
+		}
+
+		// Verify error response format
+		var response struct {
+			Errors []struct {
+				Message string   `json:"message"`
+				Path    []string `json:"path"`
+			} `json:"errors"`
+			Data *struct{} `json:"data"`
+		}
+		if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+			t.Fatalf("failed to decode response: %v", err)
+		}
+
+		if len(response.Errors) != 1 {
+			t.Fatalf("expected 1 error, got %d", len(response.Errors))
+		}
+
+		if response.Errors[0].Message != errFailTokenStorage.Error() {
+			t.Errorf("expected error message %q, got %q", errFailTokenStorage.Error(), response.Errors[0].Message)
+		}
+
+		if len(response.Errors[0].Path) != 0 {
+			t.Errorf("expected empty path, got %v", response.Errors[0].Path)
+		}
+
+		if response.Data != nil {
+			t.Error("expected data to be null")
 		}
 	})
 

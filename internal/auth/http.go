@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -15,7 +16,7 @@ func Middleware(storage Storage) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			newCtx, err := ExtractToken(r, storage)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				gqlgenLikeError(w, err, http.StatusUnauthorized)
 				return
 			}
 
@@ -23,6 +24,31 @@ func Middleware(storage Storage) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func gqlgenLikeError(w http.ResponseWriter, err error, code int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	encoder := json.NewEncoder(w)
+
+	type Structure struct {
+		Errors []struct {
+			Message string   `json:"message"`
+			Path    []string `json:"path"` // always empty
+		} `json:"errors"`
+		Data *struct{} `json:"data"` // always null
+	}
+
+	structure := Structure{
+		Errors: []struct {
+			Message string   `json:"message"`
+			Path    []string `json:"path"` // always empty
+		}{
+			{Message: err.Error(), Path: []string{}},
+		},
+	}
+
+	encoder.Encode(structure)
 }
 
 var (
