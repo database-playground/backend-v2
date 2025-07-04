@@ -1,1 +1,5 @@
-scalar Time
+directive @scope(scope: String!) on FIELD_DEFINITION
+
+type Mutation {
+  createUser(input: CreateUserInput!): User @scope(scope: "user:write")
+}
