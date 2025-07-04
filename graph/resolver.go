@@ -29,7 +29,7 @@ func NewSchema(client *ent.Client) graphql.ExecutableSchema {
 
 				user, ok := auth.GetUser(ctx)
 				if !ok {
-					return nil, errors.New("unauthorized")
+					return nil, errors.New("require authentication")
 				}
 
 				if scope.ShouldAllow(fnScope, user.Scopes) {
