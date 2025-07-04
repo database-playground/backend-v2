@@ -619,7 +619,7 @@ func (c *UserClient) QueryGroup(u *User) *GroupQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.GroupTable, user.GroupColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, user.GroupTable, user.GroupColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil

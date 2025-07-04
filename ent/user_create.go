@@ -75,19 +75,15 @@ func (uc *UserCreate) SetEmail(s string) *UserCreate {
 	return uc
 }
 
-// AddGroupIDs adds the "group" edge to the Group entity by IDs.
-func (uc *UserCreate) AddGroupIDs(ids ...int) *UserCreate {
-	uc.mutation.AddGroupIDs(ids...)
+// SetGroupID sets the "group" edge to the Group entity by ID.
+func (uc *UserCreate) SetGroupID(id int) *UserCreate {
+	uc.mutation.SetGroupID(id)
 	return uc
 }
 
-// AddGroup adds the "group" edges to the Group entity.
-func (uc *UserCreate) AddGroup(g ...*Group) *UserCreate {
-	ids := make([]int, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return uc.AddGroupIDs(ids...)
+// SetGroup sets the "group" edge to the Group entity.
+func (uc *UserCreate) SetGroup(g *Group) *UserCreate {
+	return uc.SetGroupID(g.ID)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -219,7 +215,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	}
 	if nodes := uc.mutation.GroupIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
 			Table:   user.GroupTable,
 			Columns: []string{user.GroupColumn},
@@ -231,6 +227,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.user_group = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

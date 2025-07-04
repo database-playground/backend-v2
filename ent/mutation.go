@@ -1191,8 +1191,7 @@ type UserMutation struct {
 	name          *string
 	email         *string
 	clearedFields map[string]struct{}
-	group         map[int]struct{}
-	removedgroup  map[int]struct{}
+	group         *int
 	clearedgroup  bool
 	done          bool
 	oldValue      func(context.Context) (*User, error)
@@ -1490,14 +1489,9 @@ func (m *UserMutation) ResetEmail() {
 	m.email = nil
 }
 
-// AddGroupIDs adds the "group" edge to the Group entity by ids.
-func (m *UserMutation) AddGroupIDs(ids ...int) {
-	if m.group == nil {
-		m.group = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.group[ids[i]] = struct{}{}
-	}
+// SetGroupID sets the "group" edge to the Group entity by id.
+func (m *UserMutation) SetGroupID(id int) {
+	m.group = &id
 }
 
 // ClearGroup clears the "group" edge to the Group entity.
@@ -1510,29 +1504,20 @@ func (m *UserMutation) GroupCleared() bool {
 	return m.clearedgroup
 }
 
-// RemoveGroupIDs removes the "group" edge to the Group entity by IDs.
-func (m *UserMutation) RemoveGroupIDs(ids ...int) {
-	if m.removedgroup == nil {
-		m.removedgroup = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.group, ids[i])
-		m.removedgroup[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedGroup returns the removed IDs of the "group" edge to the Group entity.
-func (m *UserMutation) RemovedGroupIDs() (ids []int) {
-	for id := range m.removedgroup {
-		ids = append(ids, id)
+// GroupID returns the "group" edge ID in the mutation.
+func (m *UserMutation) GroupID() (id int, exists bool) {
+	if m.group != nil {
+		return *m.group, true
 	}
 	return
 }
 
 // GroupIDs returns the "group" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// GroupID instead. It exists only for internal usage by the builders.
 func (m *UserMutation) GroupIDs() (ids []int) {
-	for id := range m.group {
-		ids = append(ids, id)
+	if id := m.group; id != nil {
+		ids = append(ids, *id)
 	}
 	return
 }
@@ -1541,7 +1526,6 @@ func (m *UserMutation) GroupIDs() (ids []int) {
 func (m *UserMutation) ResetGroup() {
 	m.group = nil
 	m.clearedgroup = false
-	m.removedgroup = nil
 }
 
 // Where appends a list predicates to the UserMutation builder.
@@ -1766,11 +1750,9 @@ func (m *UserMutation) AddedEdges() []string {
 func (m *UserMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case user.EdgeGroup:
-		ids := make([]ent.Value, 0, len(m.group))
-		for id := range m.group {
-			ids = append(ids, id)
+		if id := m.group; id != nil {
+			return []ent.Value{*id}
 		}
-		return ids
 	}
 	return nil
 }
@@ -1778,23 +1760,12 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 1)
-	if m.removedgroup != nil {
-		edges = append(edges, user.EdgeGroup)
-	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *UserMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case user.EdgeGroup:
-		ids := make([]ent.Value, 0, len(m.removedgroup))
-		for id := range m.removedgroup {
-			ids = append(ids, id)
-		}
-		return ids
-	}
 	return nil
 }
 
@@ -1821,6 +1792,9 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *UserMutation) ClearEdge(name string) error {
 	switch name {
+	case user.EdgeGroup:
+		m.ClearGroup()
+		return nil
 	}
 	return fmt.Errorf("unknown User unique edge %s", name)
 }

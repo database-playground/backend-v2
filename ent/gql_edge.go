@@ -20,14 +20,10 @@ func (gr *Group) ScopeSet(ctx context.Context) (result []*ScopeSet, err error) {
 	return result, err
 }
 
-func (u *User) Group(ctx context.Context) (result []*Group, err error) {
-	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = u.NamedGroup(graphql.GetFieldContext(ctx).Field.Alias)
-	} else {
-		result, err = u.Edges.GroupOrErr()
-	}
+func (u *User) Group(ctx context.Context) (*Group, error) {
+	result, err := u.Edges.GroupOrErr()
 	if IsNotLoaded(err) {
-		result, err = u.QueryGroup().All(ctx)
+		result, err = u.QueryGroup().Only(ctx)
 	}
 	return result, err
 }

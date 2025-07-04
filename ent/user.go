@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
@@ -30,27 +31,28 @@ type User struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
 	Edges        UserEdges `json:"edges"`
+	user_group   *int
 	selectValues sql.SelectValues
 }
 
 // UserEdges holds the relations/edges for other nodes in the graph.
 type UserEdges struct {
 	// Group holds the value of the group edge.
-	Group []*Group `json:"group,omitempty"`
+	Group *Group `json:"group,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
 	// totalCount holds the count of the edges above.
 	totalCount [1]map[string]int
-
-	namedGroup map[string][]*Group
 }
 
 // GroupOrErr returns the Group value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) GroupOrErr() ([]*Group, error) {
-	if e.loadedTypes[0] {
+// was not loaded in eager-loading, or loaded but was not found.
+func (e UserEdges) GroupOrErr() (*Group, error) {
+	if e.Group != nil {
 		return e.Group, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: group.Label}
 	}
 	return nil, &NotLoadedError{edge: "group"}
 }
@@ -66,6 +68,8 @@ func (*User) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
+		case user.ForeignKeys[0]: // user_group
+			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -116,6 +120,13 @@ func (u *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field email", values[i])
 			} else if value.Valid {
 				u.Email = value.String
+			}
+		case user.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field user_group", value)
+			} else if value.Valid {
+				u.user_group = new(int)
+				*u.user_group = int(value.Int64)
 			}
 		default:
 			u.selectValues.Set(columns[i], values[i])
@@ -174,30 +185,6 @@ func (u *User) String() string {
 	builder.WriteString(u.Email)
 	builder.WriteByte(')')
 	return builder.String()
-}
-
-// NamedGroup returns the Group named value or an error if the edge was not
-// loaded in eager-loading with this name.
-func (u *User) NamedGroup(name string) ([]*Group, error) {
-	if u.Edges.namedGroup == nil {
-		return nil, &NotLoadedError{edge: name}
-	}
-	nodes, ok := u.Edges.namedGroup[name]
-	if !ok {
-		return nil, &NotLoadedError{edge: name}
-	}
-	return nodes, nil
-}
-
-func (u *User) appendNamedGroup(name string, edges ...*Group) {
-	if u.Edges.namedGroup == nil {
-		u.Edges.namedGroup = make(map[string][]*Group)
-	}
-	if len(edges) == 0 {
-		u.Edges.namedGroup[name] = []*Group{}
-	} else {
-		u.Edges.namedGroup[name] = append(u.Edges.namedGroup[name], edges...)
-	}
 }
 
 // Users is a parsable slice of User.
