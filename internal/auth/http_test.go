@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -66,7 +67,8 @@ var _ auth.Storage = &failTokenStorage{}
 func TestExtractToken(t *testing.T) {
 	t.Run("no token", func(t *testing.T) {
 		r := http.Request{}
-		ctx, err := auth.ExtractToken(&r, nil)
+		storage := &mockTokenStorage{}
+		ctx, err := auth.ExtractToken(&r, storage)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -80,7 +82,8 @@ func TestExtractToken(t *testing.T) {
 		r := http.Request{
 			Header: http.Header{"Authorization": {"Test 1234"}},
 		}
-		_, err := auth.ExtractToken(&r, nil)
+		storage := &mockTokenStorage{}
+		_, err := auth.ExtractToken(&r, storage)
 		if !errors.Is(err, auth.ErrBadTokenFormat) {
 			t.Fatalf("expected bad token error, got %v", err)
 		}
@@ -109,6 +112,39 @@ func TestExtractToken(t *testing.T) {
 
 		r := http.Request{
 			Header: http.Header{"Authorization": {"Bearer 1234"}},
+		}
+		ctx, err := auth.ExtractToken(&r, storage)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		user, ok := auth.GetUser(ctx)
+		if !ok {
+			t.Fatalf("expected user, got none")
+		}
+
+		if user.Machine != tokenInfo.Machine {
+			t.Fatalf("expected machine %s, got %s", tokenInfo.Machine, user.Machine)
+		}
+
+		if user.User != tokenInfo.User {
+			t.Fatalf("expected user %s, got %s", tokenInfo.User, user.User)
+		}
+	})
+
+	t.Run("good token from cookie", func(t *testing.T) {
+		tokenInfo := auth.TokenInfo{
+			Machine: "machine",
+			User:    "user",
+		}
+		storage := &mockTokenStorage{
+			tokenInfo: tokenInfo,
+		}
+
+		r := http.Request{
+			Header: http.Header{
+				"Cookie": []string{fmt.Sprintf("%s=1234", auth.CookieAuthToken)},
+			},
 		}
 		ctx, err := auth.ExtractToken(&r, storage)
 		if err != nil {
