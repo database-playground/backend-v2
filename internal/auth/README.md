@@ -4,11 +4,7 @@
 
 ## Token 的設計
 
-目前 Token 是實作成一個 Base64 格式的 URL-safe 64 位元組隨機字串。
-
-```plain
-0E3ZZhnnBENG9oz8IeIzbFx0EzyXa_pEK32kjWaZVtliD1SOXsA2gHGeSfwOu_8i
-```
+目前 Token 的格式是 URL-safe 的 64 位元組隨機字串。格式參見 [authutil](../authutil/README.md) 套件的對應說明。
 
 > [!NOTE]
 > 不設計成 JWT，是因為在 HttpOnly 的情境下，前端沒有機會分析這段 token，而後端存取內網 Redis 的速度足夠快，因此就不採用 JWT 來避免掉設計和 rotate refresh token 以及針對 JWT 做強化所造成的種種開銷（如維護 Secret Key）。

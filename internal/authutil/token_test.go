@@ -1,13 +1,15 @@
-package auth
+package authutil_test
 
 import (
 	"strings"
 	"testing"
+
+	"github.com/database-playground/backend-v2/internal/authutil"
 )
 
 func TestGenerateToken(t *testing.T) {
 	// SPEC: 64 bytes, base64 URL-safe, no padding
-	token, err := GenerateToken()
+	token, err := authutil.GenerateToken()
 	if err != nil {
 		t.Fatalf("generate token: %v", err)
 	}
@@ -32,7 +34,7 @@ func TestGenerateToken_Fuzz(t *testing.T) {
 	s := make(map[string]struct{}, 10000)
 
 	for range 10000 {
-		token, err := GenerateToken()
+		token, err := authutil.GenerateToken()
 		if err != nil {
 			t.Fatalf("generate token: %v", err)
 		}

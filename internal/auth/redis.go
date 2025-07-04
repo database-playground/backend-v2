@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/database-playground/backend-v2/internal/authutil"
 	"github.com/redis/rueidis"
 )
 
@@ -77,7 +78,7 @@ func (s *RedisStorage) Peek(ctx context.Context, token string) (TokenInfo, error
 }
 
 func (s *RedisStorage) Create(ctx context.Context, info TokenInfo) (string, error) {
-	token, err := GenerateToken()
+	token, err := authutil.GenerateToken()
 	if err != nil {
 		return "", fmt.Errorf("generate token: %w", err)
 	}
