@@ -26,8 +26,33 @@ type User struct {
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Email holds the value of the "email" field.
-	Email        string `json:"email,omitempty"`
+	Email string `json:"email,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the UserQuery when eager-loading is set.
+	Edges        UserEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// UserEdges holds the relations/edges for other nodes in the graph.
+type UserEdges struct {
+	// Group holds the value of the group edge.
+	Group []*Group `json:"group,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+	// totalCount holds the count of the edges above.
+	totalCount [1]map[string]int
+
+	namedGroup map[string][]*Group
+}
+
+// GroupOrErr returns the Group value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) GroupOrErr() ([]*Group, error) {
+	if e.loadedTypes[0] {
+		return e.Group, nil
+	}
+	return nil, &NotLoadedError{edge: "group"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -105,6 +130,11 @@ func (u *User) Value(name string) (ent.Value, error) {
 	return u.selectValues.Get(name)
 }
 
+// QueryGroup queries the "group" edge of the User entity.
+func (u *User) QueryGroup() *GroupQuery {
+	return NewUserClient(u.config).QueryGroup(u)
+}
+
 // Update returns a builder for updating this User.
 // Note that you need to call User.Unwrap() before calling this method if this User
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -144,6 +174,30 @@ func (u *User) String() string {
 	builder.WriteString(u.Email)
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedGroup returns the Group named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (u *User) NamedGroup(name string) ([]*Group, error) {
+	if u.Edges.namedGroup == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := u.Edges.namedGroup[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (u *User) appendNamedGroup(name string, edges ...*Group) {
+	if u.Edges.namedGroup == nil {
+		u.Edges.namedGroup = make(map[string][]*Group)
+	}
+	if len(edges) == 0 {
+		u.Edges.namedGroup[name] = []*Group{}
+	} else {
+		u.Edges.namedGroup[name] = append(u.Edges.namedGroup[name], edges...)
+	}
 }
 
 // Users is a parsable slice of User.

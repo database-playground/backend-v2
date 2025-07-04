@@ -6,8 +6,181 @@ import (
 	"context"
 
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/ent/scopeset"
 	"github.com/database-playground/backend-v2/ent/user"
 )
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (gr *GroupQuery) CollectFields(ctx context.Context, satisfies ...string) (*GroupQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return gr, nil
+	}
+	if err := gr.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return gr, nil
+}
+
+func (gr *GroupQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(group.Columns))
+		selectedFields = []string{group.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "scopeSet":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ScopeSetClient{config: gr.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, scopesetImplementors)...); err != nil {
+				return err
+			}
+			gr.WithNamedScopeSet(alias, func(wq *ScopeSetQuery) {
+				*wq = *query
+			})
+		case "createdAt":
+			if _, ok := fieldSeen[group.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, group.FieldCreatedAt)
+				fieldSeen[group.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[group.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, group.FieldUpdatedAt)
+				fieldSeen[group.FieldUpdatedAt] = struct{}{}
+			}
+		case "deletedAt":
+			if _, ok := fieldSeen[group.FieldDeletedAt]; !ok {
+				selectedFields = append(selectedFields, group.FieldDeletedAt)
+				fieldSeen[group.FieldDeletedAt] = struct{}{}
+			}
+		case "name":
+			if _, ok := fieldSeen[group.FieldName]; !ok {
+				selectedFields = append(selectedFields, group.FieldName)
+				fieldSeen[group.FieldName] = struct{}{}
+			}
+		case "description":
+			if _, ok := fieldSeen[group.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, group.FieldDescription)
+				fieldSeen[group.FieldDescription] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		gr.Select(selectedFields...)
+	}
+	return nil
+}
+
+type groupPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []GroupPaginateOption
+}
+
+func newGroupPaginateArgs(rv map[string]any) *groupPaginateArgs {
+	args := &groupPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (ss *ScopeSetQuery) CollectFields(ctx context.Context, satisfies ...string) (*ScopeSetQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return ss, nil
+	}
+	if err := ss.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return ss, nil
+}
+
+func (ss *ScopeSetQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(scopeset.Columns))
+		selectedFields = []string{scopeset.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+		case "slug":
+			if _, ok := fieldSeen[scopeset.FieldSlug]; !ok {
+				selectedFields = append(selectedFields, scopeset.FieldSlug)
+				fieldSeen[scopeset.FieldSlug] = struct{}{}
+			}
+		case "description":
+			if _, ok := fieldSeen[scopeset.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, scopeset.FieldDescription)
+				fieldSeen[scopeset.FieldDescription] = struct{}{}
+			}
+		case "scopes":
+			if _, ok := fieldSeen[scopeset.FieldScopes]; !ok {
+				selectedFields = append(selectedFields, scopeset.FieldScopes)
+				fieldSeen[scopeset.FieldScopes] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		ss.Select(selectedFields...)
+	}
+	return nil
+}
+
+type scopesetPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []ScopeSetPaginateOption
+}
+
+func newScopeSetPaginateArgs(rv map[string]any) *scopesetPaginateArgs {
+	args := &scopesetPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (u *UserQuery) CollectFields(ctx context.Context, satisfies ...string) (*UserQuery, error) {
@@ -30,6 +203,19 @@ func (u *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *graph
 	)
 	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
+
+		case "group":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&GroupClient{config: u.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, groupImplementors)...); err != nil {
+				return err
+			}
+			u.WithNamedGroup(alias, func(wq *GroupQuery) {
+				*wq = *query
+			})
 		case "createdAt":
 			if _, ok := fieldSeen[user.FieldCreatedAt]; !ok {
 				selectedFields = append(selectedFields, user.FieldCreatedAt)

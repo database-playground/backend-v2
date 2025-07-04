@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -11,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/user"
 )
@@ -18,12 +20,14 @@ import (
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	ctx        *QueryContext
-	order      []user.OrderOption
-	inters     []Interceptor
-	predicates []predicate.User
-	modifiers  []func(*sql.Selector)
-	loadTotal  []func(context.Context, []*User) error
+	ctx            *QueryContext
+	order          []user.OrderOption
+	inters         []Interceptor
+	predicates     []predicate.User
+	withGroup      *GroupQuery
+	modifiers      []func(*sql.Selector)
+	loadTotal      []func(context.Context, []*User) error
+	withNamedGroup map[string]*GroupQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -58,6 +62,28 @@ func (uq *UserQuery) Unique(unique bool) *UserQuery {
 func (uq *UserQuery) Order(o ...user.OrderOption) *UserQuery {
 	uq.order = append(uq.order, o...)
 	return uq
+}
+
+// QueryGroup chains the current query on the "group" edge.
+func (uq *UserQuery) QueryGroup() *GroupQuery {
+	query := (&GroupClient{config: uq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GroupTable, user.GroupColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first User entity from the query.
@@ -252,10 +278,22 @@ func (uq *UserQuery) Clone() *UserQuery {
 		order:      append([]user.OrderOption{}, uq.order...),
 		inters:     append([]Interceptor{}, uq.inters...),
 		predicates: append([]predicate.User{}, uq.predicates...),
+		withGroup:  uq.withGroup.Clone(),
 		// clone intermediate query.
 		sql:  uq.sql.Clone(),
 		path: uq.path,
 	}
+}
+
+// WithGroup tells the query-builder to eager-load the nodes that are connected to
+// the "group" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithGroup(opts ...func(*GroupQuery)) *UserQuery {
+	query := (&GroupClient{config: uq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withGroup = query
+	return uq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -334,8 +372,11 @@ func (uq *UserQuery) prepareQuery(ctx context.Context) error {
 
 func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, error) {
 	var (
-		nodes = []*User{}
-		_spec = uq.querySpec()
+		nodes       = []*User{}
+		_spec       = uq.querySpec()
+		loadedTypes = [1]bool{
+			uq.withGroup != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*User).scanValues(nil, columns)
@@ -343,6 +384,7 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &User{config: uq.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if len(uq.modifiers) > 0 {
@@ -357,12 +399,58 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := uq.withGroup; query != nil {
+		if err := uq.loadGroup(ctx, query, nodes,
+			func(n *User) { n.Edges.Group = []*Group{} },
+			func(n *User, e *Group) { n.Edges.Group = append(n.Edges.Group, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range uq.withNamedGroup {
+		if err := uq.loadGroup(ctx, query, nodes,
+			func(n *User) { n.appendNamedGroup(name) },
+			func(n *User, e *Group) { n.appendNamedGroup(name, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for i := range uq.loadTotal {
 		if err := uq.loadTotal[i](ctx, nodes); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
+}
+
+func (uq *UserQuery) loadGroup(ctx context.Context, query *GroupQuery, nodes []*User, init func(*User), assign func(*User, *Group)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Group(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.GroupColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_group
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_group" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_group" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
 func (uq *UserQuery) sqlCount(ctx context.Context) (int, error) {
@@ -447,6 +535,20 @@ func (uq *UserQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// WithNamedGroup tells the query-builder to eager-load the nodes that are connected to the "group"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithNamedGroup(name string, opts ...func(*GroupQuery)) *UserQuery {
+	query := (&GroupClient{config: uq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if uq.withNamedGroup == nil {
+		uq.withNamedGroup = make(map[string]*GroupQuery)
+	}
+	uq.withNamedGroup[name] = query
+	return uq
 }
 
 // UserGroupBy is the group-by builder for User entities.

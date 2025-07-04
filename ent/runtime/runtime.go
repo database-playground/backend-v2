@@ -5,7 +5,9 @@ package runtime
 import (
 	"time"
 
+	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/schema"
+	"github.com/database-playground/backend-v2/ent/scopeset"
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
@@ -13,6 +15,39 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	groupMixin := schema.Group{}.Mixin()
+	groupMixinHooks0 := groupMixin[0].Hooks()
+	group.Hooks[0] = groupMixinHooks0[0]
+	groupMixinInters0 := groupMixin[0].Interceptors()
+	group.Interceptors[0] = groupMixinInters0[0]
+	groupMixinFields0 := groupMixin[0].Fields()
+	_ = groupMixinFields0
+	groupFields := schema.Group{}.Fields()
+	_ = groupFields
+	// groupDescCreatedAt is the schema descriptor for created_at field.
+	groupDescCreatedAt := groupMixinFields0[0].Descriptor()
+	// group.DefaultCreatedAt holds the default value on creation for the created_at field.
+	group.DefaultCreatedAt = groupDescCreatedAt.Default.(func() time.Time)
+	// groupDescUpdatedAt is the schema descriptor for updated_at field.
+	groupDescUpdatedAt := groupMixinFields0[1].Descriptor()
+	// group.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	group.DefaultUpdatedAt = groupDescUpdatedAt.Default.(func() time.Time)
+	// group.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	group.UpdateDefaultUpdatedAt = groupDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// groupDescName is the schema descriptor for name field.
+	groupDescName := groupFields[0].Descriptor()
+	// group.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	group.NameValidator = groupDescName.Validators[0].(func(string) error)
+	scopesetFields := schema.ScopeSet{}.Fields()
+	_ = scopesetFields
+	// scopesetDescSlug is the schema descriptor for slug field.
+	scopesetDescSlug := scopesetFields[0].Descriptor()
+	// scopeset.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
+	scopeset.SlugValidator = scopesetDescSlug.Validators[0].(func(string) error)
+	// scopesetDescScopes is the schema descriptor for scopes field.
+	scopesetDescScopes := scopesetFields[2].Descriptor()
+	// scopeset.DefaultScopes holds the default value on creation for the scopes field.
+	scopeset.DefaultScopes = scopesetDescScopes.Default.([]string)
 	userMixin := schema.User{}.Mixin()
 	userMixinHooks0 := userMixin[0].Hooks()
 	user.Hooks[0] = userMixinHooks0[0]

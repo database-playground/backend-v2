@@ -6,5 +6,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Group is the predicate function for group builders.
+type Group func(*sql.Selector)
+
+// ScopeSet is the predicate function for scopeset builders.
+type ScopeSet func(*sql.Selector)
+
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

@@ -9,6 +9,52 @@ import (
 )
 
 var (
+	// GroupsColumns holds the columns for the "groups" table.
+	GroupsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "user_group", Type: field.TypeInt, Nullable: true},
+	}
+	// GroupsTable holds the schema information for the "groups" table.
+	GroupsTable = &schema.Table{
+		Name:       "groups",
+		Columns:    GroupsColumns,
+		PrimaryKey: []*schema.Column{GroupsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "groups_users_group",
+				Columns:    []*schema.Column{GroupsColumns[6]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// ScopeSetsColumns holds the columns for the "scope_sets" table.
+	ScopeSetsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "slug", Type: field.TypeString, Unique: true},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "scopes", Type: field.TypeJSON},
+		{Name: "group_scope_set", Type: field.TypeInt, Nullable: true},
+	}
+	// ScopeSetsTable holds the schema information for the "scope_sets" table.
+	ScopeSetsTable = &schema.Table{
+		Name:       "scope_sets",
+		Columns:    ScopeSetsColumns,
+		PrimaryKey: []*schema.Column{ScopeSetsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "scope_sets_groups_scope_set",
+				Columns:    []*schema.Column{ScopeSetsColumns[4]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -26,11 +72,21 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		GroupsTable,
+		ScopeSetsTable,
 		UsersTable,
 	}
 )
 
 func init() {
+	GroupsTable.ForeignKeys[0].RefTable = UsersTable
+	GroupsTable.Annotation = &entsql.Annotation{
+		IncrementStart: func(i int) *int { return &i }(4294967296),
+	}
+	ScopeSetsTable.ForeignKeys[0].RefTable = GroupsTable
+	ScopeSetsTable.Annotation = &entsql.Annotation{
+		IncrementStart: func(i int) *int { return &i }(8589934592),
+	}
 	UsersTable.Annotation = &entsql.Annotation{
 		IncrementStart: func(i int) *int { return &i }(0),
 	}

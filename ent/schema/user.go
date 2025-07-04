@@ -4,9 +4,11 @@ import (
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
 	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
+// User is the schema for the user resource.
 type User struct {
 	ent.Schema
 }
@@ -21,6 +23,12 @@ func (User) Fields() []ent.Field {
 	}
 }
 
+func (User) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.To("group", Group.Type).Required(),
+	}
+}
+
 func (User) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		TimestampMixin{},
@@ -29,8 +37,13 @@ func (User) Mixin() []ent.Mixin {
 
 func (User) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		entgql.QueryField(),
-		entgql.Mutations(entgql.MutationCreate()),
+		entgql.QueryField().Directives(
+			ScopeDirective("user:read"),
+		),
+		entgql.Mutations(
+			entgql.MutationCreate(),
+			entgql.MutationUpdate(),
+		),
 		entgql.RelayConnection(),
 	}
 }

@@ -2,4 +2,4 @@
 
 package internal
 
-const IncrementStarts = "{\"users\":0}"
+const IncrementStarts = "{\"groups\":4294967296,\"scope_sets\":8589934592,\"users\":0}"

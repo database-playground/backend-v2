@@ -9,6 +9,30 @@ import (
 	"github.com/database-playground/backend-v2/ent"
 )
 
+// The GroupFunc type is an adapter to allow the use of ordinary
+// function as Group mutator.
+type GroupFunc func(context.Context, *ent.GroupMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GroupFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GroupMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMutation", m)
+}
+
+// The ScopeSetFunc type is an adapter to allow the use of ordinary
+// function as ScopeSet mutator.
+type ScopeSetFunc func(context.Context, *ent.ScopeSetMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ScopeSetFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ScopeSetMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ScopeSetMutation", m)
+}
+
 // The UserFunc type is an adapter to allow the use of ordinary
 // function as User mutator.
 type UserFunc func(context.Context, *ent.UserMutation) (ent.Value, error)

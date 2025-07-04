@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
@@ -72,6 +73,21 @@ func (uc *UserCreate) SetName(s string) *UserCreate {
 func (uc *UserCreate) SetEmail(s string) *UserCreate {
 	uc.mutation.SetEmail(s)
 	return uc
+}
+
+// AddGroupIDs adds the "group" edge to the Group entity by IDs.
+func (uc *UserCreate) AddGroupIDs(ids ...int) *UserCreate {
+	uc.mutation.AddGroupIDs(ids...)
+	return uc
+}
+
+// AddGroup adds the "group" edges to the Group entity.
+func (uc *UserCreate) AddGroup(g ...*Group) *UserCreate {
+	ids := make([]int, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uc.AddGroupIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -152,6 +168,9 @@ func (uc *UserCreate) check() error {
 			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "User.email": %w`, err)}
 		}
 	}
+	if len(uc.mutation.GroupIDs()) == 0 {
+		return &ValidationError{Name: "group", err: errors.New(`ent: missing required edge "User.group"`)}
+	}
 	return nil
 }
 
@@ -197,6 +216,22 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := uc.mutation.Email(); ok {
 		_spec.SetField(user.FieldEmail, field.TypeString, value)
 		_node.Email = value
+	}
+	if nodes := uc.mutation.GroupIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GroupTable,
+			Columns: []string{user.GroupColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

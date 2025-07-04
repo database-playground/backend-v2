@@ -6,6 +6,162 @@ import (
 	"time"
 )
 
+// CreateGroupInput represents a mutation input for creating groups.
+type CreateGroupInput struct {
+	CreatedAt   *time.Time
+	UpdatedAt   *time.Time
+	DeletedAt   *time.Time
+	Name        string
+	Description *string
+	ScopeSetIDs []int
+}
+
+// Mutate applies the CreateGroupInput on the GroupMutation builder.
+func (i *CreateGroupInput) Mutate(m *GroupMutation) {
+	if v := i.CreatedAt; v != nil {
+		m.SetCreatedAt(*v)
+	}
+	if v := i.UpdatedAt; v != nil {
+		m.SetUpdatedAt(*v)
+	}
+	if v := i.DeletedAt; v != nil {
+		m.SetDeletedAt(*v)
+	}
+	m.SetName(i.Name)
+	if v := i.Description; v != nil {
+		m.SetDescription(*v)
+	}
+	if v := i.ScopeSetIDs; len(v) > 0 {
+		m.AddScopeSetIDs(v...)
+	}
+}
+
+// SetInput applies the change-set in the CreateGroupInput on the GroupCreate builder.
+func (c *GroupCreate) SetInput(i CreateGroupInput) *GroupCreate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// UpdateGroupInput represents a mutation input for updating groups.
+type UpdateGroupInput struct {
+	CreatedAt         *time.Time
+	UpdatedAt         *time.Time
+	ClearDeletedAt    bool
+	DeletedAt         *time.Time
+	Name              *string
+	ClearDescription  bool
+	Description       *string
+	ClearScopeSet     bool
+	AddScopeSetIDs    []int
+	RemoveScopeSetIDs []int
+}
+
+// Mutate applies the UpdateGroupInput on the GroupMutation builder.
+func (i *UpdateGroupInput) Mutate(m *GroupMutation) {
+	if v := i.CreatedAt; v != nil {
+		m.SetCreatedAt(*v)
+	}
+	if v := i.UpdatedAt; v != nil {
+		m.SetUpdatedAt(*v)
+	}
+	if i.ClearDeletedAt {
+		m.ClearDeletedAt()
+	}
+	if v := i.DeletedAt; v != nil {
+		m.SetDeletedAt(*v)
+	}
+	if v := i.Name; v != nil {
+		m.SetName(*v)
+	}
+	if i.ClearDescription {
+		m.ClearDescription()
+	}
+	if v := i.Description; v != nil {
+		m.SetDescription(*v)
+	}
+	if i.ClearScopeSet {
+		m.ClearScopeSet()
+	}
+	if v := i.AddScopeSetIDs; len(v) > 0 {
+		m.AddScopeSetIDs(v...)
+	}
+	if v := i.RemoveScopeSetIDs; len(v) > 0 {
+		m.RemoveScopeSetIDs(v...)
+	}
+}
+
+// SetInput applies the change-set in the UpdateGroupInput on the GroupUpdate builder.
+func (c *GroupUpdate) SetInput(i UpdateGroupInput) *GroupUpdate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// SetInput applies the change-set in the UpdateGroupInput on the GroupUpdateOne builder.
+func (c *GroupUpdateOne) SetInput(i UpdateGroupInput) *GroupUpdateOne {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// CreateScopeSetInput represents a mutation input for creating scopesets.
+type CreateScopeSetInput struct {
+	Slug        string
+	Description *string
+	Scopes      []string
+}
+
+// Mutate applies the CreateScopeSetInput on the ScopeSetMutation builder.
+func (i *CreateScopeSetInput) Mutate(m *ScopeSetMutation) {
+	m.SetSlug(i.Slug)
+	if v := i.Description; v != nil {
+		m.SetDescription(*v)
+	}
+	if v := i.Scopes; v != nil {
+		m.SetScopes(v)
+	}
+}
+
+// SetInput applies the change-set in the CreateScopeSetInput on the ScopeSetCreate builder.
+func (c *ScopeSetCreate) SetInput(i CreateScopeSetInput) *ScopeSetCreate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// UpdateScopeSetInput represents a mutation input for updating scopesets.
+type UpdateScopeSetInput struct {
+	ClearDescription bool
+	Description      *string
+	Scopes           []string
+	AppendScopes     []string
+}
+
+// Mutate applies the UpdateScopeSetInput on the ScopeSetMutation builder.
+func (i *UpdateScopeSetInput) Mutate(m *ScopeSetMutation) {
+	if i.ClearDescription {
+		m.ClearDescription()
+	}
+	if v := i.Description; v != nil {
+		m.SetDescription(*v)
+	}
+	if v := i.Scopes; v != nil {
+		m.SetScopes(v)
+	}
+	if i.AppendScopes != nil {
+		m.AppendScopes(i.Scopes)
+	}
+}
+
+// SetInput applies the change-set in the UpdateScopeSetInput on the ScopeSetUpdate builder.
+func (c *ScopeSetUpdate) SetInput(i UpdateScopeSetInput) *ScopeSetUpdate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// SetInput applies the change-set in the UpdateScopeSetInput on the ScopeSetUpdateOne builder.
+func (c *ScopeSetUpdateOne) SetInput(i UpdateScopeSetInput) *ScopeSetUpdateOne {
+	i.Mutate(c.Mutation())
+	return c
+}
+
 // CreateUserInput represents a mutation input for creating users.
 type CreateUserInput struct {
 	CreatedAt *time.Time
@@ -13,6 +169,7 @@ type CreateUserInput struct {
 	DeletedAt *time.Time
 	Name      string
 	Email     string
+	GroupIDs  []int
 }
 
 // Mutate applies the CreateUserInput on the UserMutation builder.
@@ -28,10 +185,65 @@ func (i *CreateUserInput) Mutate(m *UserMutation) {
 	}
 	m.SetName(i.Name)
 	m.SetEmail(i.Email)
+	if v := i.GroupIDs; len(v) > 0 {
+		m.AddGroupIDs(v...)
+	}
 }
 
 // SetInput applies the change-set in the CreateUserInput on the UserCreate builder.
 func (c *UserCreate) SetInput(i CreateUserInput) *UserCreate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// UpdateUserInput represents a mutation input for updating users.
+type UpdateUserInput struct {
+	CreatedAt      *time.Time
+	UpdatedAt      *time.Time
+	ClearDeletedAt bool
+	DeletedAt      *time.Time
+	Name           *string
+	Email          *string
+	AddGroupIDs    []int
+	RemoveGroupIDs []int
+}
+
+// Mutate applies the UpdateUserInput on the UserMutation builder.
+func (i *UpdateUserInput) Mutate(m *UserMutation) {
+	if v := i.CreatedAt; v != nil {
+		m.SetCreatedAt(*v)
+	}
+	if v := i.UpdatedAt; v != nil {
+		m.SetUpdatedAt(*v)
+	}
+	if i.ClearDeletedAt {
+		m.ClearDeletedAt()
+	}
+	if v := i.DeletedAt; v != nil {
+		m.SetDeletedAt(*v)
+	}
+	if v := i.Name; v != nil {
+		m.SetName(*v)
+	}
+	if v := i.Email; v != nil {
+		m.SetEmail(*v)
+	}
+	if v := i.AddGroupIDs; len(v) > 0 {
+		m.AddGroupIDs(v...)
+	}
+	if v := i.RemoveGroupIDs; len(v) > 0 {
+		m.RemoveGroupIDs(v...)
+	}
+}
+
+// SetInput applies the change-set in the UpdateUserInput on the UserUpdate builder.
+func (c *UserUpdate) SetInput(i UpdateUserInput) *UserUpdate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// SetInput applies the change-set in the UpdateUserInput on the UserUpdateOne builder.
+func (c *UserUpdateOne) SetInput(i UpdateUserInput) *UserUpdateOne {
 	i.Mutate(c.Mutation())
 	return c
 }
