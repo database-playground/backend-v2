@@ -30,22 +30,13 @@ func NewSchema(client *ent.Client) graphql.ExecutableSchema {
 
 func NewErrorPresenter() graphql.ErrorPresenterFunc {
 	return func(ctx context.Context, err error) *gqlerror.Error {
-		if errors.Is(err, defs.ErrUnauthorized) {
+		var gqlErr defs.GqlError
+		if errors.As(err, &gqlErr) {
 			return &gqlerror.Error{
-				Message: "require authentication",
+				Message: gqlErr.Message,
 				Path:    graphql.GetPath(ctx),
 				Extensions: map[string]any{
-					"code": "UNAUTHORIZED",
-				},
-			}
-		}
-
-		if errors.Is(err, defs.ErrNoSufficientScope) {
-			return &gqlerror.Error{
-				Message: "no sufficient scope",
-				Path:    graphql.GetPath(ctx),
-				Extensions: map[string]any{
-					"code": "FORBIDDEN",
+					"code": gqlErr.Code,
 				},
 			}
 		}

@@ -1,9 +1,26 @@
 package defs
 
-import "errors"
+import (
+	"fmt"
+)
 
-var ErrUnauthorized = errors.New("require authentication")   // -> 401
-var ErrNoSufficientScope = errors.New("no sufficient scope") // -> 403
+type GqlError struct {
+	Message string
+	Code    string
+}
+
+func (e GqlError) Error() string {
+	return fmt.Sprintf("%s: %s", e.Code, e.Message)
+}
+
+var ErrUnauthorized = GqlError{
+	Message: "require authentication",
+	Code:    CodeUnauthorized,
+}
+var ErrNoSufficientScope = GqlError{
+	Message: "no sufficient scope",
+	Code:    CodeForbidden,
+}
 
 const CodeUnauthorized = "UNAUTHORIZED"
 const CodeForbidden = "FORBIDDEN"
