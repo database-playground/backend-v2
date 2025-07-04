@@ -1,0 +1,35 @@
+# Authentication
+
+這個 Package 的目的是儲存和取回認證憑證（token）。
+
+## Token 的設計
+
+目前 Token 是實作成一個 Base64 格式的 URL-safe 64 位元組隨機字串。
+
+```plain
+0E3ZZhnnBENG9oz8IeIzbFx0EzyXa_pEK32kjWaZVtliD1SOXsA2gHGeSfwOu_8i
+```
+
+不設計成 JWT，是因為在 HttpOnly 的情境下，前端沒有機會分析這段 token，而後端存取內網 Redis 的速度足夠快，因此就不採用 JWT 來避免掉設計 refresh token 以及針對 JWT 做強化所造成的種種開銷。
+
+## 介面
+
+Storage 介面要求實作「建立 token（登入）」、「取回 token（驗證）」、「刪除特定 token（登出）」、「刪除使用者底下所有 token（登出所有裝置）」這四個功能。
+
+建立 token 需要你帶入 user ID 和 machine ID。前者你可以使用 User model 的 `id`，後者你可以使用請求方的 User-Agent。取回 token 則會回傳你建立時帶入的資訊。
+
+登出需要你帶入 token 本身，我們會將這個 token 撤銷，使得其無法取回而顯示未驗證狀態。登出所有裝置則要求撤銷符合這個 User ID 的所有 tokens，使得簽發至這個使用者的所有 tokens 均無法取回。
+
+## Redis 介面
+
+auth 套件底下的 Redis 以這個鍵儲存資料：
+
+```jsx
+auth:token:TOKEN -> JSON({ user_id, machine_id })
+```
+
+其中 `auth:token:TOKEN` 的資料以 [Redis 的 JSON 資料型態](https://redis.io/docs/latest/develop/data-types/json/) 進行操作。
+
+這麼做的目的，是讓「登出所有裝置」的呼叫成本盡可能小：我們使用 Redis 的 SCAN 命令來走訪所有以 `auth:token:` 為前綴的鍵，並使用 JSON.GET 命令來檢查每個 token 的 user 欄位。當找到屬於目標使用者的 token 時，就使用 DEL 命令將其刪除。
+
+這種方式讓我們能夠在不需要額外索引的情況下，有效地找出並刪除特定使用者的所有 tokens。雖然這個操作需要走訪所有 tokens，但由於 SCAN 命令的漸進式掃描設計，即使在大量 tokens 的情況下也能保持穩定的效能表現。考慮到 `DeleteByUser` 不是一個會一直被呼叫的函式，故不考慮針對其特別建立並維護一個索引。
