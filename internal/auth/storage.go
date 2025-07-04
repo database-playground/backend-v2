@@ -32,4 +32,6 @@ type Storage interface {
 type TokenInfo struct {
 	Machine string `json:"machine"` // the machine that associated with the token
 	User    string `json:"user"`    // the user that associated with the machine
+
+	Scopes []string `json:"scopes"` // the scopes that the user has
 }

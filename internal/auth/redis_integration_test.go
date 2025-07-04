@@ -28,8 +28,11 @@ func TestRedisStorage_Integration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get failed: %v", err)
 	}
-	if got != info {
-		t.Errorf("Get returned wrong info: got %+v, want %+v", got, info)
+	if got.Machine != info.Machine {
+		t.Errorf("Get returned wrong machine: got %s, want %s", got.Machine, info.Machine)
+	}
+	if got.User != info.User {
+		t.Errorf("Get returned wrong user: got %s, want %s", got.User, info.User)
 	}
 
 	// Test Delete

@@ -35,7 +35,7 @@ Storage 介面要求實作「建立 token（登入）」、「取回 token（驗
 auth 套件底下的 Redis 以這個鍵儲存資料：
 
 ```jsx
-auth:token:TOKEN -> JSON({ user_id, machine_id })
+auth:token:TOKEN -> JSON({ user_id, machine_id, scopes })
 ```
 
 其中 `auth:token:TOKEN` 的資料以 [Redis 的 JSON 資料型態](https://redis.io/docs/latest/develop/data-types/json/) 進行操作。
