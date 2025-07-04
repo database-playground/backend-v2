@@ -29,7 +29,7 @@ Middleware 會在請求情境鏈中插入 `UserInfo`，resolvers 可以使用 `G
 
 ## Storage
 
-Storage 介面要求實作「建立 token（登入）」、「取回 token（驗證和延期）」、「檢驗 token（Peek）」、「刪除特定 token（登出）」、「刪除使用者底下所有 token（登出所有裝置）」這四個功能。
+Storage 介面要求實作「建立 token（登入）」、「取回 token（驗證和延期）」、「檢驗 token（Peek）」、「刪除特定 token（登出）」、「刪除使用者底下所有 token（登出所有裝置）」這些功能。
 
 建立 token 需要你帶入 user ID 和 machine ID。前者你可以使用 User model 的 `id`，後者你可以使用請求方的 User-Agent。取回 token 則會回傳你建立時帶入的資訊，且強制定義 `ErrNotFound` 為無此 token。
 
