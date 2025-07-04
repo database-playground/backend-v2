@@ -6,14 +6,128 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/database-playground/backend-v2/ent"
 )
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input ent.CreateUserInput) (*ent.User, error) {
-	panic(fmt.Errorf("not implemented: CreateUser - createUser"))
+	user, err := r.client.User.Create().SetInput(input).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// UpdateUser is the resolver for the updateUser field.
+func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.UpdateUserInput) (*ent.User, error) {
+	user, err := r.client.User.UpdateOneID(id).SetInput(input).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// DeleteUser is the resolver for the deleteUser field.
+func (r *mutationResolver) DeleteUser(ctx context.Context, id int) (bool, error) {
+	err := r.client.User.DeleteOneID(id).Exec(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+// CreateScopeSet is the resolver for the createScopeSet field.
+func (r *mutationResolver) CreateScopeSet(ctx context.Context, input ent.CreateScopeSetInput) (*ent.ScopeSet, error) {
+	scopeSet, err := r.client.ScopeSet.Create().SetInput(input).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return scopeSet, nil
+}
+
+// UpdateScopeSet is the resolver for the updateScopeSet field.
+func (r *mutationResolver) UpdateScopeSet(ctx context.Context, id int, input ent.UpdateScopeSetInput) (*ent.ScopeSet, error) {
+	scopeSet, err := r.client.ScopeSet.UpdateOneID(id).SetInput(input).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return scopeSet, nil
+}
+
+// DeleteScopeSet is the resolver for the deleteScopeSet field.
+func (r *mutationResolver) DeleteScopeSet(ctx context.Context, id int) (bool, error) {
+	err := r.client.ScopeSet.DeleteOneID(id).Exec(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+// CreateGroup is the resolver for the createGroup field.
+func (r *mutationResolver) CreateGroup(ctx context.Context, input ent.CreateGroupInput) (*ent.Group, error) {
+	group, err := r.client.Group.Create().SetInput(input).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return group, nil
+}
+
+// UpdateGroup is the resolver for the updateGroup field.
+func (r *mutationResolver) UpdateGroup(ctx context.Context, id int, input ent.UpdateGroupInput) (*ent.Group, error) {
+	group, err := r.client.Group.UpdateOneID(id).SetInput(input).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return group, nil
+}
+
+// DeleteGroup is the resolver for the deleteGroup field.
+func (r *mutationResolver) DeleteGroup(ctx context.Context, id int) (bool, error) {
+	err := r.client.Group.DeleteOneID(id).Exec(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+// CreateAdmin is the resolver for the createAdmin field.
+func (r *mutationResolver) CreateAdmin(ctx context.Context, input ent.CreateUserInput) (*ent.User, error) {
+	// create admin scopeset
+	scopeset, err := r.client.ScopeSet.Create().
+		SetSlug("admin").
+		SetScopes([]string{"*"}).
+		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// create admin group
+	group, err := r.client.Group.Create().
+		SetName("admin").
+		AddScopeSet(scopeset).
+		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	input.GroupIDs = []int{group.ID}
+
+	user, err := r.client.User.Create().SetInput(input).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 // Mutation returns MutationResolver implementation.
