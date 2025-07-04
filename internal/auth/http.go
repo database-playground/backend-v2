@@ -6,6 +6,8 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+
+	"github.com/database-playground/backend-v2/graph/defs"
 )
 
 // Middleware decodes the Authorization header and packs the user information into context.
@@ -16,7 +18,7 @@ func Middleware(storage Storage) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			newCtx, err := ExtractToken(r, storage)
 			if err != nil {
-				gqlgenLikeError(w, err, http.StatusUnauthorized)
+				gqlgenLikeError(w, err)
 				return
 			}
 
@@ -26,25 +28,31 @@ func Middleware(storage Storage) func(http.Handler) http.Handler {
 	}
 }
 
-func gqlgenLikeError(w http.ResponseWriter, err error, code int) {
+func gqlgenLikeError(w http.ResponseWriter, err error) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
+	w.WriteHeader(http.StatusOK)
 	encoder := json.NewEncoder(w)
 
+	type StructureError struct {
+		Message    string         `json:"message"`
+		Path       []string       `json:"path"` // always empty
+		Extensions map[string]any `json:"extensions"`
+	}
+
 	type Structure struct {
-		Errors []struct {
-			Message string   `json:"message"`
-			Path    []string `json:"path"` // always empty
-		} `json:"errors"`
-		Data *struct{} `json:"data"` // always null
+		Errors []StructureError `json:"errors"`
+		Data   *struct{}        `json:"data"` // always null
 	}
 
 	structure := Structure{
-		Errors: []struct {
-			Message string   `json:"message"`
-			Path    []string `json:"path"` // always empty
-		}{
-			{Message: err.Error(), Path: []string{}},
+		Errors: []StructureError{
+			{
+				Message: err.Error(),
+				Path:    []string{},
+				Extensions: map[string]any{
+					"code": defs.CodeUnauthorized,
+				},
+			},
 		},
 	}
 

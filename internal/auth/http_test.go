@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/internal/auth"
 )
 
@@ -163,8 +164,8 @@ func TestMiddleware(t *testing.T) {
 
 		wrappedHandler.ServeHTTP(rr, req)
 
-		if status := rr.Code; status != http.StatusUnauthorized {
-			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusUnauthorized)
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 		}
 
 		// Check content type
@@ -176,8 +177,9 @@ func TestMiddleware(t *testing.T) {
 		// Verify error response format
 		var response struct {
 			Errors []struct {
-				Message string   `json:"message"`
-				Path    []string `json:"path"`
+				Message    string         `json:"message"`
+				Path       []string       `json:"path"`
+				Extensions map[string]any `json:"extensions"`
 			} `json:"errors"`
 			Data *struct{} `json:"data"`
 		}
@@ -195,6 +197,10 @@ func TestMiddleware(t *testing.T) {
 
 		if len(response.Errors[0].Path) != 0 {
 			t.Errorf("expected empty path, got %v", response.Errors[0].Path)
+		}
+
+		if response.Errors[0].Extensions["code"] != defs.CodeUnauthorized {
+			t.Errorf("expected code %q, got %q", defs.CodeUnauthorized, response.Errors[0].Extensions["code"])
 		}
 
 		if response.Data != nil {
@@ -220,8 +226,8 @@ func TestMiddleware(t *testing.T) {
 
 		wrappedHandler.ServeHTTP(rr, req)
 
-		if status := rr.Code; status != http.StatusUnauthorized {
-			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusUnauthorized)
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 		}
 
 		// Check content type
@@ -233,8 +239,9 @@ func TestMiddleware(t *testing.T) {
 		// Verify error response format
 		var response struct {
 			Errors []struct {
-				Message string   `json:"message"`
-				Path    []string `json:"path"`
+				Message    string         `json:"message"`
+				Path       []string       `json:"path"`
+				Extensions map[string]any `json:"extensions"`
 			} `json:"errors"`
 			Data *struct{} `json:"data"`
 		}
@@ -252,6 +259,10 @@ func TestMiddleware(t *testing.T) {
 
 		if len(response.Errors[0].Path) != 0 {
 			t.Errorf("expected empty path, got %v", response.Errors[0].Path)
+		}
+
+		if response.Errors[0].Extensions["code"] != defs.CodeUnauthorized {
+			t.Errorf("expected code %q, got %q", defs.CodeUnauthorized, response.Errors[0].Extensions["code"])
 		}
 
 		if response.Data != nil {
