@@ -40,7 +40,7 @@ func TestRedisStorage_CreateAndGet(t *testing.T) {
 func TestRedisStorage_CreateAndGet_Expire(t *testing.T) {
 	container := testhelper.NewRedisContainer(t)
 	redisClient := testhelper.NewRedisClient(t, container)
-	storage := NewRedisStorage(redisClient, WithTokenExpire(1))
+	storage := NewRedisStorage(redisClient, WithTokenExpire(1*time.Second))
 	ctx := context.Background()
 
 	info := TokenInfo{Machine: "machine1", User: "user1"}
@@ -187,5 +187,87 @@ func TestRedisStorage_DeleteByUser_Cursor(t *testing.T) {
 		if err != nil {
 			t.Errorf("Get failed for otherUser's token %d after DeleteByUser for bulkuser: %v", i, err)
 		}
+	}
+}
+
+func TestRedisStorage_Peek(t *testing.T) {
+	container := testhelper.NewRedisContainer(t)
+	redisClient := testhelper.NewRedisClient(t, container)
+	storage := NewRedisStorage(redisClient)
+	ctx := context.Background()
+
+	info := TokenInfo{Machine: "machine1", User: "user1"}
+	token, err := storage.Create(ctx, info)
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	// Get current TTL
+	ttl, err := storage.GetCurrentTTL(ctx, token)
+	if err != nil {
+		t.Fatalf("GetExpiration failed: %v", err)
+	}
+
+	// Peek should not affect expiration
+	got, err := storage.Peek(ctx, token)
+	if err != nil {
+		t.Fatalf("Peek failed: %v", err)
+	}
+	if got.Machine != info.Machine {
+		t.Errorf("Peek returned wrong machine: got %s, want %s", got.Machine, info.Machine)
+	}
+	if got.User != info.User {
+		t.Errorf("Peek returned wrong user: got %s, want %s", got.User, info.User)
+	}
+
+	time.Sleep(2 * time.Second) // make sure afterPeekExpire < (ttl + latency)
+
+	afterPeekExpire, err := storage.GetCurrentTTL(ctx, token)
+	if err != nil {
+		t.Fatalf("GetCurrentTTL after peek failed: %v", err)
+	}
+	if afterPeekExpire >= ttl {
+		t.Errorf("GetCurrentTTL after peek should be less than to ttl, but got %d", afterPeekExpire)
+	}
+
+	// Regular Get should update expiration
+	_, err = storage.Get(ctx, token)
+	if err != nil {
+		t.Fatalf("Get failed: %v", err)
+	}
+
+	afterGetExpire, err := storage.GetCurrentTTL(ctx, token)
+	if err != nil {
+		t.Fatalf("GetCurrentTTL after get failed: %v", err)
+	}
+	if afterGetExpire <= afterPeekExpire {
+		t.Errorf("GetCurrentTTL after get should be greater than afterPeekExpire, but got %d", afterGetExpire)
+	}
+	if afterGetExpire > ttl {
+		t.Errorf("GetCurrentTTL after get should be less than or equal to ttl, but got %d", afterGetExpire)
+	}
+}
+
+func TestTestRedisStorage_GetCurrentTTL(t *testing.T) {
+	container := testhelper.NewRedisContainer(t)
+	redisClient := testhelper.NewRedisClient(t, container)
+
+	const testTTLSec = 10
+	storage := NewRedisStorage(redisClient, WithTokenExpire(time.Duration(testTTLSec)*time.Second))
+	ctx := context.Background()
+
+	info := TokenInfo{Machine: "machine1", User: "user1"}
+	token, err := storage.Create(ctx, info)
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	ttl, err := storage.GetCurrentTTL(ctx, token)
+	if err != nil {
+		t.Fatalf("GetCurrentTTL failed: %v", err)
+	}
+
+	if ttl < testTTLSec {
+		t.Errorf("Ttl should be less than %d, but got %d", testTTLSec, ttl)
 	}
 }

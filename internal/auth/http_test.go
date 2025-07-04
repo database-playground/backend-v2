@@ -34,6 +34,11 @@ func (r *baseTokenStorage) Get(ctx context.Context, token string) (auth.TokenInf
 	panic("unimplemented")
 }
 
+// Peek implements auth.Storage.
+func (r *baseTokenStorage) Peek(ctx context.Context, token string) (auth.TokenInfo, error) {
+	panic("unimplemented")
+}
+
 var _ auth.Storage = &baseTokenStorage{}
 
 type mockTokenStorage struct {

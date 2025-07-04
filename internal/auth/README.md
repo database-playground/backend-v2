@@ -22,7 +22,7 @@ Middleware 會在請求情境鏈中插入 `UserInfo`，resolvers 可以使用 `G
 
 ## Storage
 
-Storage 介面要求實作「建立 token（登入）」、「取回 token（驗證）」、「刪除特定 token（登出）」、「刪除使用者底下所有 token（登出所有裝置）」這四個功能。
+Storage 介面要求實作「建立 token（登入）」、「取回 token（驗證和延期）」、「檢驗 token（Peek）」、「刪除特定 token（登出）」、「刪除使用者底下所有 token（登出所有裝置）」這四個功能。
 
 建立 token 需要你帶入 user ID 和 machine ID。前者你可以使用 User model 的 `id`，後者你可以使用請求方的 User-Agent。取回 token 則會回傳你建立時帶入的資訊，且強制定義 `ErrNotFound` 為無此 token。
 
@@ -38,7 +38,7 @@ auth 套件底下的 Redis 以這個鍵儲存資料：
 auth:token:TOKEN -> JSON({ user_id, machine_id, scopes })
 ```
 
-其中 `auth:token:TOKEN` 的資料以 [Redis 的 JSON 資料型態](https://redis.io/docs/latest/develop/data-types/json/) 進行操作。
+其中 `auth:token:TOKEN` 的資料以 [Redis 的 JSON 資料型態](https://redis.io/docs/latest/develop/data-types/json/) 進行操作，且 `auth:token:TOKEN` 預設設定在 8 小時後到期，但 `Get` 會延期 token 到 8 小時。
 
 這麼做的目的，是讓「登出所有裝置」的呼叫成本盡可能小：我們使用 Redis 的 SCAN 命令來走訪所有以 `auth:token:` 為前綴的鍵，並使用 JSON.GET 命令來檢查每個 token 的 user 欄位。當找到屬於目標使用者的 token 時，就使用 DEL 命令將其刪除。
 

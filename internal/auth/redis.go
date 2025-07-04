@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/redis/rueidis"
 )
@@ -18,26 +19,46 @@ type RedisStorage struct {
 
 type RedisStorageOption func(*RedisStorage)
 
-func WithTokenExpire(expire int64) RedisStorageOption {
+func WithTokenExpire(expire time.Duration) RedisStorageOption {
 	return func(s *RedisStorage) {
-		s.tokenExpire = expire
+		s.tokenExpire = int64(expire.Seconds())
 	}
 }
 
 const redisTokenPrefix = "auth:token:"
-const defaultTokenExpire = 86400 // 24 hr
+const defaultTokenExpire = 8 * 60 * 60 // 8 hr
 
 // NewRedisStorage creates a new RedisStorage.
-func NewRedisStorage(redis rueidis.Client, opts ...RedisStorageOption) *RedisStorage {
+func NewRedisStorage(redis rueidis.Client, opts ...RedisStorageOption) *TestRedisStorage {
 	s := &RedisStorage{redis: redis, tokenExpire: defaultTokenExpire}
 	for _, opt := range opts {
 		opt(s)
 	}
 
-	return s
+	return &TestRedisStorage{RedisStorage: s}
 }
 
 func (s *RedisStorage) Get(ctx context.Context, token string) (TokenInfo, error) {
+	tokenInfo, err := s.Peek(ctx, token)
+	if err != nil {
+		return TokenInfo{}, err
+	}
+
+	// extend the expiration time
+	replies := s.redis.DoMulti(
+		ctx,
+		s.redis.B().Expire().Key(redisTokenPrefix+token).Seconds(s.tokenExpire).Build(),
+	)
+	for _, reply := range replies {
+		if reply.Error() != nil {
+			return TokenInfo{}, reply.Error()
+		}
+	}
+
+	return tokenInfo, nil
+}
+
+func (s *RedisStorage) Peek(ctx context.Context, token string) (TokenInfo, error) {
 	tokenKey := redisTokenPrefix + token
 
 	reply := s.redis.Do(ctx, s.redis.B().JsonGet().Key(tokenKey).Path(".").Build())
@@ -153,4 +174,29 @@ func (s *RedisStorage) DeleteByUser(ctx context.Context, user string) error {
 	}
 
 	return nil
+}
+
+// TestRedisStorage is a RedisStorage for testing purpose.
+//
+// It contains some extra methods for inspecting the token.
+// You should never use this in production since it is not API stable.
+type TestRedisStorage struct {
+	*RedisStorage
+}
+
+// GetCurrentTTL returns the current TTL of the token.
+//
+// This is only for testing purpose.
+func (s *TestRedisStorage) GetCurrentTTL(ctx context.Context, token string) (int64, error) {
+	reply := s.redis.Do(ctx, s.redis.B().Ttl().Key(redisTokenPrefix+token).Build())
+	if reply.Error() != nil {
+		return 0, reply.Error()
+	}
+
+	ttl, err := reply.AsInt64()
+	if err != nil {
+		return 0, err
+	}
+
+	return ttl, nil
 }
