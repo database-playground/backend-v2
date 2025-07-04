@@ -6,8 +6,10 @@ package graph
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/ent/user"
 	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/internal/auth"
 )
@@ -132,6 +134,23 @@ func (r *mutationResolver) CreateAdmin(ctx context.Context, input ent.CreateUser
 	return user, nil
 }
 
+// ImpersonateUser is the resolver for the impersonateUser field.
+func (r *mutationResolver) ImpersonateUser(ctx context.Context, userID int) (string, error) {
+	token, err := r.auth.Create(ctx, auth.TokenInfo{
+		Machine: "graphql:ImpersonateUser",
+		User:    strconv.Itoa(userID),
+		Scopes:  []string{"*"},
+		Meta: map[string]string{
+			"impersonated_by": strconv.Itoa(userID),
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+
 // LogoutAll is the resolver for the logoutAll field.
 func (r *mutationResolver) LogoutAll(ctx context.Context) (bool, error) {
 	user, ok := auth.GetUser(ctx)
@@ -146,6 +165,48 @@ func (r *mutationResolver) LogoutAll(ctx context.Context) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// Me is the resolver for the me field.
+func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
+	tokenInfo, ok := auth.GetUser(ctx)
+	if !ok {
+		return nil, defs.ErrUnauthorized
+	}
+
+	userID, err := strconv.Atoi(tokenInfo.User)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.ent.User.Query().Where(user.ID(userID)).Only(ctx)
+}
+
+// ImpersonatedBy is the resolver for the impersonatedBy field.
+func (r *userResolver) ImpersonatedBy(ctx context.Context, obj *ent.User) (*ent.User, error) {
+	tokenInfo, ok := auth.GetUser(ctx)
+	if !ok {
+		return nil, defs.ErrUnauthorized
+	}
+
+	if tokenInfo.Meta["impersonated_by"] == "" {
+		return nil, nil
+	}
+
+	impersonatedBy, err := strconv.Atoi(tokenInfo.Meta["impersonated_by"])
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := r.ent.User.Query().Where(user.ID(impersonatedBy)).Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return user, nil
 }
 
 // Mutation returns MutationResolver implementation.

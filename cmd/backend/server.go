@@ -82,8 +82,8 @@ func main() {
 	// FIXME: IT MUST BE DELETED IN PRODUCTION!!
 	http.HandleFunc("POST /auth-as-admin", func(w http.ResponseWriter, r *http.Request) {
 		token, err := storage.Create(r.Context(), auth.TokenInfo{
-			Machine: "admin",
-			User:    "admin",
+			Machine: r.UserAgent(),
+			User:    "1",
 			Scopes:  []string{"*"},
 		})
 		if err != nil {
