@@ -12,15 +12,25 @@
 
 不設計成 JWT，是因為在 HttpOnly 的情境下，前端沒有機會分析這段 token，而後端存取內網 Redis 的速度足夠快，因此就不採用 JWT 來避免掉設計 refresh token 以及針對 JWT 做強化所造成的種種開銷。
 
-## 介面
+## HTTP Middleware
+
+auth 中的 `Middleware` 會嘗試擷取所有經此 Middleware 的 HTTP request 中的 Bearer token。如果驗證失敗（無論是無 token、錯誤 token 格式，還是無效 token），均會回傳 HTTP 401。如果驗證成功，則將此 token 對應的使用者資訊 (`UserInfo`) 寫入請求情境鏈 (Context) 中。
+
+### Context
+
+Middleware 會在請求情境鏈中插入 `UserInfo`，resolvers 可以使用 `GetUser(ctx)` 取得這個使用者的資訊 (`UserInfo`)。`WithUser(ctx)` 是供 Middleware 在解析 token 時使用，除整合測試外您無需手動插入 `UserInfo。`
+
+## Storage
 
 Storage 介面要求實作「建立 token（登入）」、「取回 token（驗證）」、「刪除特定 token（登出）」、「刪除使用者底下所有 token（登出所有裝置）」這四個功能。
 
-建立 token 需要你帶入 user ID 和 machine ID。前者你可以使用 User model 的 `id`，後者你可以使用請求方的 User-Agent。取回 token 則會回傳你建立時帶入的資訊。
+建立 token 需要你帶入 user ID 和 machine ID。前者你可以使用 User model 的 `id`，後者你可以使用請求方的 User-Agent。取回 token 則會回傳你建立時帶入的資訊，且強制定義 `ErrNotFound` 為無此 token。
 
 登出需要你帶入 token 本身，我們會將這個 token 撤銷，使得其無法取回而顯示未驗證狀態。登出所有裝置則要求撤銷符合這個 User ID 的所有 tokens，使得簽發至這個使用者的所有 tokens 均無法取回。
 
-## Redis 介面
+除 `ErrNotFound` 以外的錯誤均為實作方自行定義，呼叫方需注意防止錯誤訊息中的機密資訊外洩。
+
+### Redis 介面
 
 auth 套件底下的 Redis 以這個鍵儲存資料：
 
