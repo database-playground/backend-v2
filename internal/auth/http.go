@@ -7,7 +7,9 @@ import (
 	"strings"
 )
 
-// Middleware decodes the share session cookie and packs the session into context
+// Middleware decodes the Authorization header and packs the user information into context.
+//
+// It will return 401 if the token is invalid.
 func Middleware(storage Storage) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -24,10 +26,16 @@ func Middleware(storage Storage) func(http.Handler) http.Handler {
 }
 
 var (
-	ErrNoToken        = errors.New("no token")
+	// ErrNoToken is returned when the Authorization header is empty.
+	ErrNoToken = errors.New("no token")
+
+	// ErrBadTokenFormat is returned when the Authorization header is not in the correct Bearer format.
 	ErrBadTokenFormat = errors.New("bad token format")
 )
 
+// ExtractToken extracts the token from the Authorization header and returns the user information.
+//
+// It will return an error if the token is invalid.
 func ExtractToken(r *http.Request, storage Storage) (context.Context, error) {
 	authHeaderContent := r.Header.Get("Authorization")
 	if authHeaderContent == "" {

@@ -1,6 +1,6 @@
 # Authentication
 
-這個 Package 的目的是儲存和取回認證憑證（token）。
+這個 Package 的目的是操作認證憑證（token）。
 
 ## Token 的設計
 

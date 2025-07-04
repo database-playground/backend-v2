@@ -9,6 +9,13 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+// NewRedisContainer creates a new Redis container for testing.
+//
+// It will skip the test if the container creation fails
+// (e.g. no Docker environment).
+//
+// The container will be terminated when the test ends,
+// thus you don't need to clean up the container manually.
 func NewRedisContainer(t *testing.T) testcontainers.Container {
 	t.Helper()
 
@@ -33,6 +40,13 @@ func NewRedisContainer(t *testing.T) testcontainers.Container {
 	return redisC
 }
 
+// NewRedisClient creates a new Redis client for testing.
+//
+// It will skip the test if the client creation fails
+// (e.g. no Docker environment).
+//
+// The client will be closed when the test ends,
+// thus you don't need to clean up the client manually.
 func NewRedisClient(t *testing.T, container testcontainers.Container) rueidis.Client {
 	t.Helper()
 
