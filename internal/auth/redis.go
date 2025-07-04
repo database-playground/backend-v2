@@ -2,8 +2,6 @@ package auth
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -79,12 +77,10 @@ func (s *RedisStorage) Peek(ctx context.Context, token string) (TokenInfo, error
 }
 
 func (s *RedisStorage) Create(ctx context.Context, info TokenInfo) (string, error) {
-	tokenBytes := make([]byte, 64)
-	_, err := rand.Read(tokenBytes)
+	token, err := GenerateToken()
 	if err != nil {
 		return "", fmt.Errorf("generate token: %w", err)
 	}
-	token := base64.StdEncoding.EncodeToString(tokenBytes)
 
 	tokenKey := redisTokenPrefix + token
 
