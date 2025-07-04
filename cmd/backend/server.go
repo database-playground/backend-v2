@@ -16,6 +16,7 @@ import (
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/graph"
 	"github.com/database-playground/backend-v2/internal/auth"
+	"github.com/joho/godotenv"
 	"github.com/redis/rueidis"
 	"github.com/vektah/gqlparser/v2/ast"
 
@@ -26,6 +27,11 @@ import (
 const defaultPort = "8080"
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("error loading .env file", err)
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
