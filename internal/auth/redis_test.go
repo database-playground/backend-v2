@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/database-playground/backend-v2/internal/testhelper"
 )
@@ -33,6 +34,29 @@ func TestRedisStorage_CreateAndGet(t *testing.T) {
 	}
 	if got.User != info.User {
 		t.Errorf("Get returned wrong user: got %s, want %s", got.User, info.User)
+	}
+}
+
+func TestRedisStorage_CreateAndGet_Expire(t *testing.T) {
+	container := testhelper.NewRedisContainer(t)
+	redisClient := testhelper.NewRedisClient(t, container)
+	storage := NewRedisStorage(redisClient, WithTokenExpire(1))
+	ctx := context.Background()
+
+	info := TokenInfo{Machine: "machine1", User: "user1"}
+
+	token, err := storage.Create(ctx, info)
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	// wait 2 seconds to make sure the token is expired
+	time.Sleep(2 * time.Second)
+
+	// token should be expired
+	_, err = storage.Get(ctx, token)
+	if err == nil {
+		t.Error("Get should fail after 1 second, but got no error")
 	}
 }
 

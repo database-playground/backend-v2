@@ -12,14 +12,29 @@ import (
 
 // RedisStorage is the storage for authentication token.
 type RedisStorage struct {
-	redis rueidis.Client
+	redis       rueidis.Client
+	tokenExpire int64
+}
+
+type RedisStorageOption func(*RedisStorage)
+
+func WithTokenExpire(expire int64) RedisStorageOption {
+	return func(s *RedisStorage) {
+		s.tokenExpire = expire
+	}
 }
 
 const redisTokenPrefix = "auth:token:"
+const defaultTokenExpire = 86400 // 24 hr
 
 // NewRedisStorage creates a new RedisStorage.
-func NewRedisStorage(redis rueidis.Client) *RedisStorage {
-	return &RedisStorage{redis: redis}
+func NewRedisStorage(redis rueidis.Client, opts ...RedisStorageOption) *RedisStorage {
+	s := &RedisStorage{redis: redis, tokenExpire: defaultTokenExpire}
+	for _, opt := range opts {
+		opt(s)
+	}
+
+	return s
 }
 
 func (s *RedisStorage) Get(ctx context.Context, token string) (TokenInfo, error) {
@@ -58,9 +73,19 @@ func (s *RedisStorage) Create(ctx context.Context, info TokenInfo) (string, erro
 		return "", fmt.Errorf("marshal token info: %w", err)
 	}
 
-	reply := s.redis.Do(ctx, s.redis.B().JsonSet().Key(tokenKey).Path(".").Value(rueidis.BinaryString(tokenInfoBytes)).Build())
-	if reply.Error() != nil {
-		return "", reply.Error()
+	replies := s.redis.DoMulti(
+		ctx,
+		s.redis.B().JsonSet().
+			Key(tokenKey).
+			Path(".").
+			Value(rueidis.BinaryString(tokenInfoBytes)).
+			Build(),
+		s.redis.B().Expire().Key(tokenKey).Seconds(s.tokenExpire).Build(),
+	)
+	for _, reply := range replies {
+		if reply.Error() != nil {
+			return "", reply.Error()
+		}
 	}
 
 	return token, nil
