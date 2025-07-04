@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"entgo.io/ent/dialect"
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -14,6 +15,8 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/graph"
+	"github.com/database-playground/backend-v2/internal/auth"
+	"github.com/redis/rueidis"
 	"github.com/vektah/gqlparser/v2/ast"
 
 	_ "github.com/database-playground/backend-v2/ent/runtime"
@@ -52,8 +55,20 @@ func main() {
 		Cache: lru.New[string](100),
 	})
 
+	redisClient, err := rueidis.NewClient(rueidis.ClientOption{
+		InitAddress: strings.Split(os.Getenv("REDIS_ADDRESSES"), ","),
+		Username:    os.Getenv("REDIS_USERNAME"),
+		Password:    os.Getenv("REDIS_PASSWORD"),
+	})
+	if err != nil {
+		log.Fatal("opening redis client", err)
+	}
+
+	storage := auth.NewRedisStorage(redisClient)
+	authMiddleware := auth.Middleware(storage)
+
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srv)
+	http.Handle("/query", authMiddleware(srv))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))

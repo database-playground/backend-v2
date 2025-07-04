@@ -1,1 +1,2 @@
 graph/*.generated.go
+.env
