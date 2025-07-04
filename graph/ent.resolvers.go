@@ -22,13 +22,13 @@ func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, erro
 }
 
 // Groups is the resolver for the groups field.
-func (r *queryResolver) Groups(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int) (*ent.GroupConnection, error) {
-	return r.client.Group.Query().Paginate(ctx, after, first, before, last)
+func (r *queryResolver) Groups(ctx context.Context) ([]*ent.Group, error) {
+	return r.client.Group.Query().All(ctx)
 }
 
 // ScopeSets is the resolver for the scopeSets field.
-func (r *queryResolver) ScopeSets(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int) (*ent.ScopeSetConnection, error) {
-	return r.client.ScopeSet.Query().Paginate(ctx, after, first, before, last)
+func (r *queryResolver) ScopeSets(ctx context.Context) ([]*ent.ScopeSet, error) {
+	return r.client.ScopeSet.Query().All(ctx)
 }
 
 // Users is the resolver for the users field.

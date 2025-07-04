@@ -46,6 +46,5 @@ func (Group) Annotations() []schema.Annotation {
 			entgql.MutationCreate(),
 			entgql.MutationUpdate(),
 		),
-		entgql.RelayConnection(),
 	}
 }
