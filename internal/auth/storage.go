@@ -1,12 +1,20 @@
 package auth
 
-import "context"
+import (
+	"context"
+	"errors"
+)
+
+var ErrNotFound = errors.New("no such token")
 
 // Storage is the storage for authentication token.
 type Storage interface {
 	// Get the token for the given token.
 	// It returns the machine name if the refresh token is valid,
 	// otherwise it returns an error.
+	//
+	// Error is implementation-defined except for ErrNotFound.
+	// ErrNotFound is returned when the token is not found.
 	Get(ctx context.Context, token string) (TokenInfo, error)
 
 	// Create a new token for with the machine name.

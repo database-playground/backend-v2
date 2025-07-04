@@ -26,8 +26,12 @@ func (s *RedisStorage) Get(ctx context.Context, token string) (TokenInfo, error)
 	tokenKey := redisTokenPrefix + token
 
 	reply := s.redis.Do(ctx, s.redis.B().JsonGet().Key(tokenKey).Path(".").Build())
-	if reply.Error() != nil {
-		return TokenInfo{}, reply.Error()
+	if err := reply.Error(); err != nil {
+		if rueidis.IsRedisNil(err) {
+			return TokenInfo{}, ErrNotFound
+		}
+
+		return TokenInfo{}, err
 	}
 
 	var tokenInfo TokenInfo

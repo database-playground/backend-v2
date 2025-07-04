@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -39,8 +40,8 @@ func TestRedisStorage_Get_InvalidToken(t *testing.T) {
 	ctx := context.Background()
 
 	_, err := storage.Get(ctx, "nonexistent-token")
-	if err == nil {
-		t.Error("Get should fail for nonexistent token, but got no error")
+	if !errors.Is(err, ErrNotFound) {
+		t.Errorf("Get should fail for nonexistent token, but got %v", err)
 	}
 }
 
