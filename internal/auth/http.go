@@ -92,7 +92,7 @@ func ExtractToken(r *http.Request, storage Storage) (context.Context, error) {
 			return token, nil
 		},
 
-		// HttpOnly Cookie: auth-token=<token>
+		// Cookies: auth-token=<token>
 		func(r *http.Request) (string, error) {
 			cookie, err := r.Cookie(CookieAuthToken)
 			if err != nil {
