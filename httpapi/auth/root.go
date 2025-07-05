@@ -4,9 +4,9 @@ package authservice
 import (
 	"fmt"
 
+	"github.com/database-playground/backend-v2/httpapi"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/config"
-	"github.com/database-playground/backend-v2/restapi"
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,4 +41,4 @@ func (s *AuthService) Register(router gin.IRouter) {
 	}
 }
 
-var _ restapi.Service = (*AuthService)(nil)
+var _ httpapi.Service = (*AuthService)(nil)

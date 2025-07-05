@@ -1,7 +1,7 @@
-// Package restapi provides the REST API controllers that does not covered by GraphQL.
+// Package httpapi provides the HTTP API controllers that does not covered by GraphQL.
 //
 // For the handlers of GraphQL API, see `graph/*.resolvers.go`.
-package restapi
+package httpapi
 
 import (
 	"github.com/gin-gonic/gin"

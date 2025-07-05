@@ -14,10 +14,10 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/graph"
+	"github.com/database-playground/backend-v2/httpapi"
+	authservice "github.com/database-playground/backend-v2/httpapi/auth"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/config"
-	"github.com/database-playground/backend-v2/restapi"
-	authservice "github.com/database-playground/backend-v2/restapi/auth"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/redis/rueidis"
@@ -100,7 +100,7 @@ func provideGqlgenHandler(entClient *ent.Client, storage auth.Storage) *handler.
 	return srv
 }
 
-func provideAuthService(storage auth.Storage, config config.Config) restapi.Service {
+func provideAuthService(storage auth.Storage, config config.Config) httpapi.Service {
 	return authservice.NewAuthService(storage, config)
 }
 
@@ -114,7 +114,7 @@ func annotateAsMiddleware(f any) any {
 		fx.ResultTags(`group:"middlewares"`),
 	)
 }
-func provideGinEngine(services []restapi.Service, middlewares []Middleware, gqlgenHandler *handler.Server, cfg config.Config) *gin.Engine {
+func provideGinEngine(services []httpapi.Service, middlewares []Middleware, gqlgenHandler *handler.Server, cfg config.Config) *gin.Engine {
 	engine := gin.New()
 	engine.SetTrustedProxies(cfg.TrustProxies)
 
@@ -133,7 +133,7 @@ func provideGinEngine(services []restapi.Service, middlewares []Middleware, gqlg
 	})
 
 	api := engine.Group("/api")
-	restapi.Register(api, services...)
+	httpapi.Register(api, services...)
 
 	return engine
 }
@@ -141,7 +141,7 @@ func provideGinEngine(services []restapi.Service, middlewares []Middleware, gqlg
 func annotateAsService(f any) any {
 	return fx.Annotate(
 		f,
-		fx.As(new(restapi.Service)),
+		fx.As(new(httpapi.Service)),
 		fx.ResultTags(`group:"services"`),
 	)
 }
