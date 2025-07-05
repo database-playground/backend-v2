@@ -8,6 +8,7 @@ import (
 	dpcli "github.com/database-playground/backend-v2/cli"
 	"github.com/database-playground/backend-v2/internal/deps"
 
+	_ "github.com/database-playground/backend-v2/ent/runtime"
 	_ "github.com/mattn/go-sqlite3"
 )
 

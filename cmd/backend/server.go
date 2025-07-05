@@ -13,8 +13,8 @@ import (
 
 func main() {
 	app := fx.New(
+		deps.FxCommonModule,
 		fx.Provide(
-			deps.FxCommonModule,
 			annotateAsMiddleware(provideAuthMiddleware),
 			annotateAsService(provideAuthService),
 			provideGqlgenHandler,
