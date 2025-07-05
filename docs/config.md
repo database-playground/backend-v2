@@ -23,5 +23,5 @@ Redis 的目的是儲存認證憑證和快取。
 - `GAUTH_REDIRECT_URI`：在完成 Google OAuth 流程後，要重新導向到的 URL，通常是指向前端。
   - 舉例：你的前端會在進入起始連結前，記錄目前頁面的位址，然後在 `/auth/completed` endpoint 重新導向回使用者上次瀏覽的連結。這時，你可以將重新導向連結寫為 `https://app.yourdomain.tld/auth/completed`。如果你沒有這樣的 endpoint，寫上前端的首頁也是可以的。注意在起始連結帶入的 `state` 會被帶入這個 URI 中。
 
-Google OAuth 的登入起始連結為 `https://backend.yourdomain.tld/oauth/google/login`，可選擇性帶入 `state` 參數。
-Google OAuth 的回呼連結為 `https://backend.yourdomain.tld/oauth/google/callback`。
+Google OAuth 的登入起始連結為 `https://backend.yourdomain.tld/api/auth/google/login`，可選擇性帶入 `state` 參數。
+Google OAuth 的回呼連結為 `https://backend.yourdomain.tld/api/auth/google/callback`。
