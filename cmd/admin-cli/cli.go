@@ -17,7 +17,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	c := dpcli.NewCliContext(entClient)
+	c := dpcli.NewContext(entClient)
 
 	promoteAdminCommand := newPromoteAdminCommand(c)
 	setupCommand := newSetupCommand(c)

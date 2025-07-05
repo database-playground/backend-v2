@@ -8,13 +8,13 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-func newMigrateCommand(dpcli *dpcli.Context) *cli.Command {
+func newMigrateCommand(clictx *dpcli.Context) *cli.Command {
 	return &cli.Command{
 		Name:  "migrate",
 		Usage: "Migrate the database to the latest version",
 		Action: func(ctx context.Context, c *cli.Command) error {
 			fmt.Println("Migrating the database to the latest version…")
-			if err := dpcli.Migrate(ctx); err != nil {
+			if err := clictx.Migrate(ctx); err != nil {
 				return err
 			}
 
@@ -24,14 +24,14 @@ func newMigrateCommand(dpcli *dpcli.Context) *cli.Command {
 	}
 }
 
-func newSetupCommand(dpcli *dpcli.Context) *cli.Command {
+func newSetupCommand(clictx *dpcli.Context) *cli.Command {
 	return &cli.Command{
 		Name:  "setup",
 		Usage: "Setup the Database Playground instance",
 		Action: func(ctx context.Context, c *cli.Command) error {
 			fmt.Println("Setting up the Database Playground instance…")
 
-			result, err := dpcli.Setup(ctx)
+			result, err := clictx.Setup(ctx)
 			if err != nil {
 				return err
 			}
