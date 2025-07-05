@@ -92,7 +92,7 @@ func main() {
 		}
 
 		http.SetCookie(w, &http.Cookie{
-			Name:     "auth-token",
+			Name:     auth.CookieAuthToken,
 			Value:    token,
 			Path:     "/",
 			MaxAge:   auth.DefaultTokenExpire, // 8 hours
@@ -119,7 +119,7 @@ func main() {
 		}
 
 		http.SetCookie(w, &http.Cookie{
-			Name:     "auth-token",
+			Name:     auth.CookieAuthToken,
 			Value:    "",
 			Path:     "/",
 			Expires:  time.Now().Add(-time.Second),

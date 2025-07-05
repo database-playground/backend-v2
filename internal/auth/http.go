@@ -10,7 +10,7 @@ import (
 	"github.com/database-playground/backend-v2/graph/defs"
 )
 
-const CookieAuthToken = "auth-token"
+const CookieAuthToken = "__Host-Auth-Token"
 
 // Middleware decodes the Authorization header and packs the user information into context.
 //
@@ -92,7 +92,7 @@ func ExtractToken(r *http.Request, storage Storage) (context.Context, error) {
 			return token, nil
 		},
 
-		// Cookies: auth-token=<token>
+		// Cookies: __Host-Auth-Token=<token>
 		func(r *http.Request) (string, error) {
 			cookie, err := r.Cookie(CookieAuthToken)
 			if err != nil {
