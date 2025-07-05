@@ -11,6 +11,7 @@ import (
 
 	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/internal/auth"
+	"github.com/gin-gonic/gin"
 )
 
 type baseTokenStorage struct{}
@@ -167,43 +168,54 @@ func TestExtractToken(t *testing.T) {
 }
 
 func TestMiddleware(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
 	t.Run("no token", func(t *testing.T) {
 		storage := &baseTokenStorage{}
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, ok := auth.GetUser(r.Context())
+
+		router := gin.New()
+		router.Use(auth.Middleware(storage))
+
+		var handlerCalled bool
+		router.GET("/test", func(c *gin.Context) {
+			handlerCalled = true
+			_, ok := auth.GetUser(c.Request.Context())
 			if ok {
 				t.Fatal("expected no user, got one")
 			}
 		})
 
-		middleware := auth.Middleware(storage)
-		wrappedHandler := middleware(handler)
-
-		req := &http.Request{
-			Header: make(http.Header),
-		}
+		req := httptest.NewRequest("GET", "/test", nil)
 		rr := httptest.NewRecorder()
 
-		wrappedHandler.ServeHTTP(rr, req)
+		router.ServeHTTP(rr, req)
+
+		if !handlerCalled {
+			t.Error("expected handler to be called")
+		}
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+		}
 	})
 
 	t.Run("bad token format", func(t *testing.T) {
 		storage := &baseTokenStorage{}
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			t.Fatal("handler should not be called")
+
+		router := gin.New()
+		router.Use(auth.Middleware(storage))
+
+		var handlerCalled bool
+		router.GET("/test", func(c *gin.Context) {
+			handlerCalled = true
+			t.Error("handler was called when it shouldn't be")
 		})
 
-		middleware := auth.Middleware(storage)
-		wrappedHandler := middleware(handler)
-
-		req := &http.Request{
-			Header: http.Header{
-				"Authorization": []string{"Basic 1234"},
-			},
-		}
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.Header.Set("Authorization", "Basic 1234")
 		rr := httptest.NewRecorder()
 
-		wrappedHandler.ServeHTTP(rr, req)
+		router.ServeHTTP(rr, req)
 
 		if status := rr.Code; status != http.StatusOK {
 			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -211,8 +223,8 @@ func TestMiddleware(t *testing.T) {
 
 		// Check content type
 		contentType := rr.Header().Get("Content-Type")
-		if contentType != "application/json" {
-			t.Errorf("expected Content-Type %q, got %q", "application/json", contentType)
+		if contentType != "application/json; charset=utf-8" {
+			t.Errorf("expected Content-Type %q, got %q", "application/json; charset=utf-8", contentType)
 		}
 
 		// Verify error response format
@@ -247,25 +259,30 @@ func TestMiddleware(t *testing.T) {
 		if response.Data != nil {
 			t.Error("expected data to be null")
 		}
+
+		// If handler was called, that's a problem
+		if handlerCalled {
+			t.Error("handler should not be called when there's an auth error")
+		}
 	})
 
 	t.Run("invalid token", func(t *testing.T) {
 		storage := &failTokenStorage{}
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			t.Fatal("handler should not be called")
+
+		router := gin.New()
+		router.Use(auth.Middleware(storage))
+
+		var handlerCalled bool
+		router.GET("/test", func(c *gin.Context) {
+			handlerCalled = true
+			t.Error("handler was called when it shouldn't be")
 		})
 
-		middleware := auth.Middleware(storage)
-		wrappedHandler := middleware(handler)
-
-		req := &http.Request{
-			Header: http.Header{
-				"Authorization": []string{"Bearer 1234"},
-			},
-		}
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.Header.Set("Authorization", "Bearer 1234")
 		rr := httptest.NewRecorder()
 
-		wrappedHandler.ServeHTTP(rr, req)
+		router.ServeHTTP(rr, req)
 
 		if status := rr.Code; status != http.StatusOK {
 			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -273,8 +290,8 @@ func TestMiddleware(t *testing.T) {
 
 		// Check content type
 		contentType := rr.Header().Get("Content-Type")
-		if contentType != "application/json" {
-			t.Errorf("expected Content-Type %q, got %q", "application/json", contentType)
+		if contentType != "application/json; charset=utf-8" {
+			t.Errorf("expected Content-Type %q, got %q", "application/json; charset=utf-8", contentType)
 		}
 
 		// Verify error response format
@@ -309,6 +326,10 @@ func TestMiddleware(t *testing.T) {
 		if response.Data != nil {
 			t.Error("expected data to be null")
 		}
+
+		if handlerCalled {
+			t.Error("handler should not be called when there's an auth error")
+		}
 	})
 
 	t.Run("valid token", func(t *testing.T) {
@@ -320,12 +341,14 @@ func TestMiddleware(t *testing.T) {
 			tokenInfo: tokenInfo,
 		}
 
+		router := gin.New()
+		router.Use(auth.Middleware(storage))
+
 		var handlerCalled bool
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		router.GET("/test", func(c *gin.Context) {
 			handlerCalled = true
 
-			// Verify user info in context
-			user, ok := auth.GetUser(r.Context())
+			user, ok := auth.GetUser(c.Request.Context())
 			if !ok {
 				t.Error("expected user in context, got none")
 			}
@@ -337,17 +360,11 @@ func TestMiddleware(t *testing.T) {
 			}
 		})
 
-		middleware := auth.Middleware(storage)
-		wrappedHandler := middleware(handler)
-
-		req := &http.Request{
-			Header: http.Header{
-				"Authorization": []string{"Bearer valid-token"},
-			},
-		}
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.Header.Set("Authorization", "Bearer valid-token")
 		rr := httptest.NewRecorder()
 
-		wrappedHandler.ServeHTTP(rr, req)
+		router.ServeHTTP(rr, req)
 
 		if !handlerCalled {
 			t.Error("expected handler to be called")

@@ -2,12 +2,12 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/database-playground/backend-v2/graph/defs"
+	"github.com/gin-gonic/gin"
 )
 
 const CookieAuthToken = "__Host-Auth-Token"
@@ -15,50 +15,30 @@ const CookieAuthToken = "__Host-Auth-Token"
 // Middleware decodes the Authorization header and packs the user information into context.
 //
 // It will return 401 if the token is invalid.
-func Middleware(storage Storage) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			newCtx, err := ExtractToken(r, storage)
-			if err != nil {
-				gqlgenLikeError(w, err)
-				return
-			}
-
-			r = r.WithContext(newCtx)
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func gqlgenLikeError(w http.ResponseWriter, err error) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	encoder := json.NewEncoder(w)
-
-	type StructureError struct {
-		Message    string         `json:"message"`
-		Path       []string       `json:"path"` // always empty
-		Extensions map[string]any `json:"extensions"`
-	}
-
-	type Structure struct {
-		Errors []StructureError `json:"errors"`
-		Data   *struct{}        `json:"data"` // always null
-	}
-
-	structure := Structure{
-		Errors: []StructureError{
-			{
-				Message: err.Error(),
-				Path:    []string{},
-				Extensions: map[string]any{
-					"code": defs.CodeUnauthorized,
+func Middleware(storage Storage) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		newCtx, err := ExtractToken(c.Request, storage)
+		if err != nil {
+			// The standard format for GraphQL errors.
+			c.JSON(http.StatusOK, gin.H{
+				"errors": []gin.H{
+					{
+						"message": err.Error(),
+						"path":    []string{},
+						"extensions": map[string]any{
+							"code": defs.CodeUnauthorized,
+						},
+					},
 				},
-			},
-		},
-	}
+				"data": nil,
+			})
+			c.Abort()
+			return
+		}
 
-	encoder.Encode(structure)
+		c.Request = c.Request.WithContext(newCtx)
+		c.Next()
+	}
 }
 
 var (
