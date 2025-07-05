@@ -1,0 +1,26 @@
+# Backend 的環境變數設定
+
+## Backend
+
+- `SERVER_URI`：這個伺服器主要提供服務的 URI，如 `https://backend.domain.tld`。
+
+## Redis
+
+Redis 的目的是儲存認證憑證和快取。
+
+- `REDIS_HOST`：Redis 的位址，如 `redis.network.internal`
+- `REDIS_PORT`：Redis 的連線埠，如 `6379`
+- `REDIS_USERNAME`：Redis 的使用者名稱，可留空
+- `REDIS_PASSWORD`：Redis 的密碼，可留空
+
+## Google OAuth
+
+這個 backend 以 Google OAuth 登入為主。
+
+- `GAUTH_CLIENT_ID`：Google OAuth 的 Client ID
+- `GAUTH_CLIENT_SECRET`：Google OAuth 的 Client Secret
+- `GAUTH_REDIRECT_URI`：在完成 Google OAuth 流程後，要重新導向到的 URL，通常是指向前端。
+  - 舉例：你的前端會在進入起始連結前，記錄目前頁面的位址，然後在 `/auth/completed` endpoint 重新導向回使用者上次瀏覽的連結。這時，你可以將重新導向連結寫為 `https://app.yourdomain.tld/auth/completed`。如果你沒有這樣的 endpoint，寫上前端的首頁也是可以的。注意在起始連結帶入的 `state` 會被帶入這個 URI 中。
+
+Google OAuth 的登入起始連結為 `https://backend.yourdomain.tld/oauth/google/login`，可選擇性帶入 `state` 參數。
+Google OAuth 的回呼連結為 `https://backend.yourdomain.tld/oauth/google/callback`。
