@@ -3,25 +3,18 @@ package main
 import (
 	"context"
 	"log/slog"
-	"os"
-	"os/signal"
 
 	"go.uber.org/fx"
 
 	_ "github.com/database-playground/backend-v2/ent/runtime"
+	"github.com/database-playground/backend-v2/internal/deps"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
-
 	app := fx.New(
 		fx.Provide(
-			provideConfig,
-			provideEntClient,
-			provideRedisClient,
-			provideAuthStorage,
+			deps.FxCommonModule,
 			annotateAsMiddleware(provideAuthMiddleware),
 			annotateAsService(provideAuthService),
 			provideGqlgenHandler,
@@ -33,13 +26,6 @@ func main() {
 		fx.Invoke(newGinLifecycle),
 	)
 
-	app.Start(ctx)
-
-	<-ctx.Done()
-	slog.Info("Gracefully shutting down server (Ctrl+C again to force stop)...")
-	cancel()
-
-	app.Stop(context.Background())
-
+	app.Start(context.Background())
 	slog.Info("Server stopped")
 }

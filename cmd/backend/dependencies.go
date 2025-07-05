@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"net"
 
-	"entgo.io/ent/dialect"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/lru"
@@ -19,60 +18,9 @@ import (
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/config"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
-	"github.com/redis/rueidis"
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/fx"
 )
-
-// provideConfig loads the environment variables from the .env file and returns a config.Config.
-func provideConfig() (config.Config, error) {
-	err := godotenv.Load()
-	if err != nil {
-		slog.Warn("error loading .env file", "error", err)
-	}
-
-	cfg, err := config.Load()
-	if err != nil {
-		slog.Error("error creating config", "error", err)
-		return config.Config{}, err
-	}
-
-	return cfg, nil
-}
-
-// provideEntClient creates an ent.Client.
-func provideEntClient() (*ent.Client, error) {
-	client, err := ent.Open(dialect.SQLite, "file:ent?mode=memory&cache=shared&_fk=1")
-	if err != nil {
-		slog.Error("error creating ent client", "error", err)
-		return nil, err
-	}
-
-	return client, nil
-}
-
-// provideRedisClient creates a rueidis.Client.
-func provideRedisClient(cfg config.Config) (rueidis.Client, error) {
-	client, err := rueidis.NewClient(rueidis.ClientOption{
-		InitAddress: []string{
-			fmt.Sprintf("%s:%d", cfg.Redis.Host, cfg.Redis.Port),
-		},
-		Username: cfg.Redis.Username,
-		Password: cfg.Redis.Password,
-	})
-	if err != nil {
-		slog.Error("error creating redis client", "error", err)
-		return nil, err
-	}
-
-	return client, nil
-}
-
-// provideAuthStorage creates an auth.Storage.
-func provideAuthStorage(redisClient rueidis.Client) auth.Storage {
-	return auth.NewRedisStorage(redisClient)
-}
 
 // provideAuthMiddleware creates an auth.Middleware that can be injected into gin.
 func provideAuthMiddleware(storage auth.Storage) Middleware {
