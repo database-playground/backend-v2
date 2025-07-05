@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -85,17 +84,12 @@ func (s *RedisStorage) Create(ctx context.Context, info TokenInfo) (string, erro
 
 	tokenKey := redisTokenPrefix + token
 
-	tokenInfoBytes, err := json.Marshal(info)
-	if err != nil {
-		return "", fmt.Errorf("marshal token info: %w", err)
-	}
-
 	replies := s.redis.DoMulti(
 		ctx,
 		s.redis.B().JsonSet().
 			Key(tokenKey).
 			Path(".").
-			Value(rueidis.BinaryString(tokenInfoBytes)).
+			Value(rueidis.JSON(info)).
 			Build(),
 		s.redis.B().Expire().Key(tokenKey).Seconds(s.tokenExpire).Build(),
 	)
@@ -139,17 +133,9 @@ func (s *RedisStorage) DeleteByUser(ctx context.Context, user string) error {
 			}
 
 			var elementUser string
-
-			elementUserJson, err := elementReply.AsBytes()
+			err = elementReply.DecodeJSON(&elementUser)
 			if err != nil {
 				return fmt.Errorf("get token info: %w", err)
-			}
-
-			fmt.Println(string(elementUserJson))
-
-			err = json.Unmarshal(elementUserJson, &elementUser)
-			if err != nil {
-				return fmt.Errorf("unmarshal user: %w", err)
 			}
 
 			if elementUser != user {
