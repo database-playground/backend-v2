@@ -3,6 +3,7 @@ package config
 import "errors"
 
 type Config struct {
+	Port      int    `env:"PORT" envDefault:"8080"`
 	ServerURI string `env:"SERVER_URI"`
 
 	Redis RedisConfig `envPrefix:"REDIS_"`
@@ -27,6 +28,7 @@ func (c Config) Validate() error {
 type RedisConfig struct {
 	Host     string `env:"HOST"`
 	Port     int    `env:"PORT"`
+	Username string `env:"USERNAME"`
 	Password string `env:"PASSWORD"`
 }
 

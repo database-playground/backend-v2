@@ -2,7 +2,8 @@
 
 ## Backend
 
-- `SERVER_URI`：這個伺服器主要提供服務的 URI，如 `https://backend.domain.tld`。
+- `PORT`：這個伺服器要監聽的連線埠，預設為 `8080`
+- `SERVER_URI`：這個伺服器主要提供服務的 URI，如 `https://backend.domain.tld`
 
 ## Redis
 
