@@ -16,13 +16,13 @@ type StateStorage interface {
 	// New creates a new state token.
 	//
 	// The token is valid for 10 minutes.
-	New(ctx context.Context) (string, error)
+	New(ctx context.Context, data []byte) (string, error)
 
 	// Use uses the state token.
 	//
 	// If the state token is not found, it returns ErrBadState.
 	// After the token is used, it will be deleted.
-	Use(ctx context.Context, token string) error
+	Use(ctx context.Context, token string) ([]byte, error)
 }
 
 const stateTokenPrefix = "gauth:state:"
@@ -39,13 +39,17 @@ func NewRedisTokenStorage(redis rueidis.Client) *RedisStateStorage {
 }
 
 // New creates a new state token.
-func (s *RedisStateStorage) New(ctx context.Context) (string, error) {
+func (s *RedisStateStorage) New(ctx context.Context, data []byte) (string, error) {
 	token, err := authutil.GenerateToken()
 	if err != nil {
 		return "", err
 	}
 
-	if err := s.redis.Do(ctx, s.redis.B().Set().Key(stateTokenPrefix+token).Value(token).Ex(stateTokenExpire).Build()).Error(); err != nil {
+	if err := s.redis.Do(ctx, s.redis.B().Set().
+		Key(stateTokenPrefix+token).
+		Value(rueidis.BinaryString(data)).
+		Ex(stateTokenExpire).
+		Build()).Error(); err != nil {
 		return "", err
 	}
 
@@ -56,23 +60,22 @@ func (s *RedisStateStorage) New(ctx context.Context) (string, error) {
 //
 // If the state token is not found, it returns ErrBadState.
 // After the token is used, it will be deleted.
-func (s *RedisStateStorage) Use(ctx context.Context, token string) error {
-	result := s.redis.Do(ctx, s.redis.B().Del().Key(stateTokenPrefix+token).Build())
-	if err := result.Error(); err != nil {
-		return err
-	}
-
-	// Del returns the number of keys deleted
-	deleted, err := result.AsInt64()
+func (s *RedisStateStorage) Use(ctx context.Context, token string) ([]byte, error) {
+	data, err := s.redis.Do(ctx, s.redis.B().Get().Key(stateTokenPrefix+token).Build()).AsBytes()
 	if err != nil {
-		return err
+		if rueidis.IsRedisNil(err) {
+			return nil, ErrBadState
+		}
+
+		return nil, err
 	}
 
-	if deleted == 0 {
-		return ErrBadState
+	err = s.redis.Do(ctx, s.redis.B().Del().Key(stateTokenPrefix+token).Build()).Error()
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	return data, nil
 }
 
 // TestRedisStateStorage is the RedisTokenStorage with some test utilities.
