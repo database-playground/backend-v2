@@ -2,6 +2,9 @@ package gauth
 
 import (
 	"net/http"
+
+	"github.com/database-playground/backend-v2/internal/config"
+	"golang.org/x/oauth2"
 )
 
 // NewGoogleAuthHandler creates a new http.Handler that handles Google OAuth2 authentication.
@@ -10,11 +13,11 @@ import (
 //
 //   - /login: Redirects to Google OAuth2 login page
 //   - /callback: Handles the callback from Google OAuth2
-func NewGoogleAuthHandler(storage StateStorage) http.Handler {
+func NewGoogleAuthHandler(gauthConfig config.GAuthConfig, callbackFn func(w http.ResponseWriter, r *http.Request, token *oauth2.Token)) http.Handler {
 	mux := http.NewServeMux()
 
-	mux.Handle("/login", NewLoginHandler(storage, "callback"))
-	mux.Handle("/callback", NewCallbackHandler(storage))
+	mux.Handle("/login", NewLoginHandler("callback", gauthConfig))
+	mux.Handle("/callback", NewCallbackHandler(gauthConfig, callbackFn))
 
 	return mux
 }
