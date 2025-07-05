@@ -103,9 +103,13 @@ func (s *RedisStorage) Create(ctx context.Context, info TokenInfo) (string, erro
 }
 
 func (s *RedisStorage) Delete(ctx context.Context, token string) error {
-	reply := s.redis.Do(ctx, s.redis.B().Del().Key(redisTokenPrefix+token).Build())
-	if reply.Error() != nil {
-		return reply.Error()
+	deleted, err := s.redis.Do(ctx, s.redis.B().Del().Key(redisTokenPrefix+token).Build()).AsInt64()
+	if err != nil {
+		return err
+	}
+
+	if deleted == 0 {
+		return ErrNotFound
 	}
 
 	return nil

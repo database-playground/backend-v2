@@ -110,6 +110,18 @@ func TestRedisStorage_Delete(t *testing.T) {
 	}
 }
 
+func TestRedisStorage_Delete_InvalidToken(t *testing.T) {
+	container := testhelper.NewRedisContainer(t)
+	redisClient := testhelper.NewRedisClient(t, container)
+	storage := NewRedisStorage(redisClient)
+	ctx := context.Background()
+
+	err := storage.Delete(ctx, "nonexistent-token")
+	if !errors.Is(err, ErrNotFound) {
+		t.Errorf("Delete should return ErrNotFound for nonexistent token, but got %v", err)
+	}
+}
+
 func TestRedisStorage_DeleteByUser(t *testing.T) {
 	container := testhelper.NewRedisContainer(t)
 	redisClient := testhelper.NewRedisClient(t, container)

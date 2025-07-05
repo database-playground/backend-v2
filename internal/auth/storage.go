@@ -30,6 +30,9 @@ type Storage interface {
 	Create(ctx context.Context, info TokenInfo) (string, error)
 
 	// Delete the specified token.
+	//
+	// Error is implementation-defined except for ErrNotFound.
+	// ErrNotFound is returned when the token is not found.
 	Delete(ctx context.Context, token string) error
 
 	// Delete the token for the given user.

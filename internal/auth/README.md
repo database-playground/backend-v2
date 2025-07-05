@@ -30,7 +30,9 @@ Storage 介面要求實作「建立 token（登入）」、「取回 token（驗
 
 建立 token 需要你帶入 user ID 和 machine ID。前者你可以使用 User model 的 `id`，後者你可以使用請求方的 User-Agent。取回 token 則會回傳你建立時帶入的資訊，且定義 `ErrNotFound` 錯誤為無此 token。
 
-登出需要你帶入 token 本身，我們會將這個 token 撤銷，使得其無法取回而顯示未驗證狀態。登出所有裝置則要求撤銷符合這個 User ID 的所有 tokens，使得簽發至這個使用者的所有 tokens 均無法取回。
+登出需要你帶入 token 本身，我們會將這個 token 撤銷，使得其無法取回而顯示未驗證狀態。如果沒有這個 token，則回傳 `ErrNotFound`。
+
+登出所有裝置則要求撤銷符合這個 User ID 的所有 tokens，使得簽發至這個使用者的所有 tokens 均無法取回。如果沒有 token 則什麼也不會發生。
 
 除 `ErrNotFound` 以外的錯誤均為實作方自行定義，呼叫方需注意防止錯誤訊息中的機密資訊外洩。
 
