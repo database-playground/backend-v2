@@ -69,9 +69,16 @@ func provideRedisClient(cfg config.Config) (rueidis.Client, error) {
 	return client, nil
 }
 
+// provideAuthStorage creates an auth.Storage.
+func provideAuthStorage(redisClient rueidis.Client) auth.Storage {
+	return auth.NewRedisStorage(redisClient)
+}
+
 // provideAuthMiddleware creates an auth.Middleware that can be injected into gin.
-func provideAuthMiddleware(storage auth.Storage) gin.HandlerFunc {
-	return auth.Middleware(storage)
+func provideAuthMiddleware(storage auth.Storage) Middleware {
+	return Middleware{
+		Handler: auth.Middleware(storage),
+	}
 }
 
 func provideGqlgenHandler(entClient *ent.Client, storage auth.Storage) *handler.Server {
@@ -93,14 +100,28 @@ func provideGqlgenHandler(entClient *ent.Client, storage auth.Storage) *handler.
 	return srv
 }
 
-func provideAuthService(storage auth.Storage, config config.Config) *authservice.AuthService {
+func provideAuthService(storage auth.Storage, config config.Config) restapi.Service {
 	return authservice.NewAuthService(storage, config)
 }
 
-func provideGinEngine(authMiddleware gin.HandlerFunc, gqlgenHandler *handler.Server, services []restapi.Service) *gin.Engine {
-	engine := gin.New()
+type Middleware struct {
+	Handler gin.HandlerFunc
+}
 
-	engine.Use(authMiddleware)
+func annotateAsMiddleware(f any) any {
+	return fx.Annotate(
+		f,
+		fx.ResultTags(`group:"middlewares"`),
+	)
+}
+func provideGinEngine(services []restapi.Service, middlewares []Middleware, gqlgenHandler *handler.Server, cfg config.Config) *gin.Engine {
+	engine := gin.New()
+	engine.SetTrustedProxies(cfg.TrustProxies)
+
+	for _, middleware := range middlewares {
+		engine.Use(middleware.Handler)
+	}
+
 	engine.Use(gin.Recovery())
 
 	engine.GET("/", func(ctx *gin.Context) {
@@ -115,6 +136,14 @@ func provideGinEngine(authMiddleware gin.HandlerFunc, gqlgenHandler *handler.Ser
 	restapi.Register(api, services...)
 
 	return engine
+}
+
+func annotateAsService(f any) any {
+	return fx.Annotate(
+		f,
+		fx.As(new(restapi.Service)),
+		fx.ResultTags(`group:"services"`),
+	)
 }
 
 func newGinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Config) {

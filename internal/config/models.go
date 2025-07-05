@@ -3,8 +3,9 @@ package config
 import "errors"
 
 type Config struct {
-	Port      int    `env:"PORT" envDefault:"8080"`
-	ServerURI string `env:"SERVER_URI"`
+	Port         int      `env:"PORT" envDefault:"8080"`
+	ServerURI    string   `env:"SERVER_URI"`
+	TrustProxies []string `env:"TRUST_PROXIES"`
 
 	Redis RedisConfig `envPrefix:"REDIS_"`
 	GAuth GAuthConfig `envPrefix:"GAUTH_"`

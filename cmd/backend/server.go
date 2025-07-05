@@ -17,11 +17,19 @@ func main() {
 	defer cancel()
 
 	app := fx.New(
-		fx.Provide(provideConfig),
-		fx.Provide(provideEntClient),
-		fx.Provide(provideRedisClient),
-		fx.Provide(provideAuthService),
-		fx.Provide(provideGqlgenHandler),
+		fx.Provide(
+			provideConfig,
+			provideEntClient,
+			provideRedisClient,
+			provideAuthStorage,
+			annotateAsMiddleware(provideAuthMiddleware),
+			annotateAsService(provideAuthService),
+			provideGqlgenHandler,
+			fx.Annotate(
+				provideGinEngine,
+				fx.ParamTags(`group:"services"`, `group:"middlewares"`),
+			),
+		),
 		fx.Invoke(newGinLifecycle),
 	)
 
@@ -31,7 +39,7 @@ func main() {
 	slog.Info("Gracefully shutting down server (Ctrl+C again to force stop)...")
 	cancel()
 
-	app.Stop(ctx)
+	app.Stop(context.Background())
 
 	slog.Info("Server stopped")
 }
