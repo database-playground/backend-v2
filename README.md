@@ -4,6 +4,19 @@
 
 您需要預備 Redis、PostgreSQL 和 Google OAuth 的憑證。
 
+### 本機測試
+
+```shell
+docker run -it --rm --name dp-redis -d redis
+docker run -it --rm --name dp-postgres -e POSTGRES_PASSWORD=databaseplayground -d postgres
+```
+
+```env
+REDIS_HOST=dp-redis.orb.local
+REDIS_PORT=6379
+DATABASE_URL=postgres://postgres:databaseplayground@dp-postgres.orb.local:5432/postgres
+```
+
 ## 初始化
 
 您需要根據 [環境變數設定](./docs/config.md) 的說明設定必要的變數，可以將此類變數寫入 `.env`。
