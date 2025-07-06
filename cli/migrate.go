@@ -1,8 +1,12 @@
 package cli
 
-import "context"
+import (
+	"context"
+
+	"github.com/database-playground/backend-v2/internal/setup"
+)
 
 // Migrate the database to the latest version.
 func (c *Context) Migrate(ctx context.Context) error {
-	return c.entClient.Schema.Create(ctx)
+	return setup.Migrate(ctx, c.entClient)
 }
