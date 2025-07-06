@@ -1,0 +1,5 @@
+{
+    "go.diagnostic.vulncheck": "Imports",
+    "go.formatTool": "gofumpt",
+    "go.lintTool": "golangci-lint"
+}

@@ -31,6 +31,9 @@
 
             # https://github.com/golangci/golangci-lint
             golangci-lint
+
+            # https://github.com/mvdan/gofumpt
+            gofumpt
           ];
         };
       });
