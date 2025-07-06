@@ -10,9 +10,11 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/graph/directive"
 	"github.com/database-playground/backend-v2/internal/auth"
+	"github.com/database-playground/backend-v2/internal/setup"
 	"github.com/database-playground/backend-v2/internal/testhelper"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/stretchr/testify/require"
@@ -840,5 +842,384 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 		// Verify response - should return null for impersonatedBy without error
 		require.NoError(t, err)
 		require.Nil(t, resp.Me.ImpersonatedBy)
+	})
+}
+
+func TestMutationResolver_DeleteMe(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Setup database with proper groups and scopes
+		_, err := setup.Setup(context.Background(), entClient)
+		require.NoError(t, err)
+
+		// Get the new-user group (which has me:delete scope)
+		newUserGroup, err := entClient.Group.Query().Where(group.NameEQ(useraccount.NewUserGroupSlug)).Only(context.Background())
+		require.NoError(t, err)
+
+		// Create a test user in new-user group
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(newUserGroup).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		resolver := &Resolver{
+			ent:  entClient,
+			auth: &mockAuthStorage{},
+		}
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Create context with authenticated user and required scope
+		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
+			UserID: user.ID,
+			Scopes: []string{"me:delete"},
+		})
+
+		// Execute mutation
+		var resp struct {
+			DeleteMe bool
+		}
+		err = c.Post(`mutation { deleteMe }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+
+		// Verify response
+		require.NoError(t, err)
+		require.True(t, resp.DeleteMe)
+
+		// Verify user was actually deleted
+		_, err = entClient.User.Get(context.Background(), user.ID)
+		require.Error(t, err)
+		require.True(t, ent.IsNotFound(err))
+	})
+
+	t.Run("unauthenticated", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+		resolver := &Resolver{
+			ent:  entClient,
+			auth: &mockAuthStorage{},
+		}
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Execute mutation with no auth context
+		var resp struct {
+			DeleteMe bool
+		}
+		err := c.Post(`mutation { deleteMe }`, &resp)
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.ErrUnauthorized.Error())
+	})
+
+	t.Run("insufficient scope", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		resolver := &Resolver{
+			ent:  entClient,
+			auth: &mockAuthStorage{},
+		}
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Create context with authenticated user but wrong scope
+		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
+			UserID: 1,
+			Scopes: []string{"user:read"},
+		})
+
+		// Execute mutation
+		var resp struct {
+			DeleteMe bool
+		}
+		err := c.Post(`mutation { deleteMe }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.ErrNoSufficientScope.Error())
+	})
+
+	t.Run("user not found", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Setup database with proper groups and scopes
+		_, err := setup.Setup(context.Background(), entClient)
+		require.NoError(t, err)
+
+		resolver := &Resolver{
+			ent:  entClient,
+			auth: &mockAuthStorage{},
+		}
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Create context with authenticated user but non-existent user ID
+		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
+			UserID: 999, // Non-existent user ID
+			Scopes: []string{"me:delete"},
+		})
+
+		// Execute mutation
+		var resp struct {
+			DeleteMe bool
+		}
+		err = c.Post(`mutation { deleteMe }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), useraccount.ErrUserNotFound.Error())
+	})
+}
+
+func TestMutationResolver_VerifyRegistration(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Setup database with proper groups and scopes
+		_, err := setup.Setup(context.Background(), entClient)
+		require.NoError(t, err)
+
+		// Get the unverified group
+		unverifiedGroup, err := entClient.Group.Query().Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).Only(context.Background())
+		require.NoError(t, err)
+
+		// Create an unverified user
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(unverifiedGroup).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		resolver := &Resolver{
+			ent:  entClient,
+			auth: &mockAuthStorage{},
+		}
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Create context with authenticated user and required scope
+		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
+			UserID: user.ID,
+			Scopes: []string{"verification:write"},
+		})
+
+		// Execute mutation
+		var resp struct {
+			VerifyRegistration bool
+		}
+		err = c.Post(`mutation { verifyRegistration }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+
+		// Verify response
+		require.NoError(t, err)
+		require.True(t, resp.VerifyRegistration)
+
+		// Verify user was actually verified (moved to new-user group)
+		updatedUser, err := entClient.User.Get(context.Background(), user.ID)
+		require.NoError(t, err)
+
+		updatedGroup, err := updatedUser.QueryGroup().Only(context.Background())
+		require.NoError(t, err)
+		require.Equal(t, useraccount.NewUserGroupSlug, updatedGroup.Name)
+	})
+
+	t.Run("unauthenticated", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+		resolver := &Resolver{
+			ent:  entClient,
+			auth: &mockAuthStorage{},
+		}
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Execute mutation with no auth context
+		var resp struct {
+			VerifyRegistration bool
+		}
+		err := c.Post(`mutation { verifyRegistration }`, &resp)
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.ErrUnauthorized.Error())
+	})
+
+	t.Run("insufficient scope", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		resolver := &Resolver{
+			ent:  entClient,
+			auth: &mockAuthStorage{},
+		}
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Create context with authenticated user but wrong scope
+		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
+			UserID: 1,
+			Scopes: []string{"user:read"},
+		})
+
+		// Execute mutation
+		var resp struct {
+			VerifyRegistration bool
+		}
+		err := c.Post(`mutation { verifyRegistration }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.ErrNoSufficientScope.Error())
+	})
+
+	t.Run("user already verified", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Setup database with proper groups and scopes
+		_, err := setup.Setup(context.Background(), entClient)
+		require.NoError(t, err)
+
+		// Get the new-user group (verified users)
+		newUserGroup, err := entClient.Group.Query().Where(group.NameEQ(useraccount.NewUserGroupSlug)).Only(context.Background())
+		require.NoError(t, err)
+
+		// Create a verified user (in new-user group)
+		verifiedUser, err := entClient.User.Create().
+			SetName("verifieduser").
+			SetEmail("verified@example.com").
+			SetGroup(newUserGroup).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		resolver := &Resolver{
+			ent:  entClient,
+			auth: &mockAuthStorage{},
+		}
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Create context with authenticated user and required scope
+		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
+			UserID: verifiedUser.ID,
+			Scopes: []string{"verification:write"},
+		})
+
+		// Execute mutation
+		var resp struct {
+			VerifyRegistration bool
+		}
+		err = c.Post(`mutation { verifyRegistration }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.ErrVerified.Error())
+	})
+
+	t.Run("user not found", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Setup database with proper groups and scopes
+		_, err := setup.Setup(context.Background(), entClient)
+		require.NoError(t, err)
+
+		resolver := &Resolver{
+			ent:  entClient,
+			auth: &mockAuthStorage{},
+		}
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Create context with authenticated user but non-existent user ID
+		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
+			UserID: 999, // Non-existent user ID
+			Scopes: []string{"verification:write"},
+		})
+
+		// Execute mutation
+		var resp struct {
+			VerifyRegistration bool
+		}
+		err = c.Post(`mutation { verifyRegistration }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "get user")
 	})
 }
