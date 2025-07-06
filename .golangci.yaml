@@ -1,0 +1,12 @@
+version: "2"
+linters:
+  default: standard
+  exclusions:
+    paths-except:
+      # GraphQL resolvers are not covered by the linter
+      - graph/*.go
+      - '!graph/*resolvers*.go'
+
+      # Ent schema is generated code
+      - 'ent'
+      - '!ent/schema'
