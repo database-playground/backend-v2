@@ -24,4 +24,9 @@ extend type Mutation {
   Delete the current user.
   """
   deleteMe: Boolean! @scope(scope: "me:delete")
+
+  """
+  Verify the registration of this user.
+  """
+  verifyRegistration: Boolean! @scope(scope: "verification:write")
 }

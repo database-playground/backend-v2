@@ -6,34 +6,35 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"strconv"
 
 	"github.com/database-playground/backend-v2/ent"
-	"github.com/database-playground/backend-v2/ent/user"
 	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/internal/auth"
+	"github.com/database-playground/backend-v2/internal/httputils"
+	"github.com/database-playground/backend-v2/internal/useraccount"
 )
 
 // ImpersonateUser is the resolver for the impersonateUser field.
 func (r *mutationResolver) ImpersonateUser(ctx context.Context, userID int) (string, error) {
-	// Get the user information.
-	user, err := r.ent.User.Query().Where(user.ID(userID)).Only(ctx)
+	// Get the user to impersonate.
+	user, err := r.UserAccount().GetUser(ctx, userID)
 	if err != nil {
-		if ent.IsNotFound(err) {
+		if errors.Is(err, useraccount.ErrUserNotFound) {
 			return "", defs.ErrNotFound
 		}
 
 		return "", err
 	}
 
-	token, err := r.auth.Create(ctx, auth.TokenInfo{
-		UserID:    user.ID,
-		UserEmail: user.Email,
-		Scopes:    []string{"*"},
-		Meta: map[string]string{
-			"impersonated_by": strconv.Itoa(userID),
-		},
-	})
+	machineName := httputils.GetMachineName(ctx)
+
+	token, err := r.UserAccount().GrantToken(
+		ctx, user, machineName,
+		useraccount.WithFlow("impersonation"),
+		useraccount.WithImpersonation(userID),
+	)
 	if err != nil {
 		return "", err
 	}
@@ -49,7 +50,7 @@ func (r *mutationResolver) LogoutAll(ctx context.Context) (bool, error) {
 		return false, defs.ErrUnauthorized
 	}
 
-	err := r.auth.DeleteByUser(ctx, user.UserID)
+	err := r.UserAccount().RevokeAllTokens(ctx, user.UserID)
 	if err != nil {
 		return false, err
 	}
@@ -61,11 +62,32 @@ func (r *mutationResolver) LogoutAll(ctx context.Context) (bool, error) {
 func (r *mutationResolver) DeleteMe(ctx context.Context) (bool, error) {
 	user, ok := auth.GetUser(ctx)
 	if !ok {
+		// this should never happen since we have set proper scope
 		return false, defs.ErrUnauthorized
 	}
 
-	err := r.ent.User.DeleteOneID(user.UserID).Exec(ctx)
+	err := r.UserAccount().DeleteUser(ctx, user.UserID)
 	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+// VerifyRegistration is the resolver for the verifyRegistration field.
+func (r *mutationResolver) VerifyRegistration(ctx context.Context) (bool, error) {
+	tokenInfo, ok := auth.GetUser(ctx)
+	if !ok {
+		// this should never happen since we have set proper scope
+		return false, defs.ErrUnauthorized
+	}
+
+	err := r.UserAccount().Verify(ctx, tokenInfo.UserID)
+	if err != nil {
+		if errors.Is(err, useraccount.ErrUserVerified) {
+			return false, defs.ErrVerified
+		}
+
 		return false, err
 	}
 
@@ -76,35 +98,30 @@ func (r *mutationResolver) DeleteMe(ctx context.Context) (bool, error) {
 func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
 	tokenInfo, ok := auth.GetUser(ctx)
 	if !ok {
+		// this should never happen since we have set proper scope
 		return nil, defs.ErrUnauthorized
 	}
 
-	return r.ent.User.Query().Where(user.ID(tokenInfo.UserID)).Only(ctx)
+	user, err := r.UserAccount().GetUser(ctx, tokenInfo.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 // ImpersonatedBy is the resolver for the impersonatedBy field.
 func (r *userResolver) ImpersonatedBy(ctx context.Context, obj *ent.User) (*ent.User, error) {
 	tokenInfo, ok := auth.GetUser(ctx)
 	if !ok {
+		// this should never happen since we have set proper scope
 		return nil, defs.ErrUnauthorized
 	}
 
-	if tokenInfo.Meta["impersonated_by"] == "" {
+	impersonatedBy, err := strconv.Atoi(tokenInfo.Meta[useraccount.MetaImpersonation])
+	if err != nil {
 		return nil, nil
 	}
 
-	impersonatedBy, err := strconv.Atoi(tokenInfo.Meta["impersonated_by"])
-	if err != nil {
-		return nil, err
-	}
-
-	user, err := r.ent.User.Query().Where(user.ID(impersonatedBy)).Only(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return user, nil
+	return r.UserAccount().GetUser(ctx, impersonatedBy)
 }

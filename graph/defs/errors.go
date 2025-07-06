@@ -28,6 +28,11 @@ var ErrNoSufficientScope = GqlError{
 	Code:    CodeForbidden,
 }
 
+var ErrVerified = GqlError{
+	Message: "user already verified",
+	Code:    "USER_VERIFIED",
+}
+
 const (
 	CodeNotFound     = "NOT_FOUND"
 	CodeUnauthorized = "UNAUTHORIZED"

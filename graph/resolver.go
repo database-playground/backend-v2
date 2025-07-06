@@ -9,6 +9,7 @@ import (
 	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/graph/directive"
 	"github.com/database-playground/backend-v2/internal/auth"
+	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
@@ -30,6 +31,10 @@ func NewSchema(ent *ent.Client, auth auth.Storage) graphql.ExecutableSchema {
 			Scope: directive.ScopeDirective,
 		},
 	})
+}
+
+func (r *Resolver) UserAccount() *useraccount.Context {
+	return useraccount.NewContext(r.ent, r.auth)
 }
 
 func NewErrorPresenter() graphql.ErrorPresenterFunc {

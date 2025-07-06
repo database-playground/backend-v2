@@ -14,6 +14,7 @@ import (
 	"github.com/database-playground/backend-v2/graph/directive"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/testhelper"
+	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -353,6 +354,41 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), storageErr.Error())
 	})
+
+	t.Run("no such user", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+		resolver := &Resolver{
+			ent:  entClient,
+			auth: &mockAuthStorage{},
+		}
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Create context with authenticated user and required scope
+		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
+			UserID: 1,
+			Scopes: []string{"user:impersonate"},
+		})
+
+		// Execute mutation
+		var resp struct {
+			ImpersonateUser string
+		}
+		err := c.Post(`mutation { impersonateUser(userID: 123) }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.ErrNotFound.Error())
+	})
 }
 
 func createTestGroup(t *testing.T, client *ent.Client) (*ent.Group, error) {
@@ -537,7 +573,7 @@ func TestQueryResolver_Me(t *testing.T) {
 
 		// Verify error
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "ent: user not found")
+		require.Contains(t, err.Error(), "user not found")
 	})
 }
 
@@ -585,7 +621,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 			UserID: user.ID,
 			Scopes: []string{"me:read", "user:impersonate"},
 			Meta: map[string]string{
-				"impersonated_by": strconv.Itoa(impersonator.ID),
+				useraccount.MetaImpersonation: strconv.Itoa(impersonator.ID),
 			},
 		})
 
