@@ -51,3 +51,10 @@ go test -v ./...
 ```shell
 go generate ./...
 ```
+
+Linting & Formatting:
+
+```shell
+golangci-lint run
+gofumpt -w .
+```
