@@ -4,6 +4,7 @@ package authservice
 import (
 	"fmt"
 
+	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/httpapi"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/config"
@@ -11,12 +12,13 @@ import (
 )
 
 type AuthService struct {
+	ent     *ent.Client
 	storage auth.Storage
 	config  config.Config
 }
 
-func NewAuthService(storage auth.Storage, config config.Config) *AuthService {
-	return &AuthService{storage: storage, config: config}
+func NewAuthService(ent *ent.Client, storage auth.Storage, config config.Config) *AuthService {
+	return &AuthService{ent: ent, storage: storage, config: config}
 }
 
 func (s *AuthService) Register(router gin.IRouter) {
