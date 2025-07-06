@@ -7,6 +7,7 @@ import (
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/scopeset"
+	"github.com/database-playground/backend-v2/internal/useraccount"
 )
 
 // SetupResult is the result of the setup process.
@@ -28,7 +29,7 @@ func (c *Context) Setup(ctx context.Context) (*SetupResult, error) {
 
 	// Check if admin scope set already exists
 	adminScopeSet, err := c.entClient.ScopeSet.Query().
-		Where(scopeset.SlugEQ("admin")).
+		Where(scopeset.SlugEQ(useraccount.AdminScopeSetSlug)).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -37,7 +38,7 @@ func (c *Context) Setup(ctx context.Context) (*SetupResult, error) {
 	if adminScopeSet == nil {
 		log.Println("[*] Creating the admin scope set…")
 		adminScopeSet, err = c.entClient.ScopeSet.Create().
-			SetSlug("admin").
+			SetSlug(useraccount.AdminScopeSetSlug).
 			SetDescription("Administrator").
 			SetScopes([]string{"*"}).
 			Save(ctx)
@@ -50,7 +51,7 @@ func (c *Context) Setup(ctx context.Context) (*SetupResult, error) {
 
 	// Check if new-user scope set already exists
 	newUserScopeSet, err := c.entClient.ScopeSet.Query().
-		Where(scopeset.SlugEQ("new-user")).
+		Where(scopeset.SlugEQ(useraccount.NewUserScopeSetSlug)).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -59,7 +60,7 @@ func (c *Context) Setup(ctx context.Context) (*SetupResult, error) {
 	if newUserScopeSet == nil {
 		log.Println("[*] Creating the 'new-user' scope set…")
 		newUserScopeSet, err = c.entClient.ScopeSet.Create().
-			SetSlug("new-user").
+			SetSlug(useraccount.NewUserScopeSetSlug).
 			SetDescription("New users can only read and write their own data.").
 			SetScopes([]string{"me:*"}).
 			Save(ctx)
@@ -72,7 +73,7 @@ func (c *Context) Setup(ctx context.Context) (*SetupResult, error) {
 
 	// Check if unverified scope set already exists
 	unverifiedScopeSet, err := c.entClient.ScopeSet.Query().
-		Where(scopeset.SlugEQ("unverified")).
+		Where(scopeset.SlugEQ(useraccount.UnverifiedScopeSetSlug)).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -80,7 +81,7 @@ func (c *Context) Setup(ctx context.Context) (*SetupResult, error) {
 	if unverifiedScopeSet == nil {
 		log.Println("[*] Creating the 'unverified' scope set…")
 		unverifiedScopeSet, err = c.entClient.ScopeSet.Create().
-			SetSlug("unverified").
+			SetSlug(useraccount.UnverifiedScopeSetSlug).
 			SetDescription("Unverified users can only verify their account and read their own initial data.").
 			SetScopes([]string{"verification:*", "me:read"}).
 			Save(ctx)
@@ -93,7 +94,7 @@ func (c *Context) Setup(ctx context.Context) (*SetupResult, error) {
 
 	// Check if admin group already exists
 	adminGroup, err := c.entClient.Group.Query().
-		Where(group.NameEQ("admin")).
+		Where(group.NameEQ(useraccount.AdminGroupSlug)).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -102,7 +103,7 @@ func (c *Context) Setup(ctx context.Context) (*SetupResult, error) {
 	if adminGroup == nil {
 		log.Println("[*] Creating the admin group…")
 		adminGroup, err = c.entClient.Group.Create().
-			SetName("admin").
+			SetName(useraccount.AdminGroupSlug).
 			SetDescription("Administrator").
 			AddScopeSetIDs(adminScopeSet.ID).
 			Save(ctx)
@@ -115,7 +116,7 @@ func (c *Context) Setup(ctx context.Context) (*SetupResult, error) {
 
 	// Check if new-user group already exists
 	newUserGroup, err := c.entClient.Group.Query().
-		Where(group.NameEQ("new-user")).
+		Where(group.NameEQ(useraccount.NewUserGroupSlug)).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -124,7 +125,7 @@ func (c *Context) Setup(ctx context.Context) (*SetupResult, error) {
 	if newUserGroup == nil {
 		log.Println("[*] Creating the 'new-user' group…")
 		newUserGroup, err = c.entClient.Group.Create().
-			SetName("new-user").
+			SetName(useraccount.NewUserGroupSlug).
 			SetDescription("New users that is not yet verified.").
 			AddScopeSetIDs(newUserScopeSet.ID).
 			Save(ctx)
@@ -137,7 +138,7 @@ func (c *Context) Setup(ctx context.Context) (*SetupResult, error) {
 
 	// Check if unverified group already exists
 	unverifiedGroup, err := c.entClient.Group.Query().
-		Where(group.NameEQ("unverified")).
+		Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -146,7 +147,7 @@ func (c *Context) Setup(ctx context.Context) (*SetupResult, error) {
 	if unverifiedGroup == nil {
 		log.Println("[*] Creating the 'unverified' group…")
 		unverifiedGroup, err = c.entClient.Group.Create().
-			SetName("unverified").
+			SetName(useraccount.UnverifiedGroupSlug).
 			SetDescription("Unverified users that is not yet verified.").
 			AddScopeSetIDs(unverifiedScopeSet.ID).
 			Save(ctx)

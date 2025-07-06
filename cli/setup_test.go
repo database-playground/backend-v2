@@ -8,6 +8,7 @@ import (
 	"github.com/database-playground/backend-v2/ent/enttest"
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/scopeset"
+	"github.com/database-playground/backend-v2/internal/useraccount"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -35,7 +36,7 @@ func TestSetup(t *testing.T) {
 		if result.AdminScopeSet == nil {
 			t.Fatal("AdminScopeSet should not be nil")
 		}
-		if result.AdminScopeSet.Slug != "admin" {
+		if result.AdminScopeSet.Slug != useraccount.AdminScopeSetSlug {
 			t.Errorf("Expected admin scope set slug to be 'admin', got %s", result.AdminScopeSet.Slug)
 		}
 		if result.AdminScopeSet.Description != "Administrator" {
@@ -49,7 +50,7 @@ func TestSetup(t *testing.T) {
 		if result.NewUserScopeSet == nil {
 			t.Fatal("NewUserScopeSet should not be nil")
 		}
-		if result.NewUserScopeSet.Slug != "new-user" {
+		if result.NewUserScopeSet.Slug != useraccount.NewUserScopeSetSlug {
 			t.Errorf("Expected new-user scope set slug to be 'new-user', got %s", result.NewUserScopeSet.Slug)
 		}
 		if result.NewUserScopeSet.Description != "New users can only read and write their own data." {
@@ -63,7 +64,7 @@ func TestSetup(t *testing.T) {
 		if result.UnverifiedScopeSet == nil {
 			t.Fatal("UnverifiedScopeSet should not be nil")
 		}
-		if result.UnverifiedScopeSet.Slug != "unverified" {
+		if result.UnverifiedScopeSet.Slug != useraccount.UnverifiedScopeSetSlug {
 			t.Errorf("Expected unverified scope set slug to be 'unverified', got %s", result.UnverifiedScopeSet.Slug)
 		}
 		if result.UnverifiedScopeSet.Description != "Unverified users can only verify their account and read their own initial data." {
@@ -77,7 +78,7 @@ func TestSetup(t *testing.T) {
 		if result.AdminGroup == nil {
 			t.Fatal("AdminGroup should not be nil")
 		}
-		if result.AdminGroup.Name != "admin" {
+		if result.AdminGroup.Name != useraccount.AdminGroupSlug {
 			t.Errorf("Expected admin group name to be 'admin', got %s", result.AdminGroup.Name)
 		}
 		if result.AdminGroup.Description != "Administrator" {
@@ -88,7 +89,7 @@ func TestSetup(t *testing.T) {
 		if result.NewUserGroup == nil {
 			t.Fatal("NewUserGroup should not be nil")
 		}
-		if result.NewUserGroup.Name != "new-user" {
+		if result.NewUserGroup.Name != useraccount.NewUserGroupSlug {
 			t.Errorf("Expected new-user group name to be 'new-user', got %s", result.NewUserGroup.Name)
 		}
 		if result.NewUserGroup.Description != "New users that is not yet verified." {
@@ -99,7 +100,7 @@ func TestSetup(t *testing.T) {
 		if result.UnverifiedGroup == nil {
 			t.Fatal("UnverifiedGroup should not be nil")
 		}
-		if result.UnverifiedGroup.Name != "unverified" {
+		if result.UnverifiedGroup.Name != useraccount.UnverifiedGroupSlug {
 			t.Errorf("Expected unverified group name to be 'unverified', got %s", result.UnverifiedGroup.Name)
 		}
 		if result.UnverifiedGroup.Description != "Unverified users that is not yet verified." {
@@ -108,7 +109,7 @@ func TestSetup(t *testing.T) {
 
 		// Verify the groups are linked to the correct scope sets
 		adminGroupWithScopes, err := client.Group.Query().
-			Where(group.NameEQ("admin")).
+			Where(group.NameEQ(useraccount.AdminGroupSlug)).
 			WithScopeSet().
 			Only(ctx)
 		if err != nil {
@@ -117,12 +118,12 @@ func TestSetup(t *testing.T) {
 		if len(adminGroupWithScopes.Edges.ScopeSet) != 1 {
 			t.Errorf("Expected admin group to have 1 scope set, got %d", len(adminGroupWithScopes.Edges.ScopeSet))
 		}
-		if adminGroupWithScopes.Edges.ScopeSet[0].Slug != "admin" {
+		if adminGroupWithScopes.Edges.ScopeSet[0].Slug != useraccount.AdminScopeSetSlug {
 			t.Errorf("Expected admin group to be linked to admin scope set, got %s", adminGroupWithScopes.Edges.ScopeSet[0].Slug)
 		}
 
 		newUserGroupWithScopes, err := client.Group.Query().
-			Where(group.NameEQ("new-user")).
+			Where(group.NameEQ(useraccount.NewUserGroupSlug)).
 			WithScopeSet().
 			Only(ctx)
 		if err != nil {
@@ -131,12 +132,12 @@ func TestSetup(t *testing.T) {
 		if len(newUserGroupWithScopes.Edges.ScopeSet) != 1 {
 			t.Errorf("Expected new-user group to have 1 scope set, got %d", len(newUserGroupWithScopes.Edges.ScopeSet))
 		}
-		if newUserGroupWithScopes.Edges.ScopeSet[0].Slug != "new-user" {
+		if newUserGroupWithScopes.Edges.ScopeSet[0].Slug != useraccount.NewUserScopeSetSlug {
 			t.Errorf("Expected new-user group to be linked to new-user scope set, got %s", newUserGroupWithScopes.Edges.ScopeSet[0].Slug)
 		}
 
 		unverifiedGroupWithScopes, err := client.Group.Query().
-			Where(group.NameEQ("unverified")).
+			Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).
 			WithScopeSet().
 			Only(ctx)
 		if err != nil {
@@ -145,7 +146,7 @@ func TestSetup(t *testing.T) {
 		if len(unverifiedGroupWithScopes.Edges.ScopeSet) != 1 {
 			t.Errorf("Expected unverified group to have 1 scope set, got %d", len(unverifiedGroupWithScopes.Edges.ScopeSet))
 		}
-		if unverifiedGroupWithScopes.Edges.ScopeSet[0].Slug != "unverified" {
+		if unverifiedGroupWithScopes.Edges.ScopeSet[0].Slug != useraccount.UnverifiedScopeSetSlug {
 			t.Errorf("Expected unverified group to be linked to unverified scope set, got %s", unverifiedGroupWithScopes.Edges.ScopeSet[0].Slug)
 		}
 	})
@@ -196,7 +197,7 @@ func TestSetup(t *testing.T) {
 
 		// Verify that only one of each entity exists in the database
 		adminScopeSets, err := client.ScopeSet.Query().
-			Where(scopeset.SlugEQ("admin")).
+			Where(scopeset.SlugEQ(useraccount.AdminScopeSetSlug)).
 			All(ctx)
 		if err != nil {
 			t.Fatalf("Failed to query admin scope sets: %v", err)
@@ -206,7 +207,7 @@ func TestSetup(t *testing.T) {
 		}
 
 		newUserScopeSets, err := client.ScopeSet.Query().
-			Where(scopeset.SlugEQ("new-user")).
+			Where(scopeset.SlugEQ(useraccount.NewUserScopeSetSlug)).
 			All(ctx)
 		if err != nil {
 			t.Fatalf("Failed to query new-user scope sets: %v", err)
@@ -216,7 +217,7 @@ func TestSetup(t *testing.T) {
 		}
 
 		unverifiedScopeSets, err := client.ScopeSet.Query().
-			Where(scopeset.SlugEQ("unverified")).
+			Where(scopeset.SlugEQ(useraccount.UnverifiedScopeSetSlug)).
 			All(ctx)
 		if err != nil {
 			t.Fatalf("Failed to query unverified scope sets: %v", err)
@@ -226,7 +227,7 @@ func TestSetup(t *testing.T) {
 		}
 
 		adminGroups, err := client.Group.Query().
-			Where(group.NameEQ("admin")).
+			Where(group.NameEQ(useraccount.AdminGroupSlug)).
 			All(ctx)
 		if err != nil {
 			t.Fatalf("Failed to query admin groups: %v", err)
@@ -236,7 +237,7 @@ func TestSetup(t *testing.T) {
 		}
 
 		newUserGroups, err := client.Group.Query().
-			Where(group.NameEQ("new-user")).
+			Where(group.NameEQ(useraccount.NewUserGroupSlug)).
 			All(ctx)
 		if err != nil {
 			t.Fatalf("Failed to query new-user groups: %v", err)
@@ -246,7 +247,7 @@ func TestSetup(t *testing.T) {
 		}
 
 		unverifiedGroups, err := client.Group.Query().
-			Where(group.NameEQ("unverified")).
+			Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).
 			All(ctx)
 		if err != nil {
 			t.Fatalf("Failed to query unverified groups: %v", err)
@@ -270,7 +271,7 @@ func TestSetup(t *testing.T) {
 
 		// Create admin scope set manually before running setup
 		existingAdminScopeSet, err := client.ScopeSet.Create().
-			SetSlug("admin").
+			SetSlug(useraccount.AdminScopeSetSlug).
 			SetDescription("Administrator").
 			SetScopes([]string{"*"}).
 			Save(ctx)
@@ -280,7 +281,7 @@ func TestSetup(t *testing.T) {
 
 		// Create unverified scope set manually before running setup
 		existingUnverifiedScopeSet, err := client.ScopeSet.Create().
-			SetSlug("unverified").
+			SetSlug(useraccount.UnverifiedScopeSetSlug).
 			SetDescription("Unverified users can only verify their account and read their own initial data.").
 			SetScopes([]string{"verification:*", "me:read"}).
 			Save(ctx)
@@ -308,7 +309,7 @@ func TestSetup(t *testing.T) {
 		if result.NewUserScopeSet == nil {
 			t.Fatal("NewUserScopeSet should not be nil")
 		}
-		if result.NewUserScopeSet.Slug != "new-user" {
+		if result.NewUserScopeSet.Slug != useraccount.NewUserScopeSetSlug {
 			t.Errorf("Expected new-user scope set slug to be 'new-user', got %s", result.NewUserScopeSet.Slug)
 		}
 
