@@ -18,12 +18,10 @@ func main() {
 		deps.FxCommonModule,
 		fx.Provide(
 			annotateAsMiddleware(provideAuthMiddleware),
+			annotateAsMiddleware(provideMachineMiddleware),
 			annotateAsService(provideAuthService),
 			provideGqlgenHandler,
-			fx.Annotate(
-				provideGinEngine,
-				fx.ParamTags(`group:"services"`, `group:"middlewares"`),
-			),
+			provideGinEngine,
 		),
 		fx.Invoke(newGinLifecycle),
 	)

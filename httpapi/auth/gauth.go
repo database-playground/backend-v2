@@ -7,6 +7,7 @@ import (
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/authutil"
 	"github.com/database-playground/backend-v2/internal/config"
+	"github.com/database-playground/backend-v2/internal/httputils"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
@@ -116,7 +117,8 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 	}
 
 	// grant verification scope to the user
-	token, err := h.useraccount.GrantToken(c.Request.Context(), entUser, "gauth", "gauth")
+	machineName := httputils.GetMachineName(c.Request.Context())
+	token, err := h.useraccount.GrantToken(c.Request.Context(), entUser, machineName, useraccount.WithFlow("gauth"))
 	if err != nil {
 		_ = c.AbortWithError(http.StatusInternalServerError, err)
 		return

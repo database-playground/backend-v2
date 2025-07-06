@@ -17,6 +17,7 @@ import (
 	authservice "github.com/database-playground/backend-v2/httpapi/auth"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/config"
+	"github.com/database-playground/backend-v2/internal/httputils"
 	"github.com/gin-gonic/gin"
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/fx"
@@ -26,6 +27,13 @@ import (
 func provideAuthMiddleware(storage auth.Storage) Middleware {
 	return Middleware{
 		Handler: auth.Middleware(storage),
+	}
+}
+
+// provideMachineMiddleware creates a machine middleware that can be injected into gin.
+func provideMachineMiddleware() Middleware {
+	return Middleware{
+		Handler: httputils.MachineMiddleware(),
 	}
 }
 
