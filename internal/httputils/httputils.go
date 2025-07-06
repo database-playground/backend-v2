@@ -26,5 +26,9 @@ func MachineMiddleware() gin.HandlerFunc {
 
 // GetMachineName returns the machine name from the context.
 func GetMachineName(ctx context.Context) string {
-	return ctx.Value(contextKeyMachine).(string)
+	if machine, ok := ctx.Value(contextKeyMachine).(string); ok {
+		return machine
+	}
+
+	return "!not-standard-path!"
 }
