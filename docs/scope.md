@@ -16,3 +16,4 @@
 
 - `user:impersonate`：給定任意使用者的 ID，允許假冒其身分操作。
 - `me:delete`：刪除自己的帳號。
+- `verification:write`：執行帳號認證。
