@@ -31,15 +31,15 @@ func (c Config) Validate() error {
 }
 
 type DatabaseConfig struct {
-	URL string `env:"URL"`
+	URI string `env:"URI"`
 }
 
 func (c DatabaseConfig) Validate() error {
-	if c.URL == "" {
-		return errors.New("DATABASE_URL is required")
+	if c.URI == "" {
+		return errors.New("DATABASE_URI is required")
 	}
 
-	if !strings.HasPrefix(c.URL, "postgres://") {
+	if !strings.HasPrefix(c.URI, "postgres://") {
 		return errors.New("DATABASE_URL must be a valid PostgreSQL URL")
 	}
 

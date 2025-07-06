@@ -39,7 +39,7 @@ func Config() (config.Config, error) {
 
 // EntClient creates an ent.Client.
 func EntClient(cfg config.Config) (*ent.Client, error) {
-	db, err := sql.Open("pgx", cfg.Database.URL)
+	db, err := sql.Open("pgx", cfg.Database.URI)
 	if err != nil {
 		return nil, err
 	}
