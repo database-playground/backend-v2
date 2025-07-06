@@ -3,7 +3,7 @@ extend type Query {
 }
 
 extend type User {
-  impersonatedBy: User @scope(scope: "user:impersonate")
+  impersonatedBy: User
 }
 
 extend type Mutation {
