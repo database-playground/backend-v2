@@ -26,12 +26,6 @@ func (s *AuthService) Register(router gin.IRouter) {
 	auth := router.Group("/auth")
 	auth.POST("/logout", s.Logout)
 
-	// FIXME: remove this group in production
-	{
-		debug := auth.Group("/debug")
-		debug.POST("/auth-as-admin", s.AuthAsAdmin)
-	}
-
 	{
 		gauth := auth.Group("/google")
 
