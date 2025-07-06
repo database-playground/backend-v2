@@ -43,13 +43,13 @@ func (h *GauthHandler) Login(c *gin.Context) {
 
 	verifier, err := authutil.GenerateToken()
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
+		_ = c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	callbackURL, err := url.Parse(h.oauthConfig.RedirectURL)
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
+		_ = c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -75,13 +75,13 @@ func (h *GauthHandler) Login(c *gin.Context) {
 func (h *GauthHandler) Callback(c *gin.Context) {
 	verifier, err := c.Cookie(verifierCookieName)
 	if err != nil {
-		c.AbortWithError(http.StatusUnauthorized, err)
+		_ = c.AbortWithError(http.StatusUnauthorized, err)
 		return
 	}
 
 	token, err := h.oauthConfig.Exchange(c.Request.Context(), c.Query("code"), oauth2.VerifierOption(verifier))
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
+		_ = c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -90,13 +90,13 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 		option.WithTokenSource(h.oauthConfig.TokenSource(c.Request.Context(), token)),
 	)
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
+		_ = c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	user, err := client.Userinfo.Get().Do()
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
+		_ = c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 

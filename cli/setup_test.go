@@ -16,7 +16,11 @@ func TestSetup(t *testing.T) {
 	t.Run("should create all required entities on first run", func(t *testing.T) {
 		// Create an in-memory SQLite database for testing
 		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer client.Close()
+		defer func() {
+			if err := client.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
 
 		ctx := context.Background()
 		cliCtx := cli.NewContext(client)
@@ -110,7 +114,11 @@ func TestSetup(t *testing.T) {
 	t.Run("should be idempotent - second run should not create duplicates", func(t *testing.T) {
 		// Create an in-memory SQLite database for testing
 		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer client.Close()
+		defer func() {
+			if err := client.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
 
 		ctx := context.Background()
 		cliCtx := cli.NewContext(client)
@@ -186,7 +194,11 @@ func TestSetup(t *testing.T) {
 	t.Run("should handle partial existing data", func(t *testing.T) {
 		// Create an in-memory SQLite database for testing
 		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer client.Close()
+		defer func() {
+			if err := client.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
 
 		ctx := context.Background()
 		cliCtx := cli.NewContext(client)
@@ -234,7 +246,11 @@ func TestSetupResult(t *testing.T) {
 	t.Run("SetupResult should have all required fields", func(t *testing.T) {
 		// Create an in-memory SQLite database for testing
 		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer client.Close()
+		defer func() {
+			if err := client.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
 
 		ctx := context.Background()
 		cliCtx := cli.NewContext(client)

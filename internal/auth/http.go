@@ -24,7 +24,7 @@ func Middleware(storage Storage) gin.HandlerFunc {
 			if errors.As(err, &badTokenInfoError) {
 				// We should revoke the invalid token here.
 				if err := storage.Delete(c.Request.Context(), badTokenInfoError.Token); err != nil {
-					c.AbortWithError(http.StatusInternalServerError, err)
+					_ = c.AbortWithError(http.StatusInternalServerError, err)
 					return
 				}
 			}

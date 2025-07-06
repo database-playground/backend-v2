@@ -64,7 +64,10 @@ func annotateAsMiddleware(f any) any {
 }
 func provideGinEngine(services []httpapi.Service, middlewares []Middleware, gqlgenHandler *handler.Server, cfg config.Config) *gin.Engine {
 	engine := gin.New()
-	engine.SetTrustedProxies(cfg.TrustProxies)
+
+	if err := engine.SetTrustedProxies(cfg.TrustProxies); err != nil {
+		slog.Error("error setting trusted proxies", "error", err)
+	}
 
 	for _, middleware := range middlewares {
 		engine.Use(middleware.Handler)
@@ -105,7 +108,9 @@ func newGinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Conf
 			}
 
 			if httpCtx.Err() != nil {
-				listener.Close()
+				if err := listener.Close(); err != nil {
+					slog.Error("error closing listener", "error", err)
+				}
 				return nil
 			}
 
@@ -117,7 +122,9 @@ func newGinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Conf
 
 			go func() {
 				<-httpCtx.Done()
-				listener.Close()
+				if err := listener.Close(); err != nil {
+					slog.Error("error closing listener", "error", err)
+				}
 			}()
 
 			slog.Info("gin engine started", "address", "http://"+listener.Addr().String())

@@ -16,7 +16,11 @@ func TestPromoteAdmin(t *testing.T) {
 	t.Run("should successfully promote user to admin", func(t *testing.T) {
 		// Create an in-memory SQLite database for testing
 		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer client.Close()
+		defer func() {
+			if err := client.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
 
 		ctx := context.Background()
 		cliCtx := cli.NewContext(client)
@@ -83,7 +87,11 @@ func TestPromoteAdmin(t *testing.T) {
 	t.Run("should return error when user not found", func(t *testing.T) {
 		// Create an in-memory SQLite database for testing
 		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer client.Close()
+		defer func() {
+			if err := client.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
 
 		ctx := context.Background()
 		cliCtx := cli.NewContext(client)
@@ -109,7 +117,11 @@ func TestPromoteAdmin(t *testing.T) {
 	t.Run("should return error when admin group not found", func(t *testing.T) {
 		// Create an in-memory SQLite database for testing
 		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer client.Close()
+		defer func() {
+			if err := client.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
 
 		ctx := context.Background()
 		cliCtx := cli.NewContext(client)
@@ -148,7 +160,11 @@ func TestPromoteAdmin(t *testing.T) {
 	t.Run("should handle database errors gracefully", func(t *testing.T) {
 		// Create an in-memory SQLite database for testing
 		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer client.Close()
+		defer func() {
+			if err := client.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
 
 		ctx := context.Background()
 		cliCtx := cli.NewContext(client)
@@ -176,7 +192,9 @@ func TestPromoteAdmin(t *testing.T) {
 		}
 
 		// Close the client to simulate database connection issues
-		client.Close()
+		if err := client.Close(); err != nil {
+			t.Fatalf("Failed to close client: %v", err)
+		}
 
 		// Try to promote user with closed client
 		err = cliCtx.PromoteAdmin(ctx, "test@example.com")
@@ -188,7 +206,11 @@ func TestPromoteAdmin(t *testing.T) {
 	t.Run("should work with multiple users", func(t *testing.T) {
 		// Create an in-memory SQLite database for testing
 		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer client.Close()
+		defer func() {
+			if err := client.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
 
 		ctx := context.Background()
 		cliCtx := cli.NewContext(client)
@@ -274,7 +296,11 @@ func TestPromoteAdmin(t *testing.T) {
 	t.Run("should handle case sensitivity in email", func(t *testing.T) {
 		// Create an in-memory SQLite database for testing
 		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer client.Close()
+		defer func() {
+			if err := client.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
 
 		ctx := context.Background()
 		cliCtx := cli.NewContext(client)
@@ -322,7 +348,11 @@ func TestPromoteAdmin(t *testing.T) {
 	t.Run("should handle empty email", func(t *testing.T) {
 		// Create an in-memory SQLite database for testing
 		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer client.Close()
+		defer func() {
+			if err := client.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
 
 		ctx := context.Background()
 		cliCtx := cli.NewContext(client)

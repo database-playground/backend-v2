@@ -34,7 +34,9 @@ func NewRedisContainer(t *testing.T) testcontainers.Container {
 	}
 
 	t.Cleanup(func() {
-		redisC.Terminate(context.Background())
+		if err := redisC.Terminate(context.Background()); err != nil {
+			t.Logf("failed to terminate Redis container: %v", err)
+		}
 	})
 
 	return redisC

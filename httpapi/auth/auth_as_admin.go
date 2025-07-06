@@ -15,7 +15,8 @@ func (s *AuthService) AuthAsAdmin(c *gin.Context) {
 	// Find the first admin user
 	user, err := s.ent.User.Query().Where(user.HasGroupWith(group.Name("admin"))).First(c.Request.Context())
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
+		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		return
 	}
 
 	token, err := s.storage.Create(c.Request.Context(), auth.TokenInfo{
@@ -25,7 +26,8 @@ func (s *AuthService) AuthAsAdmin(c *gin.Context) {
 		Scopes:    []string{"*"},
 	})
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
+		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		return
 	}
 
 	c.SetCookie(

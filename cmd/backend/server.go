@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log/slog"
+	"os"
 
 	"go.uber.org/fx"
 
@@ -26,6 +27,10 @@ func main() {
 		fx.Invoke(newGinLifecycle),
 	)
 
-	app.Start(context.Background())
+	if err := app.Start(context.Background()); err != nil {
+		slog.Error("error starting server", "error", err)
+		os.Exit(1)
+	}
+
 	slog.Info("Server stopped")
 }

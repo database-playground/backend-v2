@@ -40,7 +40,8 @@ func TestGetUser_EmptyContext(t *testing.T) {
 }
 
 func TestGetUser_NilContext(t *testing.T) {
-	user, ok := auth.GetUser(nil)
+	var ctx context.Context
+	user, ok := auth.GetUser(ctx)
 	if ok {
 		t.Fatal("expected no user in nil context")
 	}
@@ -119,8 +120,10 @@ func TestWithUser_OverwriteExisting(t *testing.T) {
 
 func TestGetUser_ContextWithDifferentType(t *testing.T) {
 	ctx := context.Background()
+
+	type differentType string
 	// Add a different type to the context with the same key
-	ctx = context.WithValue(ctx, "user", "not-a-token-info")
+	ctx = context.WithValue(ctx, differentType("user"), "not-a-token-info")
 
 	user, ok := auth.GetUser(ctx)
 	if ok {
