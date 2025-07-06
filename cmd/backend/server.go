@@ -16,6 +16,7 @@ func main() {
 			AuthStorage,
 			AnnotateMiddleware(AuthMiddleware),
 			AnnotateMiddleware(MachineMiddleware),
+			AnnotateMiddleware(CorsMiddleware),
 			AnnotateService(AuthService),
 			GqlgenHandler,
 			fx.Annotate(

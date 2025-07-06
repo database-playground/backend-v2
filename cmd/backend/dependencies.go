@@ -50,7 +50,7 @@ func CorsMiddleware(cfg config.Config) Middleware {
 		Handler: cors.New(cors.Config{
 			AllowOrigins:     cfg.AllowedOrigins,
 			AllowMethods:     []string{"GET", "POST", "OPTIONS"},
-			AllowHeaders:     []string{"*"},
+			AllowHeaders:     []string{"Content-Type", "User-Agent", "Referer"},
 			AllowCredentials: true,
 		}),
 	}
