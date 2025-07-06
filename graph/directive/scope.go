@@ -23,5 +23,5 @@ func ScopeDirective(ctx context.Context, obj any, next graphql.Resolver, fnScope
 		return next(ctx)
 	}
 
-	return nil, defs.ErrNoSufficientScope
+	return nil, defs.NewErrNoSufficientScope(fnScope)
 }

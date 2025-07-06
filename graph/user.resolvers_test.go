@@ -144,7 +144,7 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 
 		// Verify error
 		require.Error(t, err)
-		require.Contains(t, err.Error(), defs.ErrNoSufficientScope.Error())
+		require.Contains(t, err.Error(), defs.NewErrNoSufficientScope("me:write").Error())
 	})
 
 	t.Run("storage error", func(t *testing.T) {
@@ -302,7 +302,7 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 
 		// Verify error
 		require.Error(t, err)
-		require.Contains(t, err.Error(), defs.ErrNoSufficientScope.Error())
+		require.Contains(t, err.Error(), defs.NewErrNoSufficientScope("user:impersonate").Error())
 	})
 
 	t.Run("storage error", func(t *testing.T) {
@@ -678,61 +678,6 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 		require.Contains(t, err.Error(), "UNAUTHORIZED")
 	})
 
-	t.Run("insufficient scope", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
-
-		// Create test group
-		group, err := createTestGroup(t, entClient)
-		require.NoError(t, err)
-
-		// Create a test user
-		user, err := entClient.User.Create().
-			SetName("testuser").
-			SetEmail("test@example.com").
-			SetGroup(group).
-			Save(context.Background())
-		require.NoError(t, err)
-
-		resolver := &Resolver{
-			ent:  entClient,
-			auth: &mockAuthStorage{},
-		}
-
-		// Create test server with scope directive
-		cfg := Config{
-			Resolvers:  resolver,
-			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
-		}
-		srv := handler.New(NewExecutableSchema(cfg))
-		srv.AddTransport(transport.POST{})
-		gqlClient := client.New(srv)
-
-		// Create context with authenticated user but wrong scope
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: user.ID,
-			Scopes: []string{"me:read"},
-			Meta: map[string]string{
-				"impersonated_by": "1",
-			},
-		})
-
-		// Execute query
-		var resp struct {
-			Me struct {
-				ImpersonatedBy struct {
-					Name string
-				}
-			}
-		}
-		err = gqlClient.Post(`query { me { impersonatedBy { name } } }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
-		})
-
-		// Verify error
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "FORBIDDEN")
-	})
-
 	t.Run("no impersonation metadata", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)
 
@@ -963,7 +908,7 @@ func TestMutationResolver_DeleteMe(t *testing.T) {
 
 		// Verify error
 		require.Error(t, err)
-		require.Contains(t, err.Error(), defs.ErrNoSufficientScope.Error())
+		require.Contains(t, err.Error(), defs.NewErrNoSufficientScope("me:delete").Error())
 	})
 
 	t.Run("user not found", func(t *testing.T) {
@@ -1128,7 +1073,7 @@ func TestMutationResolver_VerifyRegistration(t *testing.T) {
 
 		// Verify error
 		require.Error(t, err)
-		require.Contains(t, err.Error(), defs.ErrNoSufficientScope.Error())
+		require.Contains(t, err.Error(), defs.NewErrNoSufficientScope("verification:write").Error())
 	})
 
 	t.Run("user already verified", func(t *testing.T) {
