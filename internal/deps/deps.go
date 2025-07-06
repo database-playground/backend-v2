@@ -27,6 +27,11 @@ func Config() (config.Config, error) {
 		return config.Config{}, err
 	}
 
+	if err := cfg.Validate(); err != nil {
+		slog.Error("error validating config", "error", err)
+		return config.Config{}, err
+	}
+
 	return cfg, nil
 }
 
