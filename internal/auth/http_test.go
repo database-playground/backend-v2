@@ -11,8 +11,8 @@ import (
 
 	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/internal/auth"
+	"github.com/database-playground/backend-v2/internal/authutil"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -69,7 +69,11 @@ type memoryTokenStorage struct {
 }
 
 func (m *memoryTokenStorage) Create(ctx context.Context, info auth.TokenInfo) (string, error) {
-	token := uuid.New().String()
+	token, err := authutil.GenerateToken()
+	if err != nil {
+		return "", fmt.Errorf("generate token: %w", err)
+	}
+
 	m.storage[token] = info
 	return token, nil
 }
