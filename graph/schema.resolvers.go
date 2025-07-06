@@ -28,6 +28,9 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input ent.CreateUserI
 func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.UpdateUserInput) (*ent.User, error) {
 	user, err := r.ent.User.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, defs.ErrNotFound
+		}
 		return nil, err
 	}
 
@@ -38,6 +41,9 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.Upd
 func (r *mutationResolver) DeleteUser(ctx context.Context, id int) (bool, error) {
 	err := r.ent.User.DeleteOneID(id).Exec(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return false, defs.ErrNotFound
+		}
 		return false, err
 	}
 
@@ -58,6 +64,9 @@ func (r *mutationResolver) CreateScopeSet(ctx context.Context, input ent.CreateS
 func (r *mutationResolver) UpdateScopeSet(ctx context.Context, id int, input ent.UpdateScopeSetInput) (*ent.ScopeSet, error) {
 	scopeSet, err := r.ent.ScopeSet.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, defs.ErrNotFound
+		}
 		return nil, err
 	}
 
@@ -68,6 +77,9 @@ func (r *mutationResolver) UpdateScopeSet(ctx context.Context, id int, input ent
 func (r *mutationResolver) DeleteScopeSet(ctx context.Context, id int) (bool, error) {
 	err := r.ent.ScopeSet.DeleteOneID(id).Exec(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return false, defs.ErrNotFound
+		}
 		return false, err
 	}
 
@@ -78,6 +90,9 @@ func (r *mutationResolver) DeleteScopeSet(ctx context.Context, id int) (bool, er
 func (r *mutationResolver) CreateGroup(ctx context.Context, input ent.CreateGroupInput) (*ent.Group, error) {
 	group, err := r.ent.Group.Create().SetInput(input).Save(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, defs.ErrNotFound
+		}
 		return nil, err
 	}
 
@@ -88,6 +103,9 @@ func (r *mutationResolver) CreateGroup(ctx context.Context, input ent.CreateGrou
 func (r *mutationResolver) UpdateGroup(ctx context.Context, id int, input ent.UpdateGroupInput) (*ent.Group, error) {
 	group, err := r.ent.Group.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, defs.ErrNotFound
+		}
 		return nil, err
 	}
 
@@ -98,48 +116,31 @@ func (r *mutationResolver) UpdateGroup(ctx context.Context, id int, input ent.Up
 func (r *mutationResolver) DeleteGroup(ctx context.Context, id int) (bool, error) {
 	err := r.ent.Group.DeleteOneID(id).Exec(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return false, defs.ErrNotFound
+		}
 		return false, err
 	}
 
 	return true, nil
 }
 
-// CreateAdmin is the resolver for the createAdmin field.
-func (r *mutationResolver) CreateAdmin(ctx context.Context, input ent.CreateUserInput) (*ent.User, error) {
-	// create admin scopeset
-	scopeset, err := r.ent.ScopeSet.Create().
-		SetSlug("admin").
-		SetScopes([]string{"*"}).
-		Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// create admin group
-	group, err := r.ent.Group.Create().
-		SetName("admin").
-		AddScopeSet(scopeset).
-		Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	input.GroupID = group.ID
-
-	user, err := r.ent.User.Create().SetInput(input).Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return user, nil
-}
-
 // ImpersonateUser is the resolver for the impersonateUser field.
 func (r *mutationResolver) ImpersonateUser(ctx context.Context, userID int) (string, error) {
+	// Get the user information.
+	user, err := r.ent.User.Query().Where(user.ID(userID)).Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return "", defs.ErrNotFound
+		}
+
+		return "", err
+	}
+
 	token, err := r.auth.Create(ctx, auth.TokenInfo{
-		Machine: "graphql:ImpersonateUser",
-		User:    strconv.Itoa(userID),
-		Scopes:  []string{"*"},
+		UserID:    user.ID,
+		UserEmail: user.Email,
+		Scopes:    []string{"*"},
 		Meta: map[string]string{
 			"impersonated_by": strconv.Itoa(userID),
 		},
@@ -159,7 +160,22 @@ func (r *mutationResolver) LogoutAll(ctx context.Context) (bool, error) {
 		return false, defs.ErrUnauthorized
 	}
 
-	err := r.auth.DeleteByUser(ctx, user.User)
+	err := r.auth.DeleteByUser(ctx, user.UserID)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+// DeleteMe is the resolver for the deleteMe field.
+func (r *mutationResolver) DeleteMe(ctx context.Context) (bool, error) {
+	user, ok := auth.GetUser(ctx)
+	if !ok {
+		return false, defs.ErrUnauthorized
+	}
+
+	err := r.ent.User.DeleteOneID(user.UserID).Exec(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -174,12 +190,7 @@ func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
 		return nil, defs.ErrUnauthorized
 	}
 
-	userID, err := strconv.Atoi(tokenInfo.User)
-	if err != nil {
-		return nil, err
-	}
-
-	return r.ent.User.Query().Where(user.ID(userID)).Only(ctx)
+	return r.ent.User.Query().Where(user.ID(tokenInfo.UserID)).Only(ctx)
 }
 
 // ImpersonatedBy is the resolver for the impersonatedBy field.

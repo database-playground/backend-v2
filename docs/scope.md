@@ -2,6 +2,7 @@
 
 ## 資源
 
+- `me`：針對自身的操作
 - `user`：使用者操作
 - `group`：群組操作
 - `scopeset`：範圍集合操作
@@ -14,3 +15,4 @@
 ## 特殊 scopes
 
 - `user:impersonate`：給定任意使用者的 ID，允許假冒其身分操作。
+- `me:delete`：刪除自己的帳號。

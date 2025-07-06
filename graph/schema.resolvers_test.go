@@ -33,7 +33,7 @@ func (m *mockAuthStorage) Delete(ctx context.Context, token string) error {
 	panic("unimplemented")
 }
 
-func (m *mockAuthStorage) DeleteByUser(ctx context.Context, user string) error {
+func (m *mockAuthStorage) DeleteByUser(ctx context.Context, userID int) error {
 	return m.deleteByUserErr
 }
 
@@ -64,7 +64,7 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 
 		// Create context with authenticated user and required scope
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			User:   "testuser",
+			UserID: 1,
 			Scopes: []string{"user:write"},
 		})
 
@@ -126,7 +126,7 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 
 		// Create context with authenticated user but wrong scope
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			User:   "testuser",
+			UserID: 1,
 			Scopes: []string{"user:read"},
 		})
 
@@ -164,7 +164,7 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 
 		// Create context with authenticated user and required scope
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			User:   "testuser",
+			UserID: 1,
 			Scopes: []string{"user:write"},
 		})
 
@@ -204,7 +204,7 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 
 		// Create context with authenticated user and required scope
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			User:   "testuser",
+			UserID: 1,
 			Scopes: []string{"user:impersonate"},
 		})
 
@@ -266,7 +266,7 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 
 		// Create context with authenticated user but wrong scope
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			User:   "testuser",
+			UserID: 1,
 			Scopes: []string{"user:read"},
 		})
 
@@ -304,7 +304,7 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 
 		// Create context with authenticated user and required scope
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			User:   "testuser",
+			UserID: 1,
 			Scopes: []string{"user:impersonate"},
 		})
 
@@ -381,7 +381,7 @@ func TestQueryResolver_Me(t *testing.T) {
 
 		// Create context with authenticated user and required scope
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			User:   strconv.Itoa(user.ID),
+			UserID: user.ID,
 			Scopes: []string{"user:read"},
 		})
 
@@ -449,7 +449,7 @@ func TestQueryResolver_Me(t *testing.T) {
 
 		// Create context with authenticated user but wrong scope
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			User:   "1",
+			UserID: 1,
 			Scopes: []string{"user:write"},
 		})
 
@@ -489,7 +489,7 @@ func TestQueryResolver_Me(t *testing.T) {
 
 		// Create context with authenticated user but invalid user ID
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			User:   "invalid",
+			UserID: 0,
 			Scopes: []string{"user:read"},
 		})
 
@@ -552,7 +552,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 
 		// Create context with authenticated user and required scope
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			User:   strconv.Itoa(user.ID),
+			UserID: user.ID,
 			Scopes: []string{"user:read", "user:impersonate"},
 			Meta: map[string]string{
 				"impersonated_by": strconv.Itoa(impersonator.ID),
@@ -642,7 +642,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 
 		// Create context with authenticated user but wrong scope
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			User:   strconv.Itoa(user.ID),
+			UserID: user.ID,
 			Scopes: []string{"user:read"},
 			Meta: map[string]string{
 				"impersonated_by": "1",
@@ -699,7 +699,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 
 		// Create context with authenticated user and required scope but no impersonation metadata
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			User:   strconv.Itoa(user.ID),
+			UserID: user.ID,
 			Scopes: []string{"user:read", "user:impersonate"},
 			Meta:   map[string]string{},
 		})
@@ -757,7 +757,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 
 		// Create context with authenticated user, required scope and non-existent impersonator ID
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			User:   strconv.Itoa(user.ID),
+			UserID: user.ID,
 			Scopes: []string{"user:read", "user:impersonate"},
 			Meta: map[string]string{
 				"impersonated_by": "999", // Non-existent user ID

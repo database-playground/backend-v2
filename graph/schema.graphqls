@@ -1,7 +1,7 @@
 directive @scope(scope: String!) on FIELD_DEFINITION
 
 extend type Query {
-  me: User! @scope(scope: "user:read")
+  me: User! @scope(scope: "me:read")
 }
 
 extend type User {
@@ -21,9 +21,6 @@ type Mutation {
   updateGroup(id: ID!, input: UpdateGroupInput!): Group @scope(scope: "group:write")
   deleteGroup(id: ID!): Boolean! @scope(scope: "group:write")
 
-  # FIXME: IT MUST BE DELETED IN PRODUCTION!!
-  createAdmin(input: CreateUserInput!): User
-
   """
   Impersonate a user.
 
@@ -35,5 +32,10 @@ type Mutation {
   """
   Logout from all the devices of the current user.
   """
-  logoutAll: Boolean! @scope(scope: "user:write")
+  logoutAll: Boolean! @scope(scope: "me:write")
+
+  """
+  Delete the current user.
+  """
+  deleteMe: Boolean! @scope(scope: "me:delete")
 }
