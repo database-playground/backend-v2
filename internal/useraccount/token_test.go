@@ -44,7 +44,8 @@ func TestGrantToken_Success(t *testing.T) {
 	assert.Equal(t, user.Email, tokenInfo.UserEmail)
 	assert.Equal(t, "test-machine", tokenInfo.Machine)
 	assert.Contains(t, tokenInfo.Scopes, "verification:*")
-	assert.Equal(t, "registration", tokenInfo.Meta["initiate_from_flow"])
+	assert.Equal(t, "registration", tokenInfo.Meta[useraccount.MetaInitiateFromFlow])
+	assert.Empty(t, tokenInfo.Meta[useraccount.MetaImpersonation])
 }
 
 func TestGrantToken_Impersonation(t *testing.T) {
@@ -77,8 +78,8 @@ func TestGrantToken_Impersonation(t *testing.T) {
 	assert.Equal(t, user.Email, tokenInfo.UserEmail)
 	assert.Equal(t, "test-machine", tokenInfo.Machine)
 	assert.Contains(t, tokenInfo.Scopes, "verification:*")
-	assert.Equal(t, "registration", tokenInfo.Meta["initiate_from_flow"])
-	assert.Equal(t, strconv.Itoa(user.ID), tokenInfo.Meta["impersonation"])
+	assert.Equal(t, "registration", tokenInfo.Meta[useraccount.MetaInitiateFromFlow])
+	assert.Equal(t, strconv.Itoa(user.ID), tokenInfo.Meta[useraccount.MetaImpersonation])
 }
 
 func TestGrantToken_DefaultFlow(t *testing.T) {
@@ -105,8 +106,8 @@ func TestGrantToken_DefaultFlow(t *testing.T) {
 
 	tokenInfo, err := authStorage.Get(context, token)
 	require.NoError(t, err)
-	assert.Equal(t, "undefined", tokenInfo.Meta["initiate_from_flow"])
-	assert.Empty(t, tokenInfo.Meta["impersonation"])
+	assert.Equal(t, "undefined", tokenInfo.Meta[useraccount.MetaInitiateFromFlow])
+	assert.Empty(t, tokenInfo.Meta[useraccount.MetaImpersonation])
 }
 
 func TestGrantToken_NewUserScopes(t *testing.T) {
@@ -138,8 +139,8 @@ func TestGrantToken_NewUserScopes(t *testing.T) {
 	tokenInfo, err := authStorage.Get(context, token)
 	require.NoError(t, err)
 	assert.Contains(t, tokenInfo.Scopes, "me:*")
-	assert.Equal(t, "login", tokenInfo.Meta["initiate_from_flow"])
-	assert.Empty(t, tokenInfo.Meta["impersonation"])
+	assert.Equal(t, "login", tokenInfo.Meta[useraccount.MetaInitiateFromFlow])
+	assert.Empty(t, tokenInfo.Meta[useraccount.MetaImpersonation])
 }
 
 func TestGrantToken_UserWithoutScopeSet(t *testing.T) {

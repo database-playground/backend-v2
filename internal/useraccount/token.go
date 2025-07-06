@@ -8,6 +8,11 @@ import (
 	"github.com/database-playground/backend-v2/internal/auth"
 )
 
+const (
+	MetaInitiateFromFlow = "initiate_from_flow"
+	MetaImpersonation    = "impersonation"
+)
+
 type grantTokenOptions struct {
 	flow           string
 	impersonatorID int
@@ -49,10 +54,10 @@ func (c *Context) GrantToken(ctx context.Context, user *ent.User, machine string
 	}
 
 	meta := map[string]string{
-		"initiate_from_flow": options.flow,
+		MetaInitiateFromFlow: options.flow,
 	}
 	if options.impersonatorID != 0 {
-		meta["impersonation"] = strconv.Itoa(options.impersonatorID)
+		meta[MetaImpersonation] = strconv.Itoa(options.impersonatorID)
 	}
 
 	token, err := c.auth.Create(ctx, auth.TokenInfo{
