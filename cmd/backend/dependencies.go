@@ -48,8 +48,8 @@ func provideGqlgenHandler(entClient *ent.Client, storage auth.Storage) *handler.
 	return srv
 }
 
-func provideAuthService(storage auth.Storage, config config.Config) httpapi.Service {
-	return authservice.NewAuthService(storage, config)
+func provideAuthService(entClient *ent.Client, storage auth.Storage, config config.Config) httpapi.Service {
+	return authservice.NewAuthService(entClient, storage, config)
 }
 
 type Middleware struct {
