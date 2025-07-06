@@ -52,11 +52,25 @@ func TestSetup(t *testing.T) {
 		if result.NewUserScopeSet.Slug != "new-user" {
 			t.Errorf("Expected new-user scope set slug to be 'new-user', got %s", result.NewUserScopeSet.Slug)
 		}
-		if result.NewUserScopeSet.Description != "New users can only read their own user data." {
-			t.Errorf("Expected new-user scope set description to be 'New users can only read their own user data.', got %s", result.NewUserScopeSet.Description)
+		if result.NewUserScopeSet.Description != "New users can only read and write their own data." {
+			t.Errorf("Expected new-user scope set description to be 'New users can only read and write their own data.', got %s", result.NewUserScopeSet.Description)
 		}
-		if len(result.NewUserScopeSet.Scopes) != 1 || result.NewUserScopeSet.Scopes[0] != "user:read" {
-			t.Errorf("Expected new-user scope set scopes to be ['user:read'], got %v", result.NewUserScopeSet.Scopes)
+		if len(result.NewUserScopeSet.Scopes) != 1 || result.NewUserScopeSet.Scopes[0] != "me:*" {
+			t.Errorf("Expected new-user scope set scopes to be ['me:*'], got %v", result.NewUserScopeSet.Scopes)
+		}
+
+		// Verify unverified scope set was created
+		if result.UnverifiedScopeSet == nil {
+			t.Fatal("UnverifiedScopeSet should not be nil")
+		}
+		if result.UnverifiedScopeSet.Slug != "unverified" {
+			t.Errorf("Expected unverified scope set slug to be 'unverified', got %s", result.UnverifiedScopeSet.Slug)
+		}
+		if result.UnverifiedScopeSet.Description != "Unverified users can only verify their account and read their own initial data." {
+			t.Errorf("Expected unverified scope set description to be 'Unverified users can only verify their account and read their own initial data.', got %s", result.UnverifiedScopeSet.Description)
+		}
+		if len(result.UnverifiedScopeSet.Scopes) != 2 || result.UnverifiedScopeSet.Scopes[0] != "verification:*" || result.UnverifiedScopeSet.Scopes[1] != "me:read" {
+			t.Errorf("Expected unverified scope set scopes to be ['verification:*', 'me:read'], got %v", result.UnverifiedScopeSet.Scopes)
 		}
 
 		// Verify admin group was created
@@ -79,6 +93,17 @@ func TestSetup(t *testing.T) {
 		}
 		if result.NewUserGroup.Description != "New users that is not yet verified." {
 			t.Errorf("Expected new-user group description to be 'New users that is not yet verified.', got %s", result.NewUserGroup.Description)
+		}
+
+		// Verify unverified group was created
+		if result.UnverifiedGroup == nil {
+			t.Fatal("UnverifiedGroup should not be nil")
+		}
+		if result.UnverifiedGroup.Name != "unverified" {
+			t.Errorf("Expected unverified group name to be 'unverified', got %s", result.UnverifiedGroup.Name)
+		}
+		if result.UnverifiedGroup.Description != "Unverified users that is not yet verified." {
+			t.Errorf("Expected unverified group description to be 'Unverified users that is not yet verified.', got %s", result.UnverifiedGroup.Description)
 		}
 
 		// Verify the groups are linked to the correct scope sets
@@ -108,6 +133,20 @@ func TestSetup(t *testing.T) {
 		}
 		if newUserGroupWithScopes.Edges.ScopeSet[0].Slug != "new-user" {
 			t.Errorf("Expected new-user group to be linked to new-user scope set, got %s", newUserGroupWithScopes.Edges.ScopeSet[0].Slug)
+		}
+
+		unverifiedGroupWithScopes, err := client.Group.Query().
+			Where(group.NameEQ("unverified")).
+			WithScopeSet().
+			Only(ctx)
+		if err != nil {
+			t.Fatalf("Failed to query unverified group with scope sets: %v", err)
+		}
+		if len(unverifiedGroupWithScopes.Edges.ScopeSet) != 1 {
+			t.Errorf("Expected unverified group to have 1 scope set, got %d", len(unverifiedGroupWithScopes.Edges.ScopeSet))
+		}
+		if unverifiedGroupWithScopes.Edges.ScopeSet[0].Slug != "unverified" {
+			t.Errorf("Expected unverified group to be linked to unverified scope set, got %s", unverifiedGroupWithScopes.Edges.ScopeSet[0].Slug)
 		}
 	})
 
@@ -142,11 +181,17 @@ func TestSetup(t *testing.T) {
 		if result1.NewUserScopeSet.ID != result2.NewUserScopeSet.ID {
 			t.Errorf("New-user scope set IDs should be the same, got %d and %d", result1.NewUserScopeSet.ID, result2.NewUserScopeSet.ID)
 		}
+		if result1.UnverifiedScopeSet.ID != result2.UnverifiedScopeSet.ID {
+			t.Errorf("Unverified scope set IDs should be the same, got %d and %d", result1.UnverifiedScopeSet.ID, result2.UnverifiedScopeSet.ID)
+		}
 		if result1.AdminGroup.ID != result2.AdminGroup.ID {
 			t.Errorf("Admin group IDs should be the same, got %d and %d", result1.AdminGroup.ID, result2.AdminGroup.ID)
 		}
 		if result1.NewUserGroup.ID != result2.NewUserGroup.ID {
 			t.Errorf("New-user group IDs should be the same, got %d and %d", result1.NewUserGroup.ID, result2.NewUserGroup.ID)
+		}
+		if result1.UnverifiedGroup.ID != result2.UnverifiedGroup.ID {
+			t.Errorf("Unverified group IDs should be the same, got %d and %d", result1.UnverifiedGroup.ID, result2.UnverifiedGroup.ID)
 		}
 
 		// Verify that only one of each entity exists in the database
@@ -170,6 +215,16 @@ func TestSetup(t *testing.T) {
 			t.Errorf("Expected exactly 1 new-user scope set, got %d", len(newUserScopeSets))
 		}
 
+		unverifiedScopeSets, err := client.ScopeSet.Query().
+			Where(scopeset.SlugEQ("unverified")).
+			All(ctx)
+		if err != nil {
+			t.Fatalf("Failed to query unverified scope sets: %v", err)
+		}
+		if len(unverifiedScopeSets) != 1 {
+			t.Errorf("Expected exactly 1 unverified scope set, got %d", len(unverifiedScopeSets))
+		}
+
 		adminGroups, err := client.Group.Query().
 			Where(group.NameEQ("admin")).
 			All(ctx)
@@ -188,6 +243,16 @@ func TestSetup(t *testing.T) {
 		}
 		if len(newUserGroups) != 1 {
 			t.Errorf("Expected exactly 1 new-user group, got %d", len(newUserGroups))
+		}
+
+		unverifiedGroups, err := client.Group.Query().
+			Where(group.NameEQ("unverified")).
+			All(ctx)
+		if err != nil {
+			t.Fatalf("Failed to query unverified groups: %v", err)
+		}
+		if len(unverifiedGroups) != 1 {
+			t.Errorf("Expected exactly 1 unverified group, got %d", len(unverifiedGroups))
 		}
 	})
 
@@ -213,6 +278,16 @@ func TestSetup(t *testing.T) {
 			t.Fatalf("Failed to create existing admin scope set: %v", err)
 		}
 
+		// Create unverified scope set manually before running setup
+		existingUnverifiedScopeSet, err := client.ScopeSet.Create().
+			SetSlug("unverified").
+			SetDescription("Unverified users can only verify their account and read their own initial data.").
+			SetScopes([]string{"verification:*", "me:read"}).
+			Save(ctx)
+		if err != nil {
+			t.Fatalf("Failed to create existing unverified scope set: %v", err)
+		}
+
 		// Run setup
 		result, err := cliCtx.Setup(ctx)
 		if err != nil {
@@ -224,6 +299,11 @@ func TestSetup(t *testing.T) {
 			t.Errorf("Expected to return existing admin scope set with ID %d, got %d", existingAdminScopeSet.ID, result.AdminScopeSet.ID)
 		}
 
+		// Verify that the existing unverified scope set is returned
+		if result.UnverifiedScopeSet.ID != existingUnverifiedScopeSet.ID {
+			t.Errorf("Expected to return existing unverified scope set with ID %d, got %d", existingUnverifiedScopeSet.ID, result.UnverifiedScopeSet.ID)
+		}
+
 		// Verify that new-user scope set was created
 		if result.NewUserScopeSet == nil {
 			t.Fatal("NewUserScopeSet should not be nil")
@@ -232,12 +312,15 @@ func TestSetup(t *testing.T) {
 			t.Errorf("Expected new-user scope set slug to be 'new-user', got %s", result.NewUserScopeSet.Slug)
 		}
 
-		// Verify that both groups were created
+		// Verify that all groups were created
 		if result.AdminGroup == nil {
 			t.Fatal("AdminGroup should not be nil")
 		}
 		if result.NewUserGroup == nil {
 			t.Fatal("NewUserGroup should not be nil")
+		}
+		if result.UnverifiedGroup == nil {
+			t.Fatal("UnverifiedGroup should not be nil")
 		}
 	})
 }
@@ -267,11 +350,17 @@ func TestSetupResult(t *testing.T) {
 		if result.NewUserScopeSet == nil {
 			t.Error("NewUserScopeSet should not be nil")
 		}
+		if result.UnverifiedScopeSet == nil {
+			t.Error("UnverifiedScopeSet should not be nil")
+		}
 		if result.AdminGroup == nil {
 			t.Error("AdminGroup should not be nil")
 		}
 		if result.NewUserGroup == nil {
 			t.Error("NewUserGroup should not be nil")
+		}
+		if result.UnverifiedGroup == nil {
+			t.Error("UnverifiedGroup should not be nil")
 		}
 	})
 }
