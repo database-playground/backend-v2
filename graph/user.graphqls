@@ -1,0 +1,27 @@
+extend type Query {
+  me: User! @scope(scope: "me:read")
+}
+
+extend type User {
+  impersonatedBy: User @scope(scope: "user:impersonate")
+}
+
+extend type Mutation {
+  """
+  Impersonate a user.
+
+  Returns the token of the impersonated user.
+  You can then use the token to access the user's resources.
+  """
+  impersonateUser(userID: ID!): String! @scope(scope: "user:impersonate")
+
+  """
+  Logout from all the devices of the current user.
+  """
+  logoutAll: Boolean! @scope(scope: "me:write")
+
+  """
+  Delete the current user.
+  """
+  deleteMe: Boolean! @scope(scope: "me:delete")
+}

@@ -1,13 +1,5 @@
 directive @scope(scope: String!) on FIELD_DEFINITION
 
-extend type Query {
-  me: User! @scope(scope: "me:read")
-}
-
-extend type User {
-  impersonatedBy: User @scope(scope: "user:impersonate")
-}
-
 type Mutation {
   createUser(input: CreateUserInput!): User @scope(scope: "user:write")
   updateUser(id: ID!, input: UpdateUserInput!): User @scope(scope: "user:write")
@@ -20,22 +12,4 @@ type Mutation {
   createGroup(input: CreateGroupInput!): Group @scope(scope: "group:write")
   updateGroup(id: ID!, input: UpdateGroupInput!): Group @scope(scope: "group:write")
   deleteGroup(id: ID!): Boolean! @scope(scope: "group:write")
-
-  """
-  Impersonate a user.
-
-  Returns the token of the impersonated user.
-  You can then use the token to access the user's resources.
-  """
-  impersonateUser(userID: ID!): String! @scope(scope: "user:impersonate")
-
-  """
-  Logout from all the devices of the current user.
-  """
-  logoutAll: Boolean! @scope(scope: "me:write")
-
-  """
-  Delete the current user.
-  """
-  deleteMe: Boolean! @scope(scope: "me:delete")
 }
