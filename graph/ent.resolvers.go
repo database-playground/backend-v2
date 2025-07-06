@@ -9,16 +9,21 @@ import (
 
 	"entgo.io/contrib/entgql"
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/graph/defs"
 )
 
 // Node is the resolver for the node field.
 func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
-	return r.ent.Noder(ctx, id)
+	// FIXME: Do not implement the node resolver for now,
+	// since we can't do scope check in the node resolver.
+	return nil, defs.ErrNotImplemented
 }
 
 // Nodes is the resolver for the nodes field.
 func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, error) {
-	return r.ent.Noders(ctx, ids)
+	// FIXME: Do not implement the node resolver for now,
+	// since we can't do scope check in the node resolver.
+	return nil, defs.ErrNotImplemented
 }
 
 // Groups is the resolver for the groups field.
