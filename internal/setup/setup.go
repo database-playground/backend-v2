@@ -6,6 +6,7 @@ import (
 
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/ent/migrate"
 	"github.com/database-playground/backend-v2/ent/scopeset"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 )
@@ -22,7 +23,7 @@ type SetupResult struct {
 
 // Migrate migrates the database to the latest version.
 func Migrate(ctx context.Context, entClient *ent.Client) error {
-	return entClient.Schema.Create(ctx)
+	return entClient.Schema.Create(ctx, migrate.WithGlobalUniqueID(true))
 }
 
 // Setup setups the database playground instance.
