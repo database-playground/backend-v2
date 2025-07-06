@@ -15,6 +15,12 @@ Redis 的目的是儲存認證憑證和快取。
 - `REDIS_USERNAME`：Redis 的使用者名稱，可留空
 - `REDIS_PASSWORD`：Redis 的密碼，可留空
 
+## 資料庫
+
+Database Playground 使用 PostgreSQL 作為資料庫。
+
+- `DATABASE_URI`：`postgres://<username>:<password>@<host>:<port>/<db>` 格式的連線字串
+
 ## Google OAuth
 
 這個 backend 以 Google OAuth 登入為主。
