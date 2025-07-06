@@ -49,5 +49,32 @@ type TokenInfo struct {
 	Meta   map[string]string `json:"meta"`   // the meta data of the token
 }
 
+var (
+	ErrValidationPositiveUserID   = errors.New("user ID must be positive")
+	ErrValidationRequireUserEmail = errors.New("user email is required")
+	ErrValidationRequireMachine   = errors.New("machine is required")
+	ErrValidationAtLeastOneScope  = errors.New("at least one scope is required")
+)
+
+func (t TokenInfo) Validate() error {
+	if t.UserID <= 0 {
+		return ErrValidationPositiveUserID
+	}
+
+	if t.UserEmail == "" {
+		return ErrValidationRequireUserEmail
+	}
+
+	if t.Machine == "" {
+		return ErrValidationRequireMachine
+	}
+
+	if len(t.Scopes) == 0 {
+		return ErrValidationAtLeastOneScope
+	}
+
+	return nil
+}
+
 // DefaultTokenExpire is the default expiration time of the token in seconds.
 const DefaultTokenExpire = 8 * 60 * 60 // 8 hr

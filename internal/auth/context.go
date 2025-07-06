@@ -21,6 +21,10 @@ func WithUser(ctx context.Context, info TokenInfo) context.Context {
 // It returns the user information and a boolean indicating
 // whether the user information is present.
 func GetUser(ctx context.Context) (TokenInfo, bool) {
+	if ctx == nil {
+		return TokenInfo{}, false
+	}
+
 	info, ok := ctx.Value(userContextKey).(TokenInfo)
 	return info, ok
 }

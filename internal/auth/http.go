@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -19,6 +20,15 @@ func Middleware(storage Storage) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		newCtx, err := ExtractToken(c.Request, storage)
 		if err != nil {
+			var badTokenInfoError BadTokenInfoError
+			if errors.As(err, &badTokenInfoError) {
+				// We should revoke the invalid token here.
+				if err := storage.Delete(c.Request.Context(), badTokenInfoError.Token); err != nil {
+					c.AbortWithError(http.StatusInternalServerError, err)
+					return
+				}
+			}
+
 			// The standard format for GraphQL errors.
 			c.JSON(http.StatusOK, gin.H{
 				"errors": []gin.H{
@@ -101,8 +111,29 @@ func ExtractToken(r *http.Request, storage Storage) (context.Context, error) {
 			return nil, err
 		}
 
+		if err := tokenInfo.Validate(); err != nil {
+			return nil, BadTokenInfoError{
+				Token: token,
+				Err:   err,
+			}
+		}
+
 		return WithUser(r.Context(), tokenInfo), nil
 	}
 
 	return r.Context(), nil
+}
+
+// BadTokenInfoError is returned when the token info is invalid.
+type BadTokenInfoError struct {
+	Token string
+	Err   error
+}
+
+func (e BadTokenInfoError) Error() string {
+	return fmt.Sprintf("bad token info: %v", e.Err)
+}
+
+func (e BadTokenInfoError) Unwrap() error {
+	return e.Err
 }
