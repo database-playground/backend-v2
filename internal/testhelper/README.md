@@ -14,3 +14,13 @@ redisClient := testhelper.NewRedisClient(t, container)
 這部分是使用 `testcontainer` 實作的，因此這個測試要求 Docker 環境建立容器。如果沒有 Docker 環境，則會直接觸發 `t.Skip` 略過此測試。
 
 你不需要 clean up：這兩個方法都實作了 `t.Cleanup` 關閉 Redis client 和 Redis 容器。
+
+## Ent
+
+如果一個測試需要引入 `ent` 的 SQLite Client，你可以使用 testhelper 中的 `NewEntSqliteClient` 來取得以獨立純記憶體 SQLite 為資料庫來源的 Ent 實例。
+
+```go
+entClient := testhelper.NewEntSqliteClient(t)
+```
+
+你不需要 clean up：這個方法實作了 `t.Cleanup` 關閉 Ent 用戶端並釋放記憶體。

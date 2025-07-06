@@ -10,10 +10,10 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/database-playground/backend-v2/ent"
-	"github.com/database-playground/backend-v2/ent/enttest"
 	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/graph/directive"
 	"github.com/database-playground/backend-v2/internal/auth"
+	"github.com/database-playground/backend-v2/internal/testhelper"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -47,14 +47,7 @@ func (m *mockAuthStorage) Peek(ctx context.Context, token string) (auth.TokenInf
 
 func TestMutationResolver_LogoutAll(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		// Setup test resolver with real ent client to avoid nil pointer
-		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
-		defer func() {
-			if err := entClient.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
-
+		entClient := testhelper.NewEntSqliteClient(t)
 		resolver := &Resolver{
 			ent:  entClient,
 			auth: &mockAuthStorage{},
@@ -89,14 +82,7 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 	})
 
 	t.Run("unauthenticated", func(t *testing.T) {
-		// Setup test resolver with real ent client to avoid nil pointer
-		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
-		defer func() {
-			if err := entClient.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
-
+		entClient := testhelper.NewEntSqliteClient(t)
 		resolver := &Resolver{
 			ent:  entClient,
 			auth: &mockAuthStorage{},
@@ -123,13 +109,7 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 	})
 
 	t.Run("insufficient scope", func(t *testing.T) {
-		// Setup test resolver with real ent client to avoid nil pointer
-		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
-		defer func() {
-			if err := entClient.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		resolver := &Resolver{
 			ent:  entClient,
@@ -165,13 +145,7 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 	})
 
 	t.Run("storage error", func(t *testing.T) {
-		// Setup test resolver with real ent client to avoid nil pointer
-		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
-		defer func() {
-			if err := entClient.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		// Setup test resolver with mock auth storage
 		storageErr := errors.New("storage error")
@@ -213,13 +187,7 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 
 func TestMutationResolver_ImpersonateUser(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		// Setup test resolver with real ent client to avoid nil pointer
-		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
-		defer func() {
-			if err := entClient.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		// Create test group
 		group, err := createTestGroup(t, entClient)
@@ -271,13 +239,7 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 	})
 
 	t.Run("unauthenticated", func(t *testing.T) {
-		// Setup test resolver with real ent client to avoid nil pointer
-		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
-		defer func() {
-			if err := entClient.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		resolver := &Resolver{
 			ent:  entClient,
@@ -305,13 +267,7 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 	})
 
 	t.Run("insufficient scope", func(t *testing.T) {
-		// Setup test resolver with real ent client to avoid nil pointer
-		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
-		defer func() {
-			if err := entClient.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		resolver := &Resolver{
 			ent:  entClient,
@@ -347,13 +303,7 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 	})
 
 	t.Run("storage error", func(t *testing.T) {
-		// Setup test resolver with real ent client to avoid nil pointer
-		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
-		defer func() {
-			if err := entClient.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		// Create test group
 		group, err := createTestGroup(t, entClient)
@@ -432,12 +382,7 @@ func createTestGroup(t *testing.T, client *ent.Client) (*ent.Group, error) {
 func TestQueryResolver_Me(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// Setup mock client that returns a user
-		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
-		defer func() {
-			if err := entClient.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		// Create test group
 		group, err := createTestGroup(t, entClient)
@@ -490,13 +435,7 @@ func TestQueryResolver_Me(t *testing.T) {
 	})
 
 	t.Run("unauthenticated", func(t *testing.T) {
-		// Setup test resolver with real ent client to avoid nil pointer
-		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
-		defer func() {
-			if err := entClient.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		resolver := &Resolver{
 			ent:  entClient,
@@ -526,13 +465,7 @@ func TestQueryResolver_Me(t *testing.T) {
 	})
 
 	t.Run("insufficient scope", func(t *testing.T) {
-		// Setup test resolver with real ent client to avoid nil pointer
-		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
-		defer func() {
-			if err := entClient.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		resolver := &Resolver{
 			ent:  entClient,
@@ -570,13 +503,7 @@ func TestQueryResolver_Me(t *testing.T) {
 	})
 
 	t.Run("invalid user id", func(t *testing.T) {
-		// Setup test resolver with real client to avoid nil pointer
-		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
-		defer func() {
-			if err := entClient.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		resolver := &Resolver{
 			ent:  entClient,
@@ -616,13 +543,7 @@ func TestQueryResolver_Me(t *testing.T) {
 
 func TestUserResolver_ImpersonatedBy(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		// Setup mock client that returns a user
-		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
-		defer func() {
-			if err := entClient.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		// Create test group
 		group, err := createTestGroup(t, entClient)
@@ -688,13 +609,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 	})
 
 	t.Run("unauthenticated", func(t *testing.T) {
-		// Setup test resolver with real ent client to avoid nil pointer
-		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
-		defer func() {
-			if err := entClient.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		resolver := &Resolver{
 			ent:  entClient,
@@ -726,13 +641,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 	})
 
 	t.Run("insufficient scope", func(t *testing.T) {
-		// Setup test resolver with real client to avoid nil pointer
-		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
-		defer func() {
-			if err := entClient.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		// Create test group
 		group, err := createTestGroup(t, entClient)
@@ -787,13 +696,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 	})
 
 	t.Run("no impersonation metadata", func(t *testing.T) {
-		// Setup test resolver with real client to avoid nil pointer
-		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
-		defer func() {
-			if err := entClient.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		// Create test group
 		group, err := createTestGroup(t, entClient)
@@ -848,13 +751,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 	})
 
 	t.Run("impersonator not found", func(t *testing.T) {
-		// Setup mock client that returns no user
-		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
-		defer func() {
-			if err := entClient.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		// Create test group
 		group, err := createTestGroup(t, entClient)

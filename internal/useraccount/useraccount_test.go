@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/database-playground/backend-v2/ent"
-	"github.com/database-playground/backend-v2/ent/enttest"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/setup"
+	"github.com/database-playground/backend-v2/internal/testhelper"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/stretchr/testify/require"
 
@@ -59,11 +59,9 @@ func (m *mockAuthStorage) DeleteByUser(ctx context.Context, userID int) error {
 
 // setupTestDatabase creates a test database with required groups and scope sets
 func setupTestDatabase(t *testing.T) *ent.Client {
-	// Use a unique database for each test to avoid conflicts
-	client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=private&_fk=1")
-	ctx := context.Background()
+	client := testhelper.NewEntSqliteClient(t)
 
-	_, err := setup.Setup(ctx, client)
+	_, err := setup.Setup(context.Background(), client)
 	require.NoError(t, err)
 
 	return client

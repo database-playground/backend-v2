@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/database-playground/backend-v2/ent/enttest"
 	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/internal/testhelper"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -76,7 +76,7 @@ func TestGetOrRegister_ExistingUser(t *testing.T) {
 
 func TestGetOrRegister_MissingUnverifiedGroup(t *testing.T) {
 	// Create a fresh database without setup
-	client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=private&_fk=1")
+	client := testhelper.NewEntSqliteClient(t)
 	authStorage := newMockAuthStorage()
 	ctx := useraccount.NewContext(client, authStorage)
 	context := context.Background()
@@ -163,7 +163,7 @@ func TestVerify_UserAlreadyVerified(t *testing.T) {
 
 func TestVerify_MissingNewUserGroup(t *testing.T) {
 	// Create a fresh database without setup
-	client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=private&_fk=1")
+	client := testhelper.NewEntSqliteClient(t)
 	authStorage := newMockAuthStorage()
 	ctx := useraccount.NewContext(client, authStorage)
 	context := context.Background()
@@ -279,7 +279,7 @@ func TestRegistrationFlow_ExistingUser(t *testing.T) {
 func TestRegistrationFlow_ErrorCases(t *testing.T) {
 	t.Run("incomplete setup - missing groups", func(t *testing.T) {
 		// Create a fresh database without setup
-		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=private&_fk=1")
+		client := testhelper.NewEntSqliteClient(t)
 		authStorage := newMockAuthStorage()
 		ctx := useraccount.NewContext(client, authStorage)
 		context := context.Background()

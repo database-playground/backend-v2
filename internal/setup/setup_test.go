@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/database-playground/backend-v2/ent/enttest"
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/scopeset"
 	"github.com/database-playground/backend-v2/internal/setup"
+	"github.com/database-playground/backend-v2/internal/testhelper"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -15,18 +15,11 @@ import (
 
 func TestSetup(t *testing.T) {
 	t.Run("should create all required entities on first run", func(t *testing.T) {
-		// Create an in-memory SQLite database for testing
-		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer func() {
-			if err := client.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
-
+		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
 
 		// Run setup
-		result, err := setup.Setup(ctx, client)
+		result, err := setup.Setup(ctx, entClient)
 		if err != nil {
 			t.Fatalf("Setup failed: %v", err)
 		}
@@ -107,7 +100,7 @@ func TestSetup(t *testing.T) {
 		}
 
 		// Verify the groups are linked to the correct scope sets
-		adminGroupWithScopes, err := client.Group.Query().
+		adminGroupWithScopes, err := entClient.Group.Query().
 			Where(group.NameEQ(useraccount.AdminGroupSlug)).
 			WithScopeSet().
 			Only(ctx)
@@ -121,7 +114,7 @@ func TestSetup(t *testing.T) {
 			t.Errorf("Expected admin group to be linked to admin scope set, got %s", adminGroupWithScopes.Edges.ScopeSet[0].Slug)
 		}
 
-		newUserGroupWithScopes, err := client.Group.Query().
+		newUserGroupWithScopes, err := entClient.Group.Query().
 			Where(group.NameEQ(useraccount.NewUserGroupSlug)).
 			WithScopeSet().
 			Only(ctx)
@@ -135,7 +128,7 @@ func TestSetup(t *testing.T) {
 			t.Errorf("Expected new-user group to be linked to new-user scope set, got %s", newUserGroupWithScopes.Edges.ScopeSet[0].Slug)
 		}
 
-		unverifiedGroupWithScopes, err := client.Group.Query().
+		unverifiedGroupWithScopes, err := entClient.Group.Query().
 			Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).
 			WithScopeSet().
 			Only(ctx)
@@ -151,24 +144,18 @@ func TestSetup(t *testing.T) {
 	})
 
 	t.Run("should be idempotent - second run should not create duplicates", func(t *testing.T) {
-		// Create an in-memory SQLite database for testing
-		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer func() {
-			if err := client.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		ctx := context.Background()
 
 		// Run setup first time
-		result1, err := setup.Setup(ctx, client)
+		result1, err := setup.Setup(ctx, entClient)
 		if err != nil {
 			t.Fatalf("First setup failed: %v", err)
 		}
 
 		// Run setup second time
-		result2, err := setup.Setup(ctx, client)
+		result2, err := setup.Setup(ctx, entClient)
 		if err != nil {
 			t.Fatalf("Second setup failed: %v", err)
 		}
@@ -194,7 +181,7 @@ func TestSetup(t *testing.T) {
 		}
 
 		// Verify that only one of each entity exists in the database
-		adminScopeSets, err := client.ScopeSet.Query().
+		adminScopeSets, err := entClient.ScopeSet.Query().
 			Where(scopeset.SlugEQ(useraccount.AdminScopeSetSlug)).
 			All(ctx)
 		if err != nil {
@@ -204,7 +191,7 @@ func TestSetup(t *testing.T) {
 			t.Errorf("Expected exactly 1 admin scope set, got %d", len(adminScopeSets))
 		}
 
-		newUserScopeSets, err := client.ScopeSet.Query().
+		newUserScopeSets, err := entClient.ScopeSet.Query().
 			Where(scopeset.SlugEQ(useraccount.NewUserScopeSetSlug)).
 			All(ctx)
 		if err != nil {
@@ -214,7 +201,7 @@ func TestSetup(t *testing.T) {
 			t.Errorf("Expected exactly 1 new-user scope set, got %d", len(newUserScopeSets))
 		}
 
-		unverifiedScopeSets, err := client.ScopeSet.Query().
+		unverifiedScopeSets, err := entClient.ScopeSet.Query().
 			Where(scopeset.SlugEQ(useraccount.UnverifiedScopeSetSlug)).
 			All(ctx)
 		if err != nil {
@@ -224,7 +211,7 @@ func TestSetup(t *testing.T) {
 			t.Errorf("Expected exactly 1 unverified scope set, got %d", len(unverifiedScopeSets))
 		}
 
-		adminGroups, err := client.Group.Query().
+		adminGroups, err := entClient.Group.Query().
 			Where(group.NameEQ(useraccount.AdminGroupSlug)).
 			All(ctx)
 		if err != nil {
@@ -234,7 +221,7 @@ func TestSetup(t *testing.T) {
 			t.Errorf("Expected exactly 1 admin group, got %d", len(adminGroups))
 		}
 
-		newUserGroups, err := client.Group.Query().
+		newUserGroups, err := entClient.Group.Query().
 			Where(group.NameEQ(useraccount.NewUserGroupSlug)).
 			All(ctx)
 		if err != nil {
@@ -244,7 +231,7 @@ func TestSetup(t *testing.T) {
 			t.Errorf("Expected exactly 1 new-user group, got %d", len(newUserGroups))
 		}
 
-		unverifiedGroups, err := client.Group.Query().
+		unverifiedGroups, err := entClient.Group.Query().
 			Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).
 			All(ctx)
 		if err != nil {
@@ -256,18 +243,12 @@ func TestSetup(t *testing.T) {
 	})
 
 	t.Run("should handle partial existing data", func(t *testing.T) {
-		// Create an in-memory SQLite database for testing
-		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer func() {
-			if err := client.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		ctx := context.Background()
 
 		// Create admin scope set manually before running setup
-		existingAdminScopeSet, err := client.ScopeSet.Create().
+		existingAdminScopeSet, err := entClient.ScopeSet.Create().
 			SetSlug(useraccount.AdminScopeSetSlug).
 			SetDescription("Administrator").
 			SetScopes([]string{"*"}).
@@ -277,7 +258,7 @@ func TestSetup(t *testing.T) {
 		}
 
 		// Create unverified scope set manually before running setup
-		existingUnverifiedScopeSet, err := client.ScopeSet.Create().
+		existingUnverifiedScopeSet, err := entClient.ScopeSet.Create().
 			SetSlug(useraccount.UnverifiedScopeSetSlug).
 			SetDescription("Unverified users can only verify their account and read their own initial data.").
 			SetScopes([]string{"verification:*", "me:read"}).
@@ -287,7 +268,7 @@ func TestSetup(t *testing.T) {
 		}
 
 		// Run setup
-		result, err := setup.Setup(ctx, client)
+		result, err := setup.Setup(ctx, entClient)
 		if err != nil {
 			t.Fatalf("Setup failed: %v", err)
 		}
@@ -325,17 +306,11 @@ func TestSetup(t *testing.T) {
 
 func TestSetupResult(t *testing.T) {
 	t.Run("SetupResult should have all required fields", func(t *testing.T) {
-		// Create an in-memory SQLite database for testing
-		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer func() {
-			if err := client.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		ctx := context.Background()
 
-		result, err := setup.Setup(ctx, client)
+		result, err := setup.Setup(ctx, entClient)
 		if err != nil {
 			t.Fatalf("Setup failed: %v", err)
 		}

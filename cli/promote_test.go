@@ -5,25 +5,18 @@ import (
 	"testing"
 
 	"github.com/database-playground/backend-v2/cli"
-	"github.com/database-playground/backend-v2/ent/enttest"
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/user"
+	"github.com/database-playground/backend-v2/internal/testhelper"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 func TestPromoteAdmin(t *testing.T) {
 	t.Run("should successfully promote user to admin", func(t *testing.T) {
-		// Create an in-memory SQLite database for testing
-		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer func() {
-			if err := client.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
-
+		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(client)
+		cliCtx := cli.NewContext(entClient)
 
 		// First run setup to create admin group
 		_, err := cliCtx.Setup(ctx)
@@ -32,13 +25,13 @@ func TestPromoteAdmin(t *testing.T) {
 		}
 
 		// Get the new-user group to assign to the user initially
-		newUserGroup, err := client.Group.Query().Where(group.Name("new-user")).Only(ctx)
+		newUserGroup, err := entClient.Group.Query().Where(group.Name("new-user")).Only(ctx)
 		if err != nil {
 			t.Fatalf("Failed to get new-user group: %v", err)
 		}
 
 		// Create a test user
-		testUser, err := client.User.Create().
+		testUser, err := entClient.User.Create().
 			SetEmail("test@example.com").
 			SetName("Test User").
 			SetGroup(newUserGroup).
@@ -48,7 +41,7 @@ func TestPromoteAdmin(t *testing.T) {
 		}
 
 		// Verify user is not in admin group initially
-		userWithGroup, err := client.User.Query().
+		userWithGroup, err := entClient.User.Query().
 			Where(user.ID(testUser.ID)).
 			WithGroup().
 			Only(ctx)
@@ -69,7 +62,7 @@ func TestPromoteAdmin(t *testing.T) {
 		}
 
 		// Verify user is now in admin group
-		userWithGroup, err = client.User.Query().
+		userWithGroup, err = entClient.User.Query().
 			Where(user.ID(testUser.ID)).
 			WithGroup().
 			Only(ctx)
@@ -85,16 +78,9 @@ func TestPromoteAdmin(t *testing.T) {
 	})
 
 	t.Run("should return error when user not found", func(t *testing.T) {
-		// Create an in-memory SQLite database for testing
-		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer func() {
-			if err := client.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
-
+		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(client)
+		cliCtx := cli.NewContext(entClient)
 
 		// Run setup to create admin group
 		_, err := cliCtx.Setup(ctx)
@@ -115,20 +101,13 @@ func TestPromoteAdmin(t *testing.T) {
 	})
 
 	t.Run("should return error when admin group not found", func(t *testing.T) {
-		// Create an in-memory SQLite database for testing
-		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer func() {
-			if err := client.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
-
+		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(client)
+		cliCtx := cli.NewContext(entClient)
 
 		// Create a test user without running setup (so no admin group exists)
 		// We need to create a group first since User requires a group
-		testGroup, err := client.Group.Create().
+		testGroup, err := entClient.Group.Create().
 			SetName("test-group").
 			SetDescription("Test group").
 			Save(ctx)
@@ -136,7 +115,7 @@ func TestPromoteAdmin(t *testing.T) {
 			t.Fatalf("Failed to create test group: %v", err)
 		}
 
-		_, err = client.User.Create().
+		_, err = entClient.User.Create().
 			SetEmail("test@example.com").
 			SetName("Test User").
 			SetGroup(testGroup).
@@ -158,16 +137,10 @@ func TestPromoteAdmin(t *testing.T) {
 	})
 
 	t.Run("should handle database errors gracefully", func(t *testing.T) {
-		// Create an in-memory SQLite database for testing
-		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer func() {
-			if err := client.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		ctx := context.Background()
-		cliCtx := cli.NewContext(client)
+		cliCtx := cli.NewContext(entClient)
 
 		// Run setup to create admin group
 		_, err := cliCtx.Setup(ctx)
@@ -176,13 +149,13 @@ func TestPromoteAdmin(t *testing.T) {
 		}
 
 		// Get the new-user group to assign to the user initially
-		newUserGroup, err := client.Group.Query().Where(group.Name("new-user")).Only(ctx)
+		newUserGroup, err := entClient.Group.Query().Where(group.Name("new-user")).Only(ctx)
 		if err != nil {
 			t.Fatalf("Failed to get new-user group: %v", err)
 		}
 
 		// Create a test user
-		_, err = client.User.Create().
+		_, err = entClient.User.Create().
 			SetEmail("test@example.com").
 			SetName("Test User").
 			SetGroup(newUserGroup).
@@ -192,7 +165,7 @@ func TestPromoteAdmin(t *testing.T) {
 		}
 
 		// Close the client to simulate database connection issues
-		if err := client.Close(); err != nil {
+		if err := entClient.Close(); err != nil {
 			t.Fatalf("Failed to close client: %v", err)
 		}
 
@@ -204,16 +177,10 @@ func TestPromoteAdmin(t *testing.T) {
 	})
 
 	t.Run("should work with multiple users", func(t *testing.T) {
-		// Create an in-memory SQLite database for testing
-		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer func() {
-			if err := client.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
+		entClient := testhelper.NewEntSqliteClient(t)
 
 		ctx := context.Background()
-		cliCtx := cli.NewContext(client)
+		cliCtx := cli.NewContext(entClient)
 
 		// Run setup to create admin group
 		_, err := cliCtx.Setup(ctx)
@@ -222,13 +189,13 @@ func TestPromoteAdmin(t *testing.T) {
 		}
 
 		// Get the new-user group to assign to users initially
-		newUserGroup, err := client.Group.Query().Where(group.Name("new-user")).Only(ctx)
+		newUserGroup, err := entClient.Group.Query().Where(group.Name("new-user")).Only(ctx)
 		if err != nil {
 			t.Fatalf("Failed to get new-user group: %v", err)
 		}
 
 		// Create multiple test users
-		user1, err := client.User.Create().
+		user1, err := entClient.User.Create().
 			SetEmail("user1@example.com").
 			SetName("User 1").
 			SetGroup(newUserGroup).
@@ -237,7 +204,7 @@ func TestPromoteAdmin(t *testing.T) {
 			t.Fatalf("Failed to create user1: %v", err)
 		}
 
-		user2, err := client.User.Create().
+		user2, err := entClient.User.Create().
 			SetEmail("user2@example.com").
 			SetName("User 2").
 			SetGroup(newUserGroup).
@@ -259,7 +226,7 @@ func TestPromoteAdmin(t *testing.T) {
 		}
 
 		// Verify both users are in admin group
-		user1WithGroup, err := client.User.Query().
+		user1WithGroup, err := entClient.User.Query().
 			Where(user.ID(user1.ID)).
 			WithGroup().
 			Only(ctx)
@@ -270,7 +237,7 @@ func TestPromoteAdmin(t *testing.T) {
 			t.Errorf("User1 should be in admin group, got: %v", user1WithGroup.Edges.Group)
 		}
 
-		user2WithGroup, err := client.User.Query().
+		user2WithGroup, err := entClient.User.Query().
 			Where(user.ID(user2.ID)).
 			WithGroup().
 			Only(ctx)
@@ -282,7 +249,7 @@ func TestPromoteAdmin(t *testing.T) {
 		}
 
 		// Verify admin group exists and both users are in it
-		adminGroup, err := client.Group.Query().
+		adminGroup, err := entClient.Group.Query().
 			Where(group.Name("admin")).
 			Only(ctx)
 		if err != nil {
@@ -294,16 +261,9 @@ func TestPromoteAdmin(t *testing.T) {
 	})
 
 	t.Run("should handle case sensitivity in email", func(t *testing.T) {
-		// Create an in-memory SQLite database for testing
-		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer func() {
-			if err := client.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
-
+		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(client)
+		cliCtx := cli.NewContext(entClient)
 
 		// Run setup to create admin group
 		_, err := cliCtx.Setup(ctx)
@@ -312,13 +272,13 @@ func TestPromoteAdmin(t *testing.T) {
 		}
 
 		// Get the new-user group to assign to the user initially
-		newUserGroup, err := client.Group.Query().Where(group.Name("new-user")).Only(ctx)
+		newUserGroup, err := entClient.Group.Query().Where(group.Name("new-user")).Only(ctx)
 		if err != nil {
 			t.Fatalf("Failed to get new-user group: %v", err)
 		}
 
 		// Create a test user with lowercase email
-		_, err = client.User.Create().
+		_, err = entClient.User.Create().
 			SetEmail("test@example.com").
 			SetName("Test User").
 			SetGroup(newUserGroup).
@@ -346,16 +306,9 @@ func TestPromoteAdmin(t *testing.T) {
 	})
 
 	t.Run("should handle empty email", func(t *testing.T) {
-		// Create an in-memory SQLite database for testing
-		client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-		defer func() {
-			if err := client.Close(); err != nil {
-				t.Fatalf("Failed to close client: %v", err)
-			}
-		}()
-
+		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(client)
+		cliCtx := cli.NewContext(entClient)
 
 		// Run setup to create admin group
 		_, err := cliCtx.Setup(ctx)
