@@ -9,6 +9,8 @@ import (
 
 // NewEntSqliteClient creates a new in-memory Ent SQLite client for testing.
 func NewEntSqliteClient(t *testing.T) *ent.Client {
+	t.Helper()
+
 	client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=private&_fk=1")
 
 	t.Cleanup(func() {
