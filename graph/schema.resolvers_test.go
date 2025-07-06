@@ -47,9 +47,16 @@ func (m *mockAuthStorage) Peek(ctx context.Context, token string) (auth.TokenInf
 
 func TestMutationResolver_LogoutAll(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		// Setup test resolver with mock auth storage
+		// Setup test resolver with real ent client to avoid nil pointer
+		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
+		defer func() {
+			if err := entClient.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
+
 		resolver := &Resolver{
-			ent:  &ent.Client{},
+			ent:  entClient,
 			auth: &mockAuthStorage{},
 		}
 
@@ -65,7 +72,7 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 		// Create context with authenticated user and required scope
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
 			UserID: 1,
-			Scopes: []string{"user:write"},
+			Scopes: []string{"me:write"},
 		})
 
 		// Execute mutation
@@ -82,9 +89,16 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 	})
 
 	t.Run("unauthenticated", func(t *testing.T) {
-		// Setup test resolver with mock auth storage
+		// Setup test resolver with real ent client to avoid nil pointer
+		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
+		defer func() {
+			if err := entClient.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
+
 		resolver := &Resolver{
-			ent:  &ent.Client{},
+			ent:  entClient,
 			auth: &mockAuthStorage{},
 		}
 
@@ -109,9 +123,16 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 	})
 
 	t.Run("insufficient scope", func(t *testing.T) {
-		// Setup test resolver with mock auth storage
+		// Setup test resolver with real ent client to avoid nil pointer
+		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
+		defer func() {
+			if err := entClient.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
+
 		resolver := &Resolver{
-			ent:  &ent.Client{},
+			ent:  entClient,
 			auth: &mockAuthStorage{},
 		}
 
@@ -144,10 +165,18 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 	})
 
 	t.Run("storage error", func(t *testing.T) {
+		// Setup test resolver with real ent client to avoid nil pointer
+		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
+		defer func() {
+			if err := entClient.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
+
 		// Setup test resolver with mock auth storage
 		storageErr := errors.New("storage error")
 		resolver := &Resolver{
-			ent: &ent.Client{},
+			ent: entClient,
 			auth: &mockAuthStorage{
 				deleteByUserErr: storageErr,
 			},
@@ -165,7 +194,7 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 		// Create context with authenticated user and required scope
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
 			UserID: 1,
-			Scopes: []string{"user:write"},
+			Scopes: []string{"me:write"},
 		})
 
 		// Execute mutation
@@ -184,10 +213,30 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 
 func TestMutationResolver_ImpersonateUser(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
+		// Setup test resolver with real ent client to avoid nil pointer
+		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
+		defer func() {
+			if err := entClient.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user to impersonate
+		userToImpersonate, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
 		// Setup test resolver with mock auth storage
 		expectedToken := "test-token"
 		resolver := &Resolver{
-			ent: &ent.Client{},
+			ent: entClient,
 			auth: &mockAuthStorage{
 				createToken: expectedToken,
 			},
@@ -212,7 +261,7 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 		var resp struct {
 			ImpersonateUser string
 		}
-		err := c.Post(`mutation { impersonateUser(userID: 123) }`, &resp, func(bd *client.Request) {
+		err = c.Post(`mutation { impersonateUser(userID: `+strconv.Itoa(userToImpersonate.ID)+`) }`, &resp, func(bd *client.Request) {
 			bd.HTTP = bd.HTTP.WithContext(ctx)
 		})
 
@@ -222,9 +271,16 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 	})
 
 	t.Run("unauthenticated", func(t *testing.T) {
-		// Setup test resolver with mock auth storage
+		// Setup test resolver with real ent client to avoid nil pointer
+		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
+		defer func() {
+			if err := entClient.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
+
 		resolver := &Resolver{
-			ent:  &ent.Client{},
+			ent:  entClient,
 			auth: &mockAuthStorage{},
 		}
 
@@ -249,9 +305,16 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 	})
 
 	t.Run("insufficient scope", func(t *testing.T) {
-		// Setup test resolver with mock auth storage
+		// Setup test resolver with real ent client to avoid nil pointer
+		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
+		defer func() {
+			if err := entClient.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
+
 		resolver := &Resolver{
-			ent:  &ent.Client{},
+			ent:  entClient,
 			auth: &mockAuthStorage{},
 		}
 
@@ -284,10 +347,30 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 	})
 
 	t.Run("storage error", func(t *testing.T) {
+		// Setup test resolver with real ent client to avoid nil pointer
+		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
+		defer func() {
+			if err := entClient.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user to impersonate
+		userToImpersonate, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
 		// Setup test resolver with mock auth storage
 		storageErr := errors.New("storage error")
 		resolver := &Resolver{
-			ent: &ent.Client{},
+			ent: entClient,
 			auth: &mockAuthStorage{
 				createErr: storageErr,
 			},
@@ -312,7 +395,7 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 		var resp struct {
 			ImpersonateUser string
 		}
-		err := c.Post(`mutation { impersonateUser(userID: 123) }`, &resp, func(bd *client.Request) {
+		err = c.Post(`mutation { impersonateUser(userID: `+strconv.Itoa(userToImpersonate.ID)+`) }`, &resp, func(bd *client.Request) {
 			bd.HTTP = bd.HTTP.WithContext(ctx)
 		})
 
@@ -386,7 +469,7 @@ func TestQueryResolver_Me(t *testing.T) {
 		// Create context with authenticated user and required scope
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
 			UserID: user.ID,
-			Scopes: []string{"user:read"},
+			Scopes: []string{"me:read"},
 		})
 
 		// Execute query
@@ -407,9 +490,16 @@ func TestQueryResolver_Me(t *testing.T) {
 	})
 
 	t.Run("unauthenticated", func(t *testing.T) {
-		// Setup test resolver
+		// Setup test resolver with real ent client to avoid nil pointer
+		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
+		defer func() {
+			if err := entClient.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
+
 		resolver := &Resolver{
-			ent:  &ent.Client{},
+			ent:  entClient,
 			auth: &mockAuthStorage{},
 		}
 
@@ -436,9 +526,16 @@ func TestQueryResolver_Me(t *testing.T) {
 	})
 
 	t.Run("insufficient scope", func(t *testing.T) {
-		// Setup test resolver
+		// Setup test resolver with real ent client to avoid nil pointer
+		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
+		defer func() {
+			if err := entClient.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
+
 		resolver := &Resolver{
-			ent:  &ent.Client{},
+			ent:  entClient,
 			auth: &mockAuthStorage{},
 		}
 
@@ -454,7 +551,7 @@ func TestQueryResolver_Me(t *testing.T) {
 		// Create context with authenticated user but wrong scope
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
 			UserID: 1,
-			Scopes: []string{"user:write"},
+			Scopes: []string{"me:write"},
 		})
 
 		// Execute query
@@ -498,7 +595,7 @@ func TestQueryResolver_Me(t *testing.T) {
 		// Create context with authenticated user but invalid user ID
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
 			UserID: 0,
-			Scopes: []string{"user:read"},
+			Scopes: []string{"me:read"},
 		})
 
 		// Execute query
@@ -513,7 +610,7 @@ func TestQueryResolver_Me(t *testing.T) {
 
 		// Verify error
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "strconv.Atoi")
+		require.Contains(t, err.Error(), "ent: user not found")
 	})
 }
 
@@ -565,7 +662,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 		// Create context with authenticated user and required scope
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
 			UserID: user.ID,
-			Scopes: []string{"user:read", "user:impersonate"},
+			Scopes: []string{"me:read", "user:impersonate"},
 			Meta: map[string]string{
 				"impersonated_by": strconv.Itoa(impersonator.ID),
 			},
@@ -591,9 +688,16 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 	})
 
 	t.Run("unauthenticated", func(t *testing.T) {
-		// Setup test resolver
+		// Setup test resolver with real ent client to avoid nil pointer
+		entClient := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1")
+		defer func() {
+			if err := entClient.Close(); err != nil {
+				t.Fatalf("Failed to close client: %v", err)
+			}
+		}()
+
 		resolver := &Resolver{
-			ent:  &ent.Client{},
+			ent:  entClient,
 			auth: &mockAuthStorage{},
 		}
 
@@ -659,7 +763,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 		// Create context with authenticated user but wrong scope
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
 			UserID: user.ID,
-			Scopes: []string{"user:read"},
+			Scopes: []string{"me:read"},
 			Meta: map[string]string{
 				"impersonated_by": "1",
 			},
@@ -720,7 +824,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 		// Create context with authenticated user and required scope but no impersonation metadata
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
 			UserID: user.ID,
-			Scopes: []string{"user:read", "user:impersonate"},
+			Scopes: []string{"me:read", "user:impersonate"},
 			Meta:   map[string]string{},
 		})
 
@@ -782,7 +886,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 		// Create context with authenticated user, required scope and non-existent impersonator ID
 		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
 			UserID: user.ID,
-			Scopes: []string{"user:read", "user:impersonate"},
+			Scopes: []string{"me:read", "user:impersonate"},
 			Meta: map[string]string{
 				"impersonated_by": "999", // Non-existent user ID
 			},
