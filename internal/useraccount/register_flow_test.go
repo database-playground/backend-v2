@@ -209,7 +209,7 @@ func TestRegistrationFlow_Complete(t *testing.T) {
 	assert.Equal(t, useraccount.UnverifiedGroupSlug, group.Name)
 
 	// Step 2: Grant token for unverified user
-	token, err := ctx.GrantToken(context, user, "web", "registration")
+	token, err := ctx.GrantToken(context, user, "web", useraccount.WithFlow("registration"))
 	require.NoError(t, err)
 
 	tokenInfo, err := authStorage.Get(context, token)
@@ -229,7 +229,7 @@ func TestRegistrationFlow_Complete(t *testing.T) {
 	assert.Equal(t, useraccount.NewUserGroupSlug, updatedGroup.Name)
 
 	// Step 5: Grant token for verified user
-	newToken, err := ctx.GrantToken(context, updatedUser, "web", "login")
+	newToken, err := ctx.GrantToken(context, updatedUser, "web", useraccount.WithFlow("login"))
 	require.NoError(t, err)
 
 	newTokenInfo, err := authStorage.Get(context, newToken)
@@ -268,7 +268,7 @@ func TestRegistrationFlow_ExistingUser(t *testing.T) {
 	assert.Equal(t, existingUser.Name, user.Name) // Keep original name
 
 	// Grant token - should have new-user scopes
-	token, err := ctx.GrantToken(context, user, "web", "login")
+	token, err := ctx.GrantToken(context, user, "web", useraccount.WithFlow("login"))
 	require.NoError(t, err)
 
 	tokenInfo, err := authStorage.Get(context, token)

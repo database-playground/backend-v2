@@ -2,13 +2,41 @@ package useraccount
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/internal/auth"
 )
 
+type grantTokenOptions struct {
+	flow           string
+	impersonatorID int
+}
+
+type GrantTokenOption func(*grantTokenOptions)
+
+func WithFlow(flow string) GrantTokenOption {
+	return func(o *grantTokenOptions) {
+		o.flow = flow
+	}
+}
+
+func WithImpersonation(impersonatorID int) GrantTokenOption {
+	return func(o *grantTokenOptions) {
+		o.impersonatorID = impersonatorID
+	}
+}
+
 // GrantToken creates a new token for the user.
-func (c *Context) GrantToken(ctx context.Context, user *ent.User, machine string, flow string) (string, error) {
+func (c *Context) GrantToken(ctx context.Context, user *ent.User, machine string, opts ...GrantTokenOption) (string, error) {
+	options := &grantTokenOptions{
+		flow:           "undefined",
+		impersonatorID: 0,
+	}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	// get scopes
 	scopes, err := user.QueryGroup().QueryScopeSet().All(ctx)
 	if err != nil {
@@ -20,14 +48,19 @@ func (c *Context) GrantToken(ctx context.Context, user *ent.User, machine string
 		allScopes = append(allScopes, scope.Scopes...)
 	}
 
+	meta := map[string]string{
+		"initiate_from_flow": options.flow,
+	}
+	if options.impersonatorID != 0 {
+		meta["impersonation"] = strconv.Itoa(options.impersonatorID)
+	}
+
 	token, err := c.auth.Create(ctx, auth.TokenInfo{
 		UserID:    user.ID,
 		UserEmail: user.Email,
 		Machine:   machine,
 		Scopes:    allScopes,
-		Meta: map[string]string{
-			"initiate_from_flow": flow,
-		},
+		Meta:      meta,
 	})
 	if err != nil {
 		return "", err

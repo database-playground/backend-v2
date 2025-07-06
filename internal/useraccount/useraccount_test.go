@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/setup"
 	"github.com/database-playground/backend-v2/internal/testhelper"
@@ -73,4 +74,35 @@ func TestNewContext(t *testing.T) {
 
 	ctx := useraccount.NewContext(client, authStorage)
 	require.NotNil(t, ctx)
+}
+
+func TestGetUser(t *testing.T) {
+	client := setupTestDatabase(t)
+	authStorage := newMockAuthStorage()
+	ctx := useraccount.NewContext(client, authStorage)
+	context := context.Background()
+
+	// Create a group for the user
+	unverifiedGroup, err := client.Group.Query().Where(group.NameEQ("unverified")).Only(context)
+	require.NoError(t, err)
+
+	// Create a user
+	userEnt, err := client.User.Create().
+		SetName("Test User").
+		SetEmail("test-getuser@example.com").
+		SetGroup(unverifiedGroup).
+		Save(context)
+	require.NoError(t, err)
+
+	// Test: Get existing user
+	got, err := ctx.GetUser(context, userEnt.ID)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.Equal(t, userEnt.ID, got.ID)
+	require.Equal(t, userEnt.Email, got.Email)
+
+	// Test: Get non-existent user
+	_, err = ctx.GetUser(context, 999999)
+	require.Error(t, err)
+	require.ErrorIs(t, err, useraccount.ErrUserNotFound)
 }
