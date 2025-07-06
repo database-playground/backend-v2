@@ -1,14 +1,18 @@
 package config
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
 
 type Config struct {
 	Port         int      `env:"PORT" envDefault:"8080"`
 	ServerURI    string   `env:"SERVER_URI"`
 	TrustProxies []string `env:"TRUST_PROXIES"`
 
-	Redis RedisConfig `envPrefix:"REDIS_"`
-	GAuth GAuthConfig `envPrefix:"GAUTH_"`
+	Database DatabaseConfig `envPrefix:"DATABASE_"`
+	Redis    RedisConfig    `envPrefix:"REDIS_"`
+	GAuth    GAuthConfig    `envPrefix:"GAUTH_"`
 }
 
 func (c Config) Validate() error {
@@ -21,6 +25,22 @@ func (c Config) Validate() error {
 	}
 	if err := c.GAuth.Validate(); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+type DatabaseConfig struct {
+	URL string `env:"URL"`
+}
+
+func (c DatabaseConfig) Validate() error {
+	if c.URL == "" {
+		return errors.New("DATABASE_URL is required")
+	}
+
+	if !strings.HasPrefix(c.URL, "postgres://") {
+		return errors.New("DATABASE_URL must be a valid PostgreSQL URL")
 	}
 
 	return nil

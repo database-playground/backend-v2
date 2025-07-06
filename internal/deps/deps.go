@@ -2,10 +2,12 @@
 package deps
 
 import (
+	"database/sql"
 	"fmt"
 	"log/slog"
 
 	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/config"
@@ -36,14 +38,15 @@ func Config() (config.Config, error) {
 }
 
 // EntClient creates an ent.Client.
-func EntClient() (*ent.Client, error) {
-	client, err := ent.Open(dialect.SQLite, "file:ent?mode=memory&cache=shared&_fk=1")
+func EntClient(cfg config.Config) (*ent.Client, error) {
+	db, err := sql.Open("pgx", cfg.Database.URL)
 	if err != nil {
-		slog.Error("error creating ent client", "error", err)
 		return nil, err
 	}
 
-	return client, nil
+	drv := entsql.OpenDB(dialect.Postgres, db)
+
+	return ent.NewClient(ent.Driver(drv)), nil
 }
 
 // RedisClient creates a rueidis.Client.

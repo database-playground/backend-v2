@@ -7,9 +7,10 @@ import (
 
 	"go.uber.org/fx"
 
-	_ "github.com/database-playground/backend-v2/ent/runtime"
 	"github.com/database-playground/backend-v2/internal/deps"
-	_ "github.com/mattn/go-sqlite3"
+
+	_ "github.com/database-playground/backend-v2/ent/runtime"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func main() {

@@ -9,11 +9,16 @@ import (
 	"github.com/database-playground/backend-v2/internal/deps"
 
 	_ "github.com/database-playground/backend-v2/ent/runtime"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func main() {
-	entClient, err := deps.EntClient()
+	cfg, err := deps.Config()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	entClient, err := deps.EntClient(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
