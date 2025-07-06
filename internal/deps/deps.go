@@ -9,7 +9,6 @@ import (
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/database-playground/backend-v2/ent"
-	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/config"
 	"github.com/joho/godotenv"
 	"github.com/redis/rueidis"
@@ -66,14 +65,8 @@ func RedisClient(cfg config.Config) (rueidis.Client, error) {
 	return client, nil
 }
 
-// AuthStorage creates an auth.Storage.
-func AuthStorage(redisClient rueidis.Client) auth.Storage {
-	return auth.NewRedisStorage(redisClient)
-}
-
 var FxCommonModule = fx.Module("common",
 	fx.Provide(Config),
 	fx.Provide(EntClient),
 	fx.Provide(RedisClient),
-	fx.Provide(AuthStorage),
 )

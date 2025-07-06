@@ -19,25 +19,32 @@ import (
 	"github.com/database-playground/backend-v2/internal/config"
 	"github.com/database-playground/backend-v2/internal/httputils"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/rueidis"
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/fx"
 )
 
-// provideAuthMiddleware creates an auth.Middleware that can be injected into gin.
-func provideAuthMiddleware(storage auth.Storage) Middleware {
+// AuthStorage creates an auth.Storage.
+func AuthStorage(redisClient rueidis.Client) auth.Storage {
+	return auth.NewRedisStorage(redisClient)
+}
+
+// AuthMiddleware creates an auth.Middleware that can be injected into gin.
+func AuthMiddleware(storage auth.Storage) Middleware {
 	return Middleware{
 		Handler: auth.Middleware(storage),
 	}
 }
 
-// provideMachineMiddleware creates a machine middleware that can be injected into gin.
-func provideMachineMiddleware() Middleware {
+// MachineMiddleware creates a machine middleware that can be injected into gin.
+func MachineMiddleware() Middleware {
 	return Middleware{
 		Handler: httputils.MachineMiddleware(),
 	}
 }
 
-func provideGqlgenHandler(entClient *ent.Client, storage auth.Storage) *handler.Server {
+// GqlgenHandler creates a gqlgen handler.
+func GqlgenHandler(entClient *ent.Client, storage auth.Storage) *handler.Server {
 	srv := handler.New(graph.NewSchema(entClient, storage))
 
 	srv.AddTransport(transport.Options{})
@@ -56,22 +63,13 @@ func provideGqlgenHandler(entClient *ent.Client, storage auth.Storage) *handler.
 	return srv
 }
 
-func provideAuthService(entClient *ent.Client, storage auth.Storage, config config.Config) httpapi.Service {
+// AuthService creates an auth service.
+func AuthService(entClient *ent.Client, storage auth.Storage, config config.Config) httpapi.Service {
 	return authservice.NewAuthService(entClient, storage, config)
 }
 
-type Middleware struct {
-	Handler gin.HandlerFunc
-}
-
-func annotateAsMiddleware(f any) any {
-	return fx.Annotate(
-		f,
-		fx.ResultTags(`group:"middlewares"`),
-	)
-}
-
-func provideGinEngine(services []httpapi.Service, middlewares []Middleware, gqlgenHandler *handler.Server, cfg config.Config) *gin.Engine {
+// GinEngine creates a gin engine.
+func GinEngine(services []httpapi.Service, middlewares []Middleware, gqlgenHandler *handler.Server, cfg config.Config) *gin.Engine {
 	engine := gin.New()
 
 	if err := engine.SetTrustedProxies(cfg.TrustProxies); err != nil {
@@ -98,15 +96,8 @@ func provideGinEngine(services []httpapi.Service, middlewares []Middleware, gqlg
 	return engine
 }
 
-func annotateAsService(f any) any {
-	return fx.Annotate(
-		f,
-		fx.As(new(httpapi.Service)),
-		fx.ResultTags(`group:"services"`),
-	)
-}
-
-func newGinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Config) {
+// GinLifecycle starts the gin engine.
+func GinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Config) {
 	httpCtx, cancel := context.WithCancel(context.Background())
 
 	lifecycle.Append(fx.Hook{
@@ -150,4 +141,26 @@ func newGinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Conf
 			return nil
 		},
 	})
+}
+
+// Middleware is a middleware that can be injected into gin.
+type Middleware struct {
+	Handler gin.HandlerFunc
+}
+
+// AnnotateMiddleware annotates a middleware function to be injected into gin.
+func AnnotateMiddleware(f any) any {
+	return fx.Annotate(
+		f,
+		fx.ResultTags(`group:"middlewares"`),
+	)
+}
+
+// AnnotateService annotates a service function to be injected into gin.
+func AnnotateService(f any) any {
+	return fx.Annotate(
+		f,
+		fx.As(new(httpapi.Service)),
+		fx.ResultTags(`group:"services"`),
+	)
 }

@@ -13,16 +13,17 @@ func main() {
 	app := fx.New(
 		deps.FxCommonModule,
 		fx.Provide(
-			annotateAsMiddleware(provideAuthMiddleware),
-			annotateAsMiddleware(provideMachineMiddleware),
-			annotateAsService(provideAuthService),
-			provideGqlgenHandler,
+			AuthStorage,
+			AnnotateMiddleware(AuthMiddleware),
+			AnnotateMiddleware(MachineMiddleware),
+			AnnotateService(AuthService),
+			GqlgenHandler,
 			fx.Annotate(
-				provideGinEngine,
+				GinEngine,
 				fx.ParamTags(`group:"services"`, `group:"middlewares"`),
 			),
 		),
-		fx.Invoke(newGinLifecycle),
+		fx.Invoke(GinLifecycle),
 	)
 
 	app.Run()
