@@ -27,7 +27,7 @@ func (r *baseTokenStorage) Delete(ctx context.Context, token string) error {
 }
 
 // DeleteByUser implements auth.Storage.
-func (r *baseTokenStorage) DeleteByUser(ctx context.Context, user string) error {
+func (r *baseTokenStorage) DeleteByUser(ctx context.Context, userID int) error {
 	panic("unimplemented")
 }
 
@@ -104,8 +104,8 @@ func TestExtractToken(t *testing.T) {
 
 	t.Run("good token", func(t *testing.T) {
 		tokenInfo := auth.TokenInfo{
-			Machine: "machine",
-			User:    "user",
+			UserID:    1,
+			UserEmail: "user@example.com",
 		}
 		storage := &mockTokenStorage{
 			tokenInfo: tokenInfo,
@@ -124,19 +124,18 @@ func TestExtractToken(t *testing.T) {
 			t.Fatalf("expected user, got none")
 		}
 
-		if user.Machine != tokenInfo.Machine {
-			t.Fatalf("expected machine %s, got %s", tokenInfo.Machine, user.Machine)
+		if user.UserID != tokenInfo.UserID {
+			t.Fatalf("expected user %d, got %d", tokenInfo.UserID, user.UserID)
 		}
-
-		if user.User != tokenInfo.User {
-			t.Fatalf("expected user %s, got %s", tokenInfo.User, user.User)
+		if user.UserEmail != tokenInfo.UserEmail {
+			t.Fatalf("expected user email %s, got %s", tokenInfo.UserEmail, user.UserEmail)
 		}
 	})
 
 	t.Run("good token from cookie", func(t *testing.T) {
 		tokenInfo := auth.TokenInfo{
-			Machine: "machine",
-			User:    "user",
+			UserID:    1,
+			UserEmail: "user@example.com",
 		}
 		storage := &mockTokenStorage{
 			tokenInfo: tokenInfo,
@@ -157,12 +156,11 @@ func TestExtractToken(t *testing.T) {
 			t.Fatalf("expected user, got none")
 		}
 
-		if user.Machine != tokenInfo.Machine {
-			t.Fatalf("expected machine %s, got %s", tokenInfo.Machine, user.Machine)
+		if user.UserID != tokenInfo.UserID {
+			t.Fatalf("expected user %d, got %d", tokenInfo.UserID, user.UserID)
 		}
-
-		if user.User != tokenInfo.User {
-			t.Fatalf("expected user %s, got %s", tokenInfo.User, user.User)
+		if user.UserEmail != tokenInfo.UserEmail {
+			t.Fatalf("expected user email %s, got %s", tokenInfo.UserEmail, user.UserEmail)
 		}
 	})
 }
@@ -334,8 +332,8 @@ func TestMiddleware(t *testing.T) {
 
 	t.Run("valid token", func(t *testing.T) {
 		tokenInfo := auth.TokenInfo{
-			Machine: "test-machine",
-			User:    "test-user",
+			UserID:    1,
+			UserEmail: "test-user@example.com",
 		}
 		storage := &mockTokenStorage{
 			tokenInfo: tokenInfo,
@@ -352,11 +350,8 @@ func TestMiddleware(t *testing.T) {
 			if !ok {
 				t.Error("expected user in context, got none")
 			}
-			if user.Machine != tokenInfo.Machine {
-				t.Errorf("expected machine %q, got %q", tokenInfo.Machine, user.Machine)
-			}
-			if user.User != tokenInfo.User {
-				t.Errorf("expected user %q, got %q", tokenInfo.User, user.User)
+			if user.UserID != tokenInfo.UserID {
+				t.Errorf("expected user %d, got %d", tokenInfo.UserID, user.UserID)
 			}
 		})
 

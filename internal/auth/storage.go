@@ -36,13 +36,14 @@ type Storage interface {
 	Delete(ctx context.Context, token string) error
 
 	// Delete the token for the given user.
-	DeleteByUser(ctx context.Context, user string) error
+	DeleteByUser(ctx context.Context, userID int) error
 }
 
 // TokenInfo is the information of the token.
 type TokenInfo struct {
-	Machine string `json:"machine"` // the machine that associated with the token
-	User    string `json:"user"`    // the user that associated with the machine
+	UserID    int    `json:"user_id"`    // the user ID that associated with the machine
+	UserEmail string `json:"user_email"` // the user email that associated with the machine
+	Machine   string `json:"machine"`    // the machine name that associated with the machine
 
 	Scopes []string          `json:"scopes"` // the scopes that the user has
 	Meta   map[string]string `json:"meta"`   // the meta data of the token

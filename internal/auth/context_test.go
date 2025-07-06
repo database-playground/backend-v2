@@ -10,8 +10,8 @@ import (
 func TestUserContext(t *testing.T) {
 	ctx := context.Background()
 	ctx = auth.WithUser(ctx, auth.TokenInfo{
-		Machine: "machine",
-		User:    "user",
+		UserID:    1,
+		UserEmail: "user@example.com",
 	})
 
 	user, ok := auth.GetUser(ctx)
@@ -19,11 +19,11 @@ func TestUserContext(t *testing.T) {
 		t.Fatal("user not found")
 	}
 
-	if user.Machine != "machine" {
-		t.Fatalf("machine is not correct: %v", user.Machine)
+	if user.UserID != 1 {
+		t.Fatalf("user is not correct: %v", user.UserID)
 	}
 
-	if user.User != "user" {
-		t.Fatalf("user is not correct: %v", user.User)
+	if user.UserEmail != "user@example.com" {
+		t.Fatalf("user email is not correct: %v", user.UserEmail)
 	}
 }

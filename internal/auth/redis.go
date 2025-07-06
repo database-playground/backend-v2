@@ -115,7 +115,7 @@ func (s *RedisStorage) Delete(ctx context.Context, token string) error {
 	return nil
 }
 
-func (s *RedisStorage) DeleteByUser(ctx context.Context, user string) error {
+func (s *RedisStorage) DeleteByUser(ctx context.Context, userID int) error {
 	var cursor uint64 = 0
 
 	for {
@@ -131,18 +131,18 @@ func (s *RedisStorage) DeleteByUser(ctx context.Context, user string) error {
 
 		for _, element := range scanEntry.Elements {
 			// get "user" json key
-			elementReply := s.redis.Do(ctx, s.redis.B().JsonGet().Key(element).Path("user").Build())
+			elementReply := s.redis.Do(ctx, s.redis.B().JsonGet().Key(element).Path("user_id").Build())
 			if elementReply.Error() != nil {
 				return fmt.Errorf("get token info: %w", elementReply.Error())
 			}
 
-			var elementUser string
+			var elementUser int
 			err = elementReply.DecodeJSON(&elementUser)
 			if err != nil {
 				return fmt.Errorf("get token info: %w", err)
 			}
 
-			if elementUser != user {
+			if elementUser != userID {
 				continue
 			}
 
@@ -186,3 +186,8 @@ func (s *TestRedisStorage) GetCurrentTTL(ctx context.Context, token string) (int
 
 	return ttl, nil
 }
+
+var (
+	_ Storage = &RedisStorage{}
+	_ Storage = &TestRedisStorage{}
+)

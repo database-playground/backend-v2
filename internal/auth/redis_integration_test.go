@@ -15,7 +15,7 @@ func TestRedisStorage_Integration(t *testing.T) {
 	ctx := context.Background()
 
 	// Test Create and Get
-	info := TokenInfo{Machine: "machine1", User: "user1"}
+	info := TokenInfo{UserID: 1, UserEmail: "user1@example.com"}
 	token, err := storage.Create(ctx, info)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
@@ -28,11 +28,11 @@ func TestRedisStorage_Integration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get failed: %v", err)
 	}
-	if got.Machine != info.Machine {
-		t.Errorf("Get returned wrong machine: got %s, want %s", got.Machine, info.Machine)
+	if got.UserID != info.UserID {
+		t.Errorf("Get returned wrong user: got %d, want %d", got.UserID, info.UserID)
 	}
-	if got.User != info.User {
-		t.Errorf("Get returned wrong user: got %s, want %s", got.User, info.User)
+	if got.UserEmail != info.UserEmail {
+		t.Errorf("Get returned wrong user email: got %s, want %s", got.UserEmail, info.UserEmail)
 	}
 
 	// Test Delete
@@ -46,8 +46,8 @@ func TestRedisStorage_Integration(t *testing.T) {
 	}
 
 	// Test DeleteByUser
-	info2 := TokenInfo{Machine: "machine2", User: "user2"}
-	info3 := TokenInfo{Machine: "machine3", User: "user2"}
+	info2 := TokenInfo{UserID: 2, UserEmail: "user2@example.com"}
+	info3 := TokenInfo{UserID: 2, UserEmail: "user2@example.com"}
 	token2, err := storage.Create(ctx, info2)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
@@ -57,7 +57,7 @@ func TestRedisStorage_Integration(t *testing.T) {
 		t.Fatalf("Create failed: %v", err)
 	}
 
-	err = storage.DeleteByUser(ctx, "user2")
+	err = storage.DeleteByUser(ctx, 2)
 	if err != nil {
 		t.Fatalf("DeleteByUser failed: %v", err)
 	}
@@ -71,12 +71,12 @@ func TestRedisStorage_Integration(t *testing.T) {
 	}
 
 	// Test DeleteByUser does not delete other users' tokens
-	info4 := TokenInfo{Machine: "machine4", User: "user3"}
+	info4 := TokenInfo{UserID: 3, UserEmail: "user3@example.com"}
 	token4, err := storage.Create(ctx, info4)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
-	err = storage.DeleteByUser(ctx, "user2") // should not affect user3
+	err = storage.DeleteByUser(ctx, 2) // should not affect user3
 	if err != nil {
 		t.Fatalf("DeleteByUser failed: %v", err)
 	}
