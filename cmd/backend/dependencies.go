@@ -18,6 +18,7 @@ import (
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/config"
 	"github.com/database-playground/backend-v2/internal/httputils"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/rueidis"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -40,6 +41,18 @@ func AuthMiddleware(storage auth.Storage) Middleware {
 func MachineMiddleware() Middleware {
 	return Middleware{
 		Handler: httputils.MachineMiddleware(),
+	}
+}
+
+// CorsMiddleware creates a cors middleware that can be injected into gin.
+func CorsMiddleware(cfg config.Config) Middleware {
+	return Middleware{
+		Handler: cors.New(cors.Config{
+			AllowOrigins:     cfg.AllowedOrigins,
+			AllowMethods:     []string{"GET", "POST", "OPTIONS"},
+			AllowHeaders:     []string{"*"},
+			AllowCredentials: true,
+		}),
 	}
 }
 

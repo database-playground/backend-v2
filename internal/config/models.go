@@ -6,9 +6,10 @@ import (
 )
 
 type Config struct {
-	Port         int      `env:"PORT" envDefault:"8080"`
-	ServerURI    string   `env:"SERVER_URI"`
-	TrustProxies []string `env:"TRUST_PROXIES"`
+	Port           int      `env:"PORT" envDefault:"8080"`
+	ServerURI      string   `env:"SERVER_URI"`
+	AllowedOrigins []string `env:"ALLOWED_ORIGINS"`
+	TrustProxies   []string `env:"TRUST_PROXIES"`
 
 	Database DatabaseConfig `envPrefix:"DATABASE_"`
 	Redis    RedisConfig    `envPrefix:"REDIS_"`

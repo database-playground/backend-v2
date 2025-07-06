@@ -6,6 +6,10 @@
 - `SERVER_URI`：這個伺服器主要提供服務的 URI，如 `https://backend.domain.tld`
 - `TRUST_PROXIES`：信任的 Proxies 地址（以逗號分隔），如 `10.0.0.0/8,127.0.0.1/8`
 
+## 前端設定
+
+- `ALLOWED_ORIGINS`：允許存取這個 API 的 origins（以逗號分隔），如 `https://domain.tld,https://dev.domain.tld`
+
 ## Redis
 
 Redis 的目的是儲存認證憑證和快取。

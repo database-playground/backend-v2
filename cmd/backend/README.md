@@ -16,10 +16,12 @@ flowchart BT
 
     AuthStorage --> RedisClient
     AuthMiddleware --> AuthStorage
+    CorsMiddleware --> Config
 
     subgraph Middlewares
         AuthMiddleware
         MachineMiddleware
+        CorsMiddleware
     end
 
     GqlgenHandler --> EntClient
