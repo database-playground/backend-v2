@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -99,4 +100,68 @@ func TestGrantToken_UserWithoutScopeSet(t *testing.T) {
 	tokenInfo, err := authStorage.Get(context, token)
 	require.NoError(t, err)
 	assert.Empty(t, tokenInfo.Scopes)
+}
+
+func TestRevokeToken_Success(t *testing.T) {
+	client := setupTestDatabase(t)
+	authStorage := newMockAuthStorage()
+	ctx := useraccount.NewContext(client, authStorage)
+	context := context.Background()
+
+	unverifiedGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).Only(context)
+	require.NoError(t, err)
+
+	user, err := client.User.Create().
+		SetName("Test User").
+		SetEmail("test10@example.com").
+		SetGroup(unverifiedGroup).
+		Save(context)
+	require.NoError(t, err)
+
+	token, err := ctx.GrantToken(context, user, "test-machine", "registration")
+	require.NoError(t, err)
+	require.NotEmpty(t, token)
+
+	err = ctx.RevokeToken(context, token)
+	require.NoError(t, err)
+
+	_, err = authStorage.Get(context, token)
+	require.Error(t, err)
+	assert.Equal(t, auth.ErrNotFound, err)
+}
+
+func TestRevokeAllTokens_Success(t *testing.T) {
+	client := setupTestDatabase(t)
+	authStorage := newMockAuthStorage()
+	ctx := useraccount.NewContext(client, authStorage)
+	context := context.Background()
+
+	unverifiedGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).Only(context)
+	require.NoError(t, err)
+
+	user, err := client.User.Create().
+		SetName("Test User").
+		SetEmail("test11@example.com").
+		SetGroup(unverifiedGroup).
+		Save(context)
+	require.NoError(t, err)
+
+	token, err := ctx.GrantToken(context, user, "test-machine", "registration")
+	require.NoError(t, err)
+	require.NotEmpty(t, token)
+
+	token2, err := ctx.GrantToken(context, user, "test-machine-2", "registration")
+	require.NoError(t, err)
+	require.NotEmpty(t, token2)
+
+	err = ctx.RevokeAllTokens(context, user.ID)
+	require.NoError(t, err)
+
+	_, err = authStorage.Get(context, token)
+	require.Error(t, err)
+	assert.Equal(t, auth.ErrNotFound, err)
+
+	_, err = authStorage.Get(context, token2)
+	require.Error(t, err)
+	assert.Equal(t, auth.ErrNotFound, err)
 }
