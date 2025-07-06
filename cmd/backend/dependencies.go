@@ -62,6 +62,7 @@ func annotateAsMiddleware(f any) any {
 		fx.ResultTags(`group:"middlewares"`),
 	)
 }
+
 func provideGinEngine(services []httpapi.Service, middlewares []Middleware, gqlgenHandler *handler.Server, cfg config.Config) *gin.Engine {
 	engine := gin.New()
 

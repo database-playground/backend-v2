@@ -17,15 +17,19 @@ var ErrNotFound = GqlError{
 	Message: "not found",
 	Code:    CodeNotFound,
 }
+
 var ErrUnauthorized = GqlError{
 	Message: "require authentication",
 	Code:    CodeUnauthorized,
 }
+
 var ErrNoSufficientScope = GqlError{
 	Message: "no sufficient scope",
 	Code:    CodeForbidden,
 }
 
-const CodeNotFound = "NOT_FOUND"
-const CodeUnauthorized = "UNAUTHORIZED"
-const CodeForbidden = "FORBIDDEN"
+const (
+	CodeNotFound     = "NOT_FOUND"
+	CodeUnauthorized = "UNAUTHORIZED"
+	CodeForbidden    = "FORBIDDEN"
+)

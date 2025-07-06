@@ -110,9 +110,11 @@ func (m *memoryTokenStorage) DeleteByUser(ctx context.Context, userID int) error
 	return nil
 }
 
-var _ auth.Storage = &mockTokenStorage{}
-var _ auth.Storage = &failTokenStorage{}
-var _ auth.Storage = &memoryTokenStorage{}
+var (
+	_ auth.Storage = &mockTokenStorage{}
+	_ auth.Storage = &failTokenStorage{}
+	_ auth.Storage = &memoryTokenStorage{}
+)
 
 func TestExtractToken(t *testing.T) {
 	t.Run("no token", func(t *testing.T) {
