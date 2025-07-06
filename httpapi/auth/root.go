@@ -8,17 +8,18 @@ import (
 	"github.com/database-playground/backend-v2/httpapi"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/config"
+	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/gin-gonic/gin"
 )
 
 type AuthService struct {
-	ent     *ent.Client
-	storage auth.Storage
-	config  config.Config
+	entClient *ent.Client
+	storage   auth.Storage
+	config    config.Config
 }
 
-func NewAuthService(ent *ent.Client, storage auth.Storage, config config.Config) *AuthService {
-	return &AuthService{ent: ent, storage: storage, config: config}
+func NewAuthService(entClient *ent.Client, storage auth.Storage, config config.Config) *AuthService {
+	return &AuthService{entClient: entClient, storage: storage, config: config}
 }
 
 func (s *AuthService) Register(router gin.IRouter) {
@@ -36,7 +37,10 @@ func (s *AuthService) Register(router gin.IRouter) {
 
 		oauthConfig := BuildOAuthConfig(s.config.GAuth)
 		oauthConfig.RedirectURL = fmt.Sprintf("%s%s/google/callback", s.config.ServerURI, auth.BasePath())
-		gauthHandler := NewGauthHandler(oauthConfig)
+
+		useraccount := useraccount.NewContext(s.entClient, s.storage)
+
+		gauthHandler := NewGauthHandler(oauthConfig, useraccount, s.config.GAuth.RedirectURL)
 
 		gauth.GET("/login", gauthHandler.Login)
 		gauth.GET("/callback", gauthHandler.Callback)

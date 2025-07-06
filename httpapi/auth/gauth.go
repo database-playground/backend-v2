@@ -4,8 +4,10 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/authutil"
 	"github.com/database-playground/backend-v2/internal/config"
+	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -30,10 +32,12 @@ func BuildOAuthConfig(gauthConfig config.GAuthConfig) *oauth2.Config {
 
 type GauthHandler struct {
 	oauthConfig *oauth2.Config
+	useraccount *useraccount.Context
+	redirectURL string
 }
 
-func NewGauthHandler(oauthConfig *oauth2.Config) *GauthHandler {
-	return &GauthHandler{oauthConfig: oauthConfig}
+func NewGauthHandler(oauthConfig *oauth2.Config, useraccount *useraccount.Context, redirectURL string) *GauthHandler {
+	return &GauthHandler{oauthConfig: oauthConfig, useraccount: useraccount, redirectURL: redirectURL}
 }
 
 func (h *GauthHandler) Login(c *gin.Context) {
@@ -73,13 +77,15 @@ func (h *GauthHandler) Login(c *gin.Context) {
 }
 
 func (h *GauthHandler) Callback(c *gin.Context) {
+	c.SetSameSite(http.SameSiteStrictMode)
+
 	verifier, err := c.Cookie(verifierCookieName)
 	if err != nil {
 		_ = c.AbortWithError(http.StatusUnauthorized, err)
 		return
 	}
 
-	token, err := h.oauthConfig.Exchange(c.Request.Context(), c.Query("code"), oauth2.VerifierOption(verifier))
+	oauthToken, err := h.oauthConfig.Exchange(c.Request.Context(), c.Query("code"), oauth2.VerifierOption(verifier))
 	if err != nil {
 		_ = c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -87,7 +93,7 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 
 	client, err := googleoauth2.NewService(
 		c.Request.Context(),
-		option.WithTokenSource(h.oauthConfig.TokenSource(c.Request.Context(), token)),
+		option.WithTokenSource(h.oauthConfig.TokenSource(c.Request.Context(), oauthToken)),
 	)
 	if err != nil {
 		_ = c.AbortWithError(http.StatusInternalServerError, err)
@@ -100,6 +106,32 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 		return
 	}
 
-	// FIXME: WIP
-	c.JSON(http.StatusOK, user)
+	entUser, err := h.useraccount.GetOrRegister(c.Request.Context(), useraccount.UserRegisterRequest{
+		Email: user.Email,
+		Name:  user.Name,
+	})
+	if err != nil {
+		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	// grant verification scope to the user
+	token, err := h.useraccount.GrantToken(c.Request.Context(), entUser, "gauth", "gauth")
+	if err != nil {
+		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	// write to cookie
+	c.SetCookie(
+		/* name */ auth.CookieAuthToken,
+		/* value */ token,
+		/* maxAge */ auth.DefaultTokenExpire,
+		/* path */ "/",
+		/* domain */ "",
+		/* secure */ true,
+		/* httpOnly */ true,
+	)
+
+	c.Redirect(http.StatusTemporaryRedirect, h.redirectURL)
 }

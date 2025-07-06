@@ -13,7 +13,7 @@ func (s *AuthService) AuthAsAdmin(c *gin.Context) {
 	c.SetSameSite(http.SameSiteStrictMode)
 
 	// Find the first admin user
-	user, err := s.ent.User.Query().Where(user.HasGroupWith(group.Name("admin"))).First(c.Request.Context())
+	user, err := s.entClient.User.Query().Where(user.HasGroupWith(group.Name("admin"))).First(c.Request.Context())
 	if err != nil {
 		_ = c.AbortWithError(http.StatusInternalServerError, err)
 		return
