@@ -123,6 +123,8 @@ func GinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Config)
 			}
 
 			go func() {
+				slog.Info("gin engine starting", "address", srv.Addr, "proto", cfg.Server.GetProto())
+
 				if cfg.Server.CertFile != nil && cfg.Server.KeyFile != nil {
 					if err := srv.ListenAndServeTLS(*cfg.Server.CertFile, *cfg.Server.KeyFile); err != nil {
 						slog.Error("error running gin engine with TLS", "error", err)
@@ -141,7 +143,6 @@ func GinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Config)
 				}
 			}()
 
-			slog.Info("gin engine started", "address", srv.Addr)
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
