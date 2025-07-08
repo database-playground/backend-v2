@@ -119,3 +119,11 @@ func (c ServerConfig) Validate() error {
 
 	return nil
 }
+
+func (c ServerConfig) GetProto() string {
+	if c.CertFile != nil && c.KeyFile != nil {
+		return "https"
+	}
+
+	return "http"
+}
