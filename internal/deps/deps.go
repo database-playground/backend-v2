@@ -13,6 +13,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/redis/rueidis"
 	"go.uber.org/fx"
+	"go.uber.org/fx/fxevent"
 )
 
 // Config loads the environment variables from the .env file and returns a config.Config.
@@ -69,4 +70,10 @@ var FxCommonModule = fx.Module("common",
 	fx.Provide(Config),
 	fx.Provide(EntClient),
 	fx.Provide(RedisClient),
+)
+
+var FxSlogOption = fx.Options(
+	fx.WithLogger(func() fxevent.Logger {
+		return &fxevent.SlogLogger{Logger: slog.Default()}
+	}),
 )
