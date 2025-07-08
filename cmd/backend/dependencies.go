@@ -23,6 +23,8 @@ import (
 	"github.com/redis/rueidis"
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/fx"
+
+	_ "github.com/database-playground/backend-v2/internal/deps/logger"
 )
 
 // AuthStorage creates an auth.Storage.
