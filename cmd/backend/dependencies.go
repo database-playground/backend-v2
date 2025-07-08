@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net"
+	"net/http"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -115,32 +115,31 @@ func GinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Config)
 
 	lifecycle.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			listener, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
-			if err != nil {
-				return err
-			}
-
-			if httpCtx.Err() != nil {
-				if err := listener.Close(); err != nil {
-					slog.Error("error closing listener", "error", err)
-				}
-				return nil
+			srv := &http.Server{
+				Addr:    fmt.Sprintf(":%d", cfg.Port),
+				Handler: engine,
 			}
 
 			go func() {
-				if err := engine.RunListener(listener); err != nil {
-					slog.Error("error running gin engine", "error", err)
+				if cfg.Server.CertFile != nil && cfg.Server.KeyFile != nil {
+					if err := srv.ListenAndServeTLS(*cfg.Server.CertFile, *cfg.Server.KeyFile); err != nil {
+						slog.Error("error running gin engine with TLS", "error", err)
+					}
+				} else {
+					if err := srv.ListenAndServe(); err != nil {
+						slog.Error("error running gin engine", "error", err)
+					}
 				}
 			}()
 
 			go func() {
 				<-httpCtx.Done()
-				if err := listener.Close(); err != nil {
-					slog.Error("error closing listener", "error", err)
+				if err := srv.Shutdown(context.Background()); err != nil {
+					slog.Error("error shutting down gin engine", "error", err)
 				}
 			}()
 
-			slog.Info("gin engine started", "address", "http://"+listener.Addr().String())
+			slog.Info("gin engine started", "address", srv.Addr)
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {

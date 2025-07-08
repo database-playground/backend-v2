@@ -30,7 +30,7 @@ func (s *AuthService) Register(router gin.IRouter) {
 		gauth := auth.Group("/google")
 
 		oauthConfig := BuildOAuthConfig(s.config.GAuth)
-		oauthConfig.RedirectURL = fmt.Sprintf("%s%s/google/callback", s.config.ServerURI, auth.BasePath())
+		oauthConfig.RedirectURL = fmt.Sprintf("%s%s/google/callback", s.config.Server.URI, auth.BasePath())
 
 		useraccount := useraccount.NewContext(s.entClient, s.storage)
 

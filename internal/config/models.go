@@ -2,30 +2,34 @@ package config
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"strings"
 )
 
 type Config struct {
 	Port           int      `env:"PORT" envDefault:"8080"`
-	ServerURI      string   `env:"SERVER_URI"`
 	AllowedOrigins []string `env:"ALLOWED_ORIGINS"`
 	TrustProxies   []string `env:"TRUST_PROXIES"`
 
 	Database DatabaseConfig `envPrefix:"DATABASE_"`
 	Redis    RedisConfig    `envPrefix:"REDIS_"`
 	GAuth    GAuthConfig    `envPrefix:"GAUTH_"`
+	Server   ServerConfig   `envPrefix:"SERVER_"`
 }
 
 func (c Config) Validate() error {
-	if c.ServerURI == "" {
-		return errors.New("SERVER_URI is required")
+	if err := c.Database.Validate(); err != nil {
+		return fmt.Errorf("DATABASE: %w", err)
 	}
-
 	if err := c.Redis.Validate(); err != nil {
-		return err
+		return fmt.Errorf("REDIS: %w", err)
 	}
 	if err := c.GAuth.Validate(); err != nil {
-		return err
+		return fmt.Errorf("GAUTH: %w", err)
+	}
+	if err := c.Server.Validate(); err != nil {
+		return fmt.Errorf("SERVER: %w", err)
 	}
 
 	return nil
@@ -80,6 +84,37 @@ func (c GAuthConfig) Validate() error {
 	}
 	if c.RedirectURL == "" {
 		return errors.New("GAUTH_REDIRECT_URL is required")
+	}
+
+	return nil
+}
+
+type ServerConfig struct {
+	URI      string  `env:"URI"`
+	CertFile *string `env:"CERT_FILE"`
+	KeyFile  *string `env:"KEY_FILE"`
+}
+
+func (c ServerConfig) Validate() error {
+	if c.URI == "" {
+		return errors.New("SERVER_URI is required")
+	}
+
+	if (c.CertFile != nil && c.KeyFile == nil) || (c.CertFile == nil && c.KeyFile != nil) {
+		return errors.New("SERVER_CERT_FILE and SERVER_KEY_FILE must be set together")
+	}
+
+	// check if both cert and key are there
+	if c.CertFile != nil {
+		if _, err := os.Stat(*c.CertFile); os.IsNotExist(err) {
+			return errors.New("SERVER_CERT_FILE does not exist")
+		}
+	}
+
+	if c.KeyFile != nil {
+		if _, err := os.Stat(*c.KeyFile); os.IsNotExist(err) {
+			return errors.New("SERVER_KEY_FILE does not exist")
+		}
 	}
 
 	return nil

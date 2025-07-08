@@ -3,12 +3,27 @@
 ## Backend
 
 - `PORT`：這個伺服器要監聽的連線埠，預設為 `8080`
-- `SERVER_URI`：這個伺服器主要提供服務的 URI，如 `https://backend.domain.tld`
 - `TRUST_PROXIES`：信任的 Proxies 地址（以逗號分隔），如 `10.0.0.0/8,127.0.0.1/8`
+- `GIN_MODE`：Gin 的伺服器模式。Release 是生產模式。
 
 ## 前端設定
 
 - `ALLOWED_ORIGINS`：允許存取這個 API 的 origins（以逗號分隔），如 `https://domain.tld,https://dev.domain.tld`
+
+## 伺服器設定
+
+- `SERVER_URI`：這個伺服器主要提供服務的 URI，如 `https://backend.domain.tld`
+- `SERVER_CERT_FILE`：若要啟用 TLS 伺服器，這個選項可以讓你指定 TLS certificate 對應的檔案。
+- `SERVER_KEY_FILE`：若要啟用 TLS 伺服器，這個選項可以讓你指定 TLS key 對應的檔案。
+
+如果您在開發環境，可以使用 `mkcert` 產生一組金鑰方便測試 Secure Cookies：
+
+```shell
+nix run nixpkgs#mkcert -- -install
+nix run nixpkgs#mkcert -- localhost
+```
+
+由此產生的 `localhost-key.pem` 對應到 `SERVER_KEY_FILE`；`localhost.pem` 對應到 `SERVER_CERT_FILE`
 
 ## Redis
 
