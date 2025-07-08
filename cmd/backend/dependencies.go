@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -127,10 +128,18 @@ func GinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Config)
 
 				if cfg.Server.CertFile != nil && cfg.Server.KeyFile != nil {
 					if err := srv.ListenAndServeTLS(*cfg.Server.CertFile, *cfg.Server.KeyFile); err != nil {
+						if errors.Is(err, http.ErrServerClosed) {
+							return
+						}
+
 						slog.Error("error running gin engine with TLS", "error", err)
 					}
 				} else {
 					if err := srv.ListenAndServe(); err != nil {
+						if errors.Is(err, http.ErrServerClosed) {
+							return
+						}
+
 						slog.Error("error running gin engine", "error", err)
 					}
 				}
