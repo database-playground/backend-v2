@@ -45,7 +45,7 @@ func (c DatabaseConfig) Validate() error {
 	}
 
 	if !strings.HasPrefix(c.URI, "postgres://") {
-		return errors.New("DATABASE_URL must be a valid PostgreSQL URL")
+		return errors.New("DATABASE_URI must be a valid PostgreSQL URL")
 	}
 
 	return nil
