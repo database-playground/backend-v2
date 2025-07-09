@@ -13,7 +13,7 @@ func (s *AuthService) Logout(c *gin.Context) {
 	// check if there is a token in the cookie
 	token, err := c.Cookie(auth.CookieAuthToken)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "You should be logged in to logout.",
 		})
 
@@ -22,7 +22,7 @@ func (s *AuthService) Logout(c *gin.Context) {
 
 	// revoke the token
 	if err := s.storage.Delete(c.Request.Context(), token); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":  "Failed to revoke the token. Please try again later.",
 			"detail": err.Error(),
 		})

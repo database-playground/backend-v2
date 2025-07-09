@@ -48,13 +48,19 @@ func (h *GauthHandler) Login(c *gin.Context) {
 
 	verifier, err := authutil.GenerateToken()
 	if err != nil {
-		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":  "failed to generate verifier",
+			"detail": err.Error(),
+		})
 		return
 	}
 
 	callbackURL, err := url.Parse(h.oauthConfig.RedirectURL)
 	if err != nil {
-		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":  "failed to parse redirect URL",
+			"detail": err.Error(),
+		})
 		return
 	}
 
@@ -82,13 +88,19 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 
 	verifier, err := c.Cookie(verifierCookieName)
 	if err != nil {
-		_ = c.AbortWithError(http.StatusUnauthorized, err)
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":  "failed to get verifier",
+			"detail": err.Error(),
+		})
 		return
 	}
 
 	oauthToken, err := h.oauthConfig.Exchange(c.Request.Context(), c.Query("code"), oauth2.VerifierOption(verifier))
 	if err != nil {
-		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":  "failed to exchange code",
+			"detail": err.Error(),
+		})
 		return
 	}
 
@@ -97,13 +109,19 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 		option.WithTokenSource(h.oauthConfig.TokenSource(c.Request.Context(), oauthToken)),
 	)
 	if err != nil {
-		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":  "failed to create google client",
+			"detail": err.Error(),
+		})
 		return
 	}
 
 	user, err := client.Userinfo.Get().Do()
 	if err != nil {
-		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":  "failed to get user info",
+			"detail": err.Error(),
+		})
 		return
 	}
 
@@ -112,7 +130,10 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 		Name:  user.Name,
 	})
 	if err != nil {
-		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":  "failed to get or register user",
+			"detail": err.Error(),
+		})
 		return
 	}
 
@@ -120,7 +141,10 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 	machineName := httputils.GetMachineName(c.Request.Context())
 	token, err := h.useraccount.GrantToken(c.Request.Context(), entUser, machineName, useraccount.WithFlow("gauth"))
 	if err != nil {
-		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":  "failed to grant token",
+			"detail": err.Error(),
+		})
 		return
 	}
 
