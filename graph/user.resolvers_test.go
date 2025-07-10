@@ -537,7 +537,7 @@ func TestQueryResolver_Me(t *testing.T) {
 
 		// Verify error
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "FORBIDDEN")
+		require.Contains(t, err.Error(), "UNAUTHORIZED")
 	})
 
 	t.Run("invalid user id", func(t *testing.T) {
