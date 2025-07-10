@@ -126,8 +126,9 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 	}
 
 	entUser, err := h.useraccount.GetOrRegister(c.Request.Context(), useraccount.UserRegisterRequest{
-		Email: user.Email,
-		Name:  user.Name,
+		Email:  user.Email,
+		Name:   user.Name,
+		Avatar: user.Picture,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

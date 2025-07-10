@@ -11,8 +11,9 @@ import (
 )
 
 type UserRegisterRequest struct {
-	Name  string
-	Email string
+	Name   string
+	Email  string
+	Avatar string
 }
 
 var (
@@ -43,6 +44,7 @@ func (c *Context) GetOrRegister(ctx context.Context, req UserRegisterRequest) (*
 		SetEmail(req.Email).
 		SetName(req.Name).
 		SetGroup(unverifiedGroup).
+		SetAvatar(req.Avatar).
 		Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("create user: %w", err)
