@@ -239,6 +239,11 @@ func (u *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *graph
 				selectedFields = append(selectedFields, user.FieldEmail)
 				fieldSeen[user.FieldEmail] = struct{}{}
 			}
+		case "avatar":
+			if _, ok := fieldSeen[user.FieldAvatar]; !ok {
+				selectedFields = append(selectedFields, user.FieldAvatar)
+				fieldSeen[user.FieldAvatar] = struct{}{}
+			}
 		case "id":
 		case "__typename":
 		default:

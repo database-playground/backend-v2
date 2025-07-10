@@ -134,6 +134,7 @@ func (c *ScopeSetUpdateOne) SetInput(i UpdateScopeSetInput) *ScopeSetUpdateOne {
 type CreateUserInput struct {
 	Name    string
 	Email   string
+	Avatar  *string
 	GroupID int
 }
 
@@ -141,6 +142,9 @@ type CreateUserInput struct {
 func (i *CreateUserInput) Mutate(m *UserMutation) {
 	m.SetName(i.Name)
 	m.SetEmail(i.Email)
+	if v := i.Avatar; v != nil {
+		m.SetAvatar(*v)
+	}
 	m.SetGroupID(i.GroupID)
 }
 
@@ -152,9 +156,11 @@ func (c *UserCreate) SetInput(i CreateUserInput) *UserCreate {
 
 // UpdateUserInput represents a mutation input for updating users.
 type UpdateUserInput struct {
-	Name    *string
-	Email   *string
-	GroupID *int
+	Name        *string
+	Email       *string
+	ClearAvatar bool
+	Avatar      *string
+	GroupID     *int
 }
 
 // Mutate applies the UpdateUserInput on the UserMutation builder.
@@ -164,6 +170,12 @@ func (i *UpdateUserInput) Mutate(m *UserMutation) {
 	}
 	if v := i.Email; v != nil {
 		m.SetEmail(*v)
+	}
+	if i.ClearAvatar {
+		m.ClearAvatar()
+	}
+	if v := i.Avatar; v != nil {
+		m.SetAvatar(*v)
 	}
 	if v := i.GroupID; v != nil {
 		m.SetGroupID(*v)

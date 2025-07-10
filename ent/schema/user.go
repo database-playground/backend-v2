@@ -20,6 +20,8 @@ func (User) Fields() []ent.Field {
 		field.String("email").
 			NotEmpty().
 			Unique(),
+		field.String("avatar").
+			Optional(),
 	}
 }
 

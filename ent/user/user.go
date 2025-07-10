@@ -25,6 +25,8 @@ const (
 	FieldName = "name"
 	// FieldEmail holds the string denoting the email field in the database.
 	FieldEmail = "email"
+	// FieldAvatar holds the string denoting the avatar field in the database.
+	FieldAvatar = "avatar"
 	// EdgeGroup holds the string denoting the group edge name in mutations.
 	EdgeGroup = "group"
 	// Table holds the table name of the user in the database.
@@ -46,6 +48,7 @@ var Columns = []string{
 	FieldDeletedAt,
 	FieldName,
 	FieldEmail,
+	FieldAvatar,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "users"
@@ -120,6 +123,11 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByEmail orders the results by the email field.
 func ByEmail(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEmail, opts...).ToFunc()
+}
+
+// ByAvatar orders the results by the avatar field.
+func ByAvatar(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAvatar, opts...).ToFunc()
 }
 
 // ByGroupField orders the results by group field.

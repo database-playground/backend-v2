@@ -75,6 +75,20 @@ func (uc *UserCreate) SetEmail(s string) *UserCreate {
 	return uc
 }
 
+// SetAvatar sets the "avatar" field.
+func (uc *UserCreate) SetAvatar(s string) *UserCreate {
+	uc.mutation.SetAvatar(s)
+	return uc
+}
+
+// SetNillableAvatar sets the "avatar" field if the given value is not nil.
+func (uc *UserCreate) SetNillableAvatar(s *string) *UserCreate {
+	if s != nil {
+		uc.SetAvatar(*s)
+	}
+	return uc
+}
+
 // SetGroupID sets the "group" edge to the Group entity by ID.
 func (uc *UserCreate) SetGroupID(id int) *UserCreate {
 	uc.mutation.SetGroupID(id)
@@ -212,6 +226,10 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := uc.mutation.Email(); ok {
 		_spec.SetField(user.FieldEmail, field.TypeString, value)
 		_node.Email = value
+	}
+	if value, ok := uc.mutation.Avatar(); ok {
+		_spec.SetField(user.FieldAvatar, field.TypeString, value)
+		_node.Avatar = value
 	}
 	if nodes := uc.mutation.GroupIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

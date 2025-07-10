@@ -54,6 +54,7 @@ var (
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "email", Type: field.TypeString, Unique: true},
+		{Name: "avatar", Type: field.TypeString, Nullable: true},
 		{Name: "user_group", Type: field.TypeInt},
 	}
 	// UsersTable holds the schema information for the "users" table.
@@ -64,7 +65,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "users_groups_group",
-				Columns:    []*schema.Column{UsersColumns[6]},
+				Columns:    []*schema.Column{UsersColumns[7]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
