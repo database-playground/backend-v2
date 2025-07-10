@@ -790,6 +790,212 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 	})
 }
 
+func TestMutationResolver_UpdateMe(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create a test user
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		resolver := &Resolver{
+			ent:  entClient,
+			auth: &mockAuthStorage{},
+		}
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		gqlClient := client.New(srv)
+
+		// Create context with authenticated user and required scope
+		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
+			UserID: user.ID,
+			Scopes: []string{"me:write"},
+		})
+
+		// Execute mutation
+		var resp struct {
+			UpdateMe struct {
+				Name string
+			}
+		}
+		err = gqlClient.Post(`mutation { updateMe(input: { name: "testuser" }) { name } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+
+		// Verify response
+		require.NoError(t, err)
+		require.Equal(t, "testuser", resp.UpdateMe.Name)
+	})
+
+	t.Run("trying to update their group", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		resolver := &Resolver{
+			ent:  entClient,
+			auth: &mockAuthStorage{},
+		}
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		gqlClient := client.New(srv)
+
+		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
+			UserID: user.ID,
+			Scopes: []string{"me:write"},
+		})
+
+		var resp struct {
+			UpdateMe struct {
+				Name string
+			}
+		}
+		err = gqlClient.Post(`mutation { updateMe(input: { groupID: "1" }) { name } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.ErrDisallowUpdateGroup.Error())
+	})
+
+	t.Run("unauthenticated", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		resolver := &Resolver{
+			ent:  entClient,
+			auth: &mockAuthStorage{},
+		}
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		gqlClient := client.New(srv)
+
+		// Execute mutation with no auth context
+		var resp struct {
+			UpdateMe struct {
+				Name string
+			}
+		}
+		err := gqlClient.Post(`mutation { updateMe(input: { name: "testuser" }) { name } }`, &resp)
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.ErrUnauthorized.Error())
+	})
+
+	t.Run("insufficient scope", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		resolver := &Resolver{
+			ent:  entClient,
+			auth: &mockAuthStorage{},
+		}
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		gqlClient := client.New(srv)
+
+		// Create context with authenticated user and required scope
+		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
+			UserID: 1,
+			Scopes: []string{"test"},
+		})
+
+		// Execute mutation
+		var resp struct {
+			UpdateMe struct {
+				Name string
+			}
+		}
+		err := gqlClient.Post(`mutation { updateMe(input: { name: "testuser" }) { name } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.NewErrNoSufficientScope("me:write").Error())
+	})
+
+	t.Run("user not found", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		resolver := &Resolver{
+			ent:  entClient,
+			auth: &mockAuthStorage{},
+		}
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		gqlClient := client.New(srv)
+
+		// Create context with authenticated user and required scope
+		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
+			UserID: 1,
+			Scopes: []string{"me:write"},
+		})
+
+		// Execute mutation
+		var resp struct {
+			UpdateMe struct {
+				Name string
+			}
+		}
+		err := gqlClient.Post(`mutation { updateMe(input: { name: "testuser" }) { name } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), useraccount.ErrUserNotFound.Error())
+	})
+}
+
 func TestMutationResolver_DeleteMe(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)

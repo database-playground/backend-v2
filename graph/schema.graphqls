@@ -1,15 +1,1 @@
 directive @scope(scope: String!) on FIELD_DEFINITION
-
-type Mutation {
-  createUser(input: CreateUserInput!): User @scope(scope: "user:write")
-  updateUser(id: ID!, input: UpdateUserInput!): User @scope(scope: "user:write")
-  deleteUser(id: ID!): Boolean! @scope(scope: "user:write")
-
-  createScopeSet(input: CreateScopeSetInput!): ScopeSet @scope(scope: "scopeset:write")
-  updateScopeSet(id: ID!, input: UpdateScopeSetInput!): ScopeSet @scope(scope: "scopeset:write")
-  deleteScopeSet(id: ID!): Boolean! @scope(scope: "scopeset:write")
-
-  createGroup(input: CreateGroupInput!): Group @scope(scope: "group:write")
-  updateGroup(id: ID!, input: UpdateGroupInput!): Group @scope(scope: "group:write")
-  deleteGroup(id: ID!): Boolean! @scope(scope: "group:write")
-}

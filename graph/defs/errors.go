@@ -46,6 +46,11 @@ var ErrNotImplemented = GqlError{
 	Code:    CodeNotImplemented,
 }
 
+var ErrDisallowUpdateGroup = GqlError{
+	Message: "update group of yourself is not allowed",
+	Code:    CodeForbidden,
+}
+
 const (
 	// CodeNotFound is the error code for "not found".
 	CodeNotFound = "NOT_FOUND"
@@ -55,4 +60,6 @@ const (
 	CodeUserVerified = "USER_VERIFIED"
 	// CodeNotImplemented is the error code for "not implemented".
 	CodeNotImplemented = "NOT_IMPLEMENTED"
+	// CodeForbidden is the error code for "forbidden".
+	CodeForbidden = "FORBIDDEN"
 )

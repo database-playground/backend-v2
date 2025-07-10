@@ -16,6 +16,128 @@ import (
 	"github.com/database-playground/backend-v2/internal/useraccount"
 )
 
+// UpdateMe is the resolver for the updateMe field.
+func (r *mutationResolver) UpdateMe(ctx context.Context, input ent.UpdateUserInput) (*ent.User, error) {
+	user, ok := auth.GetUser(ctx)
+	if !ok {
+		// this should never happen since we have set proper scope
+		return nil, defs.ErrUnauthorized
+	}
+
+	// users cannot update their group
+	if input.GroupID != nil {
+		return nil, defs.ErrDisallowUpdateGroup
+	}
+
+	updatedUser, err := r.ent.User.UpdateOneID(user.UserID).SetInput(input).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedUser, nil
+}
+
+// UpdateUser is the resolver for the updateUser field.
+func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.UpdateUserInput) (*ent.User, error) {
+	user, err := r.ent.User.UpdateOneID(id).SetInput(input).Save(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, defs.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// DeleteUser is the resolver for the deleteUser field.
+func (r *mutationResolver) DeleteUser(ctx context.Context, id int) (bool, error) {
+	err := r.ent.User.DeleteOneID(id).Exec(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return false, defs.ErrNotFound
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
+// CreateScopeSet is the resolver for the createScopeSet field.
+func (r *mutationResolver) CreateScopeSet(ctx context.Context, input ent.CreateScopeSetInput) (*ent.ScopeSet, error) {
+	scopeSet, err := r.ent.ScopeSet.Create().SetInput(input).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return scopeSet, nil
+}
+
+// UpdateScopeSet is the resolver for the updateScopeSet field.
+func (r *mutationResolver) UpdateScopeSet(ctx context.Context, id int, input ent.UpdateScopeSetInput) (*ent.ScopeSet, error) {
+	scopeSet, err := r.ent.ScopeSet.UpdateOneID(id).SetInput(input).Save(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, defs.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return scopeSet, nil
+}
+
+// DeleteScopeSet is the resolver for the deleteScopeSet field.
+func (r *mutationResolver) DeleteScopeSet(ctx context.Context, id int) (bool, error) {
+	err := r.ent.ScopeSet.DeleteOneID(id).Exec(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return false, defs.ErrNotFound
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
+// CreateGroup is the resolver for the createGroup field.
+func (r *mutationResolver) CreateGroup(ctx context.Context, input ent.CreateGroupInput) (*ent.Group, error) {
+	group, err := r.ent.Group.Create().SetInput(input).Save(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, defs.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return group, nil
+}
+
+// UpdateGroup is the resolver for the updateGroup field.
+func (r *mutationResolver) UpdateGroup(ctx context.Context, id int, input ent.UpdateGroupInput) (*ent.Group, error) {
+	group, err := r.ent.Group.UpdateOneID(id).SetInput(input).Save(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, defs.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return group, nil
+}
+
+// DeleteGroup is the resolver for the deleteGroup field.
+func (r *mutationResolver) DeleteGroup(ctx context.Context, id int) (bool, error) {
+	err := r.ent.Group.DeleteOneID(id).Exec(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return false, defs.ErrNotFound
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
 // ImpersonateUser is the resolver for the impersonateUser field.
 func (r *mutationResolver) ImpersonateUser(ctx context.Context, userID int) (string, error) {
 	// Get the user to impersonate.
@@ -125,3 +247,8 @@ func (r *userResolver) ImpersonatedBy(ctx context.Context, obj *ent.User) (*ent.
 
 	return r.UserAccount().GetUser(ctx, impersonatedBy)
 }
+
+// Mutation returns MutationResolver implementation.
+func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+
+type mutationResolver struct{ *Resolver }

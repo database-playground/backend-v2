@@ -3,10 +3,54 @@ extend type Query {
 }
 
 extend type User {
+  """
+  The user who impersonated this user.
+  """
   impersonatedBy: User
 }
 
 extend type Mutation {
+  """
+  Update the information of the current user.
+  """
+  updateMe(input: UpdateUserInput!): User @scope(scope: "me:write")
+
+  """
+  Update the information of a user.
+  """
+  updateUser(id: ID!, input: UpdateUserInput!): User @scope(scope: "user:write")
+
+  """
+  Delete a user.
+  """
+  deleteUser(id: ID!): Boolean! @scope(scope: "user:write")
+
+  """
+  Create a new scope set.
+  """
+  createScopeSet(input: CreateScopeSetInput!): ScopeSet @scope(scope: "scopeset:write")
+  """
+  Update a scope set.
+  """
+  updateScopeSet(id: ID!, input: UpdateScopeSetInput!): ScopeSet @scope(scope: "scopeset:write")
+  """
+  Delete a scope set.
+  """
+  deleteScopeSet(id: ID!): Boolean! @scope(scope: "scopeset:write")
+
+  """
+  Create a new group.
+  """
+  createGroup(input: CreateGroupInput!): Group @scope(scope: "group:write")
+  """
+  Update a group.
+  """
+  updateGroup(id: ID!, input: UpdateGroupInput!): Group @scope(scope: "group:write")
+  """
+  Delete a group.
+  """
+  deleteGroup(id: ID!): Boolean! @scope(scope: "group:write")
+
   """
   Impersonate a user.
 
