@@ -157,7 +157,6 @@ func (c *UserCreate) SetInput(i CreateUserInput) *UserCreate {
 // UpdateUserInput represents a mutation input for updating users.
 type UpdateUserInput struct {
 	Name        *string
-	Email       *string
 	ClearAvatar bool
 	Avatar      *string
 	GroupID     *int
@@ -167,9 +166,6 @@ type UpdateUserInput struct {
 func (i *UpdateUserInput) Mutate(m *UserMutation) {
 	if v := i.Name; v != nil {
 		m.SetName(*v)
-	}
-	if v := i.Email; v != nil {
-		m.SetEmail(*v)
 	}
 	if i.ClearAvatar {
 		m.ClearAvatar()

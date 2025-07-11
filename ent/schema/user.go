@@ -19,7 +19,8 @@ func (User) Fields() []ent.Field {
 			NotEmpty(),
 		field.String("email").
 			NotEmpty().
-			Unique(),
+			Unique().
+			Immutable(),
 		field.String("avatar").
 			Optional(),
 	}
