@@ -10,7 +10,12 @@ import (
 	"strconv"
 
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/ent/predicate"
+	"github.com/database-playground/backend-v2/ent/scopeset"
+	"github.com/database-playground/backend-v2/ent/user"
 	"github.com/database-playground/backend-v2/graph/defs"
+	"github.com/database-playground/backend-v2/graph/model"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/httputils"
 	"github.com/database-playground/backend-v2/internal/useraccount"
@@ -230,6 +235,63 @@ func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
 	}
 
 	return user, nil
+}
+
+// User is the resolver for the user field.
+func (r *queryResolver) User(ctx context.Context, id int) (*ent.User, error) {
+	user, err := r.ent.User.Query().Where(user.ID(id)).First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, defs.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// Group is the resolver for the group field.
+func (r *queryResolver) Group(ctx context.Context, id int) (*ent.Group, error) {
+	group, err := r.ent.Group.Query().Where(group.ID(id)).First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, defs.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return group, nil
+}
+
+// ScopeSet is the resolver for the scopeSet field.
+func (r *queryResolver) ScopeSet(ctx context.Context, filter model.ScopeSetFilter) (*ent.ScopeSet, error) {
+	var ps predicate.ScopeSet
+
+	if filter.ID != nil {
+		ps = scopeset.ID(*filter.ID)
+	}
+
+	if filter.Slug != nil {
+		if ps != nil {
+			return nil, defs.ErrInvalidFilter
+		}
+
+		ps = scopeset.Slug(*filter.Slug)
+	}
+
+	if ps == nil {
+		return nil, defs.ErrInvalidFilter
+	}
+
+	scopeSet, err := r.ent.ScopeSet.Query().Where(ps).First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, defs.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return scopeSet, nil
 }
 
 // ImpersonatedBy is the resolver for the impersonatedBy field.

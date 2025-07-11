@@ -1,5 +1,37 @@
 extend type Query {
   me: User! @scope(scope: "me:read")
+
+  """
+  Get a user by ID.
+  """
+  user(id: ID!): User! @scope(scope: "user:read")
+
+  """
+  Get a group by ID.
+  """
+  group(id: ID!): Group! @scope(scope: "group:read")
+
+  """
+  Get a scope set by ID or slug.
+  """
+  scopeSet(filter: ScopeSetFilter!): ScopeSet! @scope(scope: "scopeset:read")
+}
+
+"""
+Filter for scope sets.
+
+The filters are mutually exclusive, only one of them can be provided.
+"""
+input ScopeSetFilter {
+  """
+  The ID of the scope set.
+  """
+  id: ID
+
+  """
+  The slug of the scope set.
+  """
+  slug: String
 }
 
 extend type User {

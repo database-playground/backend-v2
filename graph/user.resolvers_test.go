@@ -108,7 +108,7 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 
 		// Verify error
 		require.Error(t, err)
-		require.Contains(t, err.Error(), defs.ErrUnauthorized.Error())
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
 	})
 
 	t.Run("insufficient scope", func(t *testing.T) {
@@ -266,7 +266,7 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 
 		// Verify error
 		require.Error(t, err)
-		require.Contains(t, err.Error(), defs.ErrUnauthorized.Error())
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
 	})
 
 	t.Run("insufficient scope", func(t *testing.T) {
@@ -499,7 +499,7 @@ func TestQueryResolver_Me(t *testing.T) {
 
 		// Verify error
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "UNAUTHORIZED")
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
 	})
 
 	t.Run("insufficient scope", func(t *testing.T) {
@@ -537,7 +537,7 @@ func TestQueryResolver_Me(t *testing.T) {
 
 		// Verify error
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "UNAUTHORIZED")
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
 	})
 
 	t.Run("invalid user id", func(t *testing.T) {
@@ -576,6 +576,300 @@ func TestQueryResolver_Me(t *testing.T) {
 		// Verify error
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "user not found")
+	})
+}
+
+func TestQueryResolver_User(t *testing.T) {
+	entClient := testhelper.NewEntSqliteClient(t)
+	resolver := &Resolver{
+		ent:  entClient,
+		auth: &mockAuthStorage{},
+	}
+	cfg := Config{
+		Resolvers:  resolver,
+		Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+	}
+	srv := handler.New(NewExecutableSchema(cfg))
+	srv.AddTransport(transport.POST{})
+	gqlClient := client.New(srv)
+
+	group, err := createTestGroup(t, entClient)
+	require.NoError(t, err)
+	user, err := entClient.User.Create().
+		SetName("user1").
+		SetEmail("user1@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	ctx := auth.WithUser(context.Background(), auth.TokenInfo{
+		UserID: 1,
+		Scopes: []string{"user:read"},
+	})
+
+	t.Run("success", func(t *testing.T) {
+		var resp struct {
+			User struct {
+				Name  string
+				Email string
+			}
+		}
+		err := gqlClient.Post(`query { user(id: `+strconv.Itoa(user.ID)+`) { name email } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+		require.NoError(t, err)
+		require.Equal(t, "user1", resp.User.Name)
+		require.Equal(t, "user1@example.com", resp.User.Email)
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		var resp struct {
+			User struct {
+				Name string
+			}
+		}
+		err := gqlClient.Post(`query { user(id: 99999) { name } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.ErrNotFound.Error())
+	})
+
+	t.Run("bad scope", func(t *testing.T) {
+		var resp struct {
+			User struct {
+				Name string
+			}
+		}
+
+		err := gqlClient.Post(`query { user(id: `+strconv.Itoa(user.ID)+`) { name } }`, &resp, func(bd *client.Request) {
+			badCtx := auth.WithUser(context.Background(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{},
+			})
+			bd.HTTP = bd.HTTP.WithContext(badCtx)
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+	})
+
+	t.Run("unauthenticated", func(t *testing.T) {
+		var resp struct {
+			User struct {
+				Name string
+			}
+		}
+
+		err := gqlClient.Post(`query { user(id: `+strconv.Itoa(user.ID)+`) { name } }`, &resp)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+	})
+}
+
+func TestQueryResolver_Group(t *testing.T) {
+	entClient := testhelper.NewEntSqliteClient(t)
+	resolver := &Resolver{
+		ent:  entClient,
+		auth: &mockAuthStorage{},
+	}
+	cfg := Config{
+		Resolvers:  resolver,
+		Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+	}
+	srv := handler.New(NewExecutableSchema(cfg))
+	srv.AddTransport(transport.POST{})
+	gqlClient := client.New(srv)
+
+	group, err := createTestGroup(t, entClient)
+	require.NoError(t, err)
+
+	ctx := auth.WithUser(context.Background(), auth.TokenInfo{
+		UserID: 1,
+		Scopes: []string{"group:read"},
+	})
+
+	t.Run("success", func(t *testing.T) {
+		var resp struct {
+			Group struct {
+				Name string
+			}
+		}
+		err := gqlClient.Post(`query { group(id: `+strconv.Itoa(group.ID)+`) { name } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+		require.NoError(t, err)
+		require.Equal(t, "test", resp.Group.Name)
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		var resp struct {
+			Group struct {
+				Name string
+			}
+		}
+		err := gqlClient.Post(`query { group(id: 99999) { name } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.ErrNotFound.Error())
+	})
+
+	t.Run("bad scope", func(t *testing.T) {
+		var resp struct {
+			Group struct {
+				Name string
+			}
+		}
+
+		err := gqlClient.Post(`query { group(id: `+strconv.Itoa(group.ID)+`) { name } }`, &resp, func(bd *client.Request) {
+			badCtx := auth.WithUser(context.Background(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{},
+			})
+			bd.HTTP = bd.HTTP.WithContext(badCtx)
+		})
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+	})
+
+	t.Run("unauthenticated", func(t *testing.T) {
+		var resp struct {
+			Group struct {
+				Name string
+			}
+		}
+
+		err := gqlClient.Post(`query { group(id: `+strconv.Itoa(group.ID)+`) { name } }`, &resp)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+	})
+}
+
+func TestQueryResolver_ScopeSet(t *testing.T) {
+	entClient := testhelper.NewEntSqliteClient(t)
+	resolver := &Resolver{
+		ent:  entClient,
+		auth: &mockAuthStorage{},
+	}
+	cfg := Config{
+		Resolvers:  resolver,
+		Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+	}
+	srv := handler.New(NewExecutableSchema(cfg))
+	srv.AddTransport(transport.POST{})
+	gqlClient := client.New(srv)
+
+	scopeset, err := entClient.ScopeSet.Create().
+		SetSlug("slug1").
+		SetScopes([]string{"a", "b"}).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	ctx := auth.WithUser(context.Background(), auth.TokenInfo{
+		UserID: 1,
+		Scopes: []string{"scopeset:read"},
+	})
+
+	t.Run("by id", func(t *testing.T) {
+		var resp struct {
+			ScopeSet struct {
+				Slug string
+			}
+		}
+		query := `query { scopeSet(filter: { id: ` + strconv.Itoa(scopeset.ID) + ` }) { slug } }`
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+		require.NoError(t, err)
+		require.Equal(t, "slug1", resp.ScopeSet.Slug)
+	})
+
+	t.Run("by slug", func(t *testing.T) {
+		var resp struct {
+			ScopeSet struct {
+				Slug string
+			}
+		}
+		query := `query { scopeSet(filter: { slug: "slug1" }) { slug } }`
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+		require.NoError(t, err)
+		require.Equal(t, "slug1", resp.ScopeSet.Slug)
+	})
+
+	t.Run("no filter", func(t *testing.T) {
+		var resp struct {
+			ScopeSet struct {
+				Slug string
+			}
+		}
+		query := `query { scopeSet(filter: { }) { slug } }`
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.ErrInvalidFilter.Error())
+	})
+
+	t.Run("both filter", func(t *testing.T) {
+		var resp struct {
+			ScopeSet struct {
+				Slug string
+			}
+		}
+		query := `query { scopeSet(filter: { id: 1, slug: "slug1" }) { slug } }`
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.ErrInvalidFilter.Error())
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		var resp struct {
+			ScopeSet struct {
+				Slug string
+			}
+		}
+		query := `query { scopeSet(filter: { id: 99999 }) { slug } }`
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(ctx)
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.ErrNotFound.Error())
+	})
+
+	t.Run("bad scope", func(t *testing.T) {
+		var resp struct {
+			ScopeSet struct {
+				Slug string
+			}
+		}
+
+		err := gqlClient.Post(`query { scopeSet(filter: { id: `+strconv.Itoa(scopeset.ID)+` }) { slug } }`, &resp, func(bd *client.Request) {
+			badCtx := auth.WithUser(context.Background(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{},
+			})
+			bd.HTTP = bd.HTTP.WithContext(badCtx)
+		})
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+	})
+
+	t.Run("unauthenticated", func(t *testing.T) {
+		var resp struct {
+			ScopeSet struct {
+				Slug string
+			}
+		}
+
+		err := gqlClient.Post(`query { scopeSet(filter: { id: `+strconv.Itoa(scopeset.ID)+` }) { slug } }`, &resp)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
 	})
 }
 
@@ -675,7 +969,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 
 		// Verify error
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "UNAUTHORIZED")
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
 	})
 
 	t.Run("no impersonation metadata", func(t *testing.T) {
@@ -1243,7 +1537,7 @@ func TestMutationResolver_VerifyRegistration(t *testing.T) {
 
 		// Verify error
 		require.Error(t, err)
-		require.Contains(t, err.Error(), defs.ErrUnauthorized.Error())
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
 	})
 
 	t.Run("insufficient scope", func(t *testing.T) {

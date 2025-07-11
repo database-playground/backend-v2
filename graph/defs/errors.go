@@ -51,6 +51,11 @@ var ErrDisallowUpdateGroup = GqlError{
 	Code:    CodeForbidden,
 }
 
+var ErrInvalidFilter = GqlError{
+	Message: "invalid filter",
+	Code:    CodeInvalidInput,
+}
+
 const (
 	// CodeNotFound is the error code for "not found".
 	CodeNotFound = "NOT_FOUND"
@@ -62,4 +67,6 @@ const (
 	CodeNotImplemented = "NOT_IMPLEMENTED"
 	// CodeForbidden is the error code for "forbidden".
 	CodeForbidden = "FORBIDDEN"
+	// CodeInvalidInput is the error code for "invalid input".
+	CodeInvalidInput = "INVALID_INPUT"
 )
