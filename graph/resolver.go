@@ -33,8 +33,10 @@ func NewSchema(ent *ent.Client, auth auth.Storage) graphql.ExecutableSchema {
 	})
 }
 
-func (r *Resolver) UserAccount() *useraccount.Context {
-	return useraccount.NewContext(r.ent, r.auth)
+func (r *Resolver) UserAccount(ctx context.Context) *useraccount.Context {
+	entClient := ent.FromContext(ctx)
+
+	return useraccount.NewContext(entClient, r.auth)
 }
 
 func NewErrorPresenter() graphql.ErrorPresenterFunc {

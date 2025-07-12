@@ -34,7 +34,9 @@ func (r *mutationResolver) UpdateMe(ctx context.Context, input ent.UpdateUserInp
 		return nil, defs.ErrDisallowUpdateGroup
 	}
 
-	updatedUser, err := r.ent.User.UpdateOneID(user.UserID).SetInput(input).Save(ctx)
+	entClient := ent.FromContext(ctx)
+
+	updatedUser, err := entClient.User.UpdateOneID(user.UserID).SetInput(input).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +46,9 @@ func (r *mutationResolver) UpdateMe(ctx context.Context, input ent.UpdateUserInp
 
 // UpdateUser is the resolver for the updateUser field.
 func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.UpdateUserInput) (*ent.User, error) {
-	user, err := r.ent.User.UpdateOneID(id).SetInput(input).Save(ctx)
+	entClient := ent.FromContext(ctx)
+
+	user, err := entClient.User.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, defs.ErrNotFound
@@ -57,7 +61,9 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.Upd
 
 // DeleteUser is the resolver for the deleteUser field.
 func (r *mutationResolver) DeleteUser(ctx context.Context, id int) (bool, error) {
-	err := r.ent.User.DeleteOneID(id).Exec(ctx)
+	entClient := ent.FromContext(ctx)
+
+	err := entClient.User.DeleteOneID(id).Exec(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return false, defs.ErrNotFound
@@ -70,7 +76,9 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id int) (bool, error)
 
 // CreateScopeSet is the resolver for the createScopeSet field.
 func (r *mutationResolver) CreateScopeSet(ctx context.Context, input ent.CreateScopeSetInput) (*ent.ScopeSet, error) {
-	scopeSet, err := r.ent.ScopeSet.Create().SetInput(input).Save(ctx)
+	entClient := ent.FromContext(ctx)
+
+	scopeSet, err := entClient.ScopeSet.Create().SetInput(input).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +88,9 @@ func (r *mutationResolver) CreateScopeSet(ctx context.Context, input ent.CreateS
 
 // UpdateScopeSet is the resolver for the updateScopeSet field.
 func (r *mutationResolver) UpdateScopeSet(ctx context.Context, id int, input ent.UpdateScopeSetInput) (*ent.ScopeSet, error) {
-	scopeSet, err := r.ent.ScopeSet.UpdateOneID(id).SetInput(input).Save(ctx)
+	entClient := ent.FromContext(ctx)
+
+	scopeSet, err := entClient.ScopeSet.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, defs.ErrNotFound
@@ -93,7 +103,9 @@ func (r *mutationResolver) UpdateScopeSet(ctx context.Context, id int, input ent
 
 // DeleteScopeSet is the resolver for the deleteScopeSet field.
 func (r *mutationResolver) DeleteScopeSet(ctx context.Context, id int) (bool, error) {
-	err := r.ent.ScopeSet.DeleteOneID(id).Exec(ctx)
+	entClient := ent.FromContext(ctx)
+
+	err := entClient.ScopeSet.DeleteOneID(id).Exec(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return false, defs.ErrNotFound
@@ -106,7 +118,9 @@ func (r *mutationResolver) DeleteScopeSet(ctx context.Context, id int) (bool, er
 
 // CreateGroup is the resolver for the createGroup field.
 func (r *mutationResolver) CreateGroup(ctx context.Context, input ent.CreateGroupInput) (*ent.Group, error) {
-	group, err := r.ent.Group.Create().SetInput(input).Save(ctx)
+	entClient := ent.FromContext(ctx)
+
+	group, err := entClient.Group.Create().SetInput(input).Save(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, defs.ErrNotFound
@@ -119,7 +133,9 @@ func (r *mutationResolver) CreateGroup(ctx context.Context, input ent.CreateGrou
 
 // UpdateGroup is the resolver for the updateGroup field.
 func (r *mutationResolver) UpdateGroup(ctx context.Context, id int, input ent.UpdateGroupInput) (*ent.Group, error) {
-	group, err := r.ent.Group.UpdateOneID(id).SetInput(input).Save(ctx)
+	entClient := ent.FromContext(ctx)
+
+	group, err := entClient.Group.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, defs.ErrNotFound
@@ -132,7 +148,9 @@ func (r *mutationResolver) UpdateGroup(ctx context.Context, id int, input ent.Up
 
 // DeleteGroup is the resolver for the deleteGroup field.
 func (r *mutationResolver) DeleteGroup(ctx context.Context, id int) (bool, error) {
-	err := r.ent.Group.DeleteOneID(id).Exec(ctx)
+	entClient := ent.FromContext(ctx)
+
+	err := entClient.Group.DeleteOneID(id).Exec(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return false, defs.ErrNotFound
@@ -145,8 +163,10 @@ func (r *mutationResolver) DeleteGroup(ctx context.Context, id int) (bool, error
 
 // ImpersonateUser is the resolver for the impersonateUser field.
 func (r *mutationResolver) ImpersonateUser(ctx context.Context, userID int) (string, error) {
+	userAccountSrv := r.UserAccount(ctx)
+
 	// Get the user to impersonate.
-	user, err := r.UserAccount().GetUser(ctx, userID)
+	user, err := userAccountSrv.GetUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, useraccount.ErrUserNotFound) {
 			return "", defs.ErrNotFound
@@ -157,7 +177,7 @@ func (r *mutationResolver) ImpersonateUser(ctx context.Context, userID int) (str
 
 	machineName := httputils.GetMachineName(ctx)
 
-	token, err := r.UserAccount().GrantToken(
+	token, err := userAccountSrv.GrantToken(
 		ctx, user, machineName,
 		useraccount.WithFlow("impersonation"),
 		useraccount.WithImpersonation(userID),
@@ -177,7 +197,9 @@ func (r *mutationResolver) LogoutAll(ctx context.Context) (bool, error) {
 		return false, defs.ErrUnauthorized
 	}
 
-	err := r.UserAccount().RevokeAllTokens(ctx, user.UserID)
+	userAccountSrv := r.UserAccount(ctx)
+
+	err := userAccountSrv.RevokeAllTokens(ctx, user.UserID)
 	if err != nil {
 		return false, err
 	}
@@ -193,7 +215,9 @@ func (r *mutationResolver) DeleteMe(ctx context.Context) (bool, error) {
 		return false, defs.ErrUnauthorized
 	}
 
-	err := r.UserAccount().DeleteUser(ctx, user.UserID)
+	userAccountSrv := r.UserAccount(ctx)
+
+	err := userAccountSrv.DeleteUser(ctx, user.UserID)
 	if err != nil {
 		return false, err
 	}
@@ -209,7 +233,9 @@ func (r *mutationResolver) VerifyRegistration(ctx context.Context) (bool, error)
 		return false, defs.ErrUnauthorized
 	}
 
-	err := r.UserAccount().Verify(ctx, tokenInfo.UserID)
+	userAccountSrv := r.UserAccount(ctx)
+
+	err := userAccountSrv.Verify(ctx, tokenInfo.UserID)
 	if err != nil {
 		if errors.Is(err, useraccount.ErrUserVerified) {
 			return false, defs.ErrVerified
@@ -229,7 +255,9 @@ func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
 		return nil, defs.ErrUnauthorized
 	}
 
-	user, err := r.UserAccount().GetUser(ctx, tokenInfo.UserID)
+	userAccountSrv := r.UserAccount(ctx)
+
+	user, err := userAccountSrv.GetUser(ctx, tokenInfo.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +267,9 @@ func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id int) (*ent.User, error) {
-	user, err := r.ent.User.Query().Where(user.ID(id)).First(ctx)
+	entClient := ent.FromContext(ctx)
+
+	user, err := entClient.User.Query().Where(user.ID(id)).First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, defs.ErrNotFound
@@ -252,7 +282,9 @@ func (r *queryResolver) User(ctx context.Context, id int) (*ent.User, error) {
 
 // Group is the resolver for the group field.
 func (r *queryResolver) Group(ctx context.Context, id int) (*ent.Group, error) {
-	group, err := r.ent.Group.Query().Where(group.ID(id)).First(ctx)
+	entClient := ent.FromContext(ctx)
+
+	group, err := entClient.Group.Query().Where(group.ID(id)).First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, defs.ErrNotFound
@@ -283,7 +315,9 @@ func (r *queryResolver) ScopeSet(ctx context.Context, filter model.ScopeSetFilte
 		return nil, defs.ErrInvalidFilter
 	}
 
-	scopeSet, err := r.ent.ScopeSet.Query().Where(ps).First(ctx)
+	entClient := ent.FromContext(ctx)
+
+	scopeSet, err := entClient.ScopeSet.Query().Where(ps).First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, defs.ErrNotFound
@@ -307,7 +341,9 @@ func (r *userResolver) ImpersonatedBy(ctx context.Context, obj *ent.User) (*ent.
 		return nil, nil
 	}
 
-	return r.UserAccount().GetUser(ctx, impersonatedBy)
+	userAccountSrv := r.UserAccount(ctx)
+
+	return userAccountSrv.GetUser(ctx, impersonatedBy)
 }
 
 // Mutation returns MutationResolver implementation.

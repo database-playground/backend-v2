@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/lru"
@@ -69,6 +70,7 @@ func GqlgenHandler(entClient *ent.Client, storage auth.Storage) *handler.Server 
 
 	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 
+	srv.Use(entgql.Transactioner{TxOpener: entClient})
 	srv.Use(extension.Introspection{})
 	srv.Use(extension.AutomaticPersistedQuery{
 		Cache: lru.New[string](100),
