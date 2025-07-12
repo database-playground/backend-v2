@@ -5,7 +5,9 @@ package runtime
 import (
 	"time"
 
+	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/schema"
 	"github.com/database-playground/backend-v2/ent/scopeset"
 	"github.com/database-playground/backend-v2/ent/user"
@@ -15,6 +17,20 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	databaseFields := schema.Database{}.Fields()
+	_ = databaseFields
+	// databaseDescSlug is the schema descriptor for slug field.
+	databaseDescSlug := databaseFields[0].Descriptor()
+	// database.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
+	database.SlugValidator = databaseDescSlug.Validators[0].(func(string) error)
+	// databaseDescRelationFigure is the schema descriptor for relation_figure field.
+	databaseDescRelationFigure := databaseFields[1].Descriptor()
+	// database.RelationFigureValidator is a validator for the "relation_figure" field. It is called by the builders before save.
+	database.RelationFigureValidator = databaseDescRelationFigure.Validators[0].(func(string) error)
+	// databaseDescSchema is the schema descriptor for schema field.
+	databaseDescSchema := databaseFields[3].Descriptor()
+	// database.SchemaValidator is a validator for the "schema" field. It is called by the builders before save.
+	database.SchemaValidator = databaseDescSchema.Validators[0].(func(string) error)
 	groupMixin := schema.Group{}.Mixin()
 	groupMixinHooks0 := groupMixin[0].Hooks()
 	group.Hooks[0] = groupMixinHooks0[0]
@@ -38,6 +54,12 @@ func init() {
 	groupDescName := groupFields[0].Descriptor()
 	// group.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	group.NameValidator = groupDescName.Validators[0].(func(string) error)
+	questionFields := schema.Question{}.Fields()
+	_ = questionFields
+	// questionDescCategory is the schema descriptor for category field.
+	questionDescCategory := questionFields[0].Descriptor()
+	// question.CategoryValidator is a validator for the "category" field. It is called by the builders before save.
+	question.CategoryValidator = questionDescCategory.Validators[0].(func(string) error)
 	scopesetFields := schema.ScopeSet{}.Fields()
 	_ = scopesetFields
 	// scopesetDescSlug is the schema descriptor for slug field.

@@ -13,7 +13,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/schema"
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/scopeset"
 	"github.com/database-playground/backend-v2/ent/user"
 	"github.com/hashicorp/go-multierror"
@@ -25,10 +27,20 @@ type Noder interface {
 	IsNode()
 }
 
+var databaseImplementors = []string{"Database", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*Database) IsNode() {}
+
 var groupImplementors = []string{"Group", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*Group) IsNode() {}
+
+var questionImplementors = []string{"Question", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*Question) IsNode() {}
 
 var scopesetImplementors = []string{"ScopeSet", "Node"}
 
@@ -98,11 +110,29 @@ func (c *Client) Noder(ctx context.Context, id int, opts ...NodeOption) (_ Noder
 
 func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error) {
 	switch table {
+	case database.Table:
+		query := c.Database.Query().
+			Where(database.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, databaseImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case group.Table:
 		query := c.Group.Query().
 			Where(group.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, groupImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case question.Table:
+		query := c.Question.Query().
+			Where(question.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, questionImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -198,10 +228,42 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		idmap[id] = append(idmap[id], &noders[i])
 	}
 	switch table {
+	case database.Table:
+		query := c.Database.Query().
+			Where(database.IDIn(ids...))
+		query, err := query.CollectFields(ctx, databaseImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case group.Table:
 		query := c.Group.Query().
 			Where(group.IDIn(ids...))
 		query, err := query.CollectFields(ctx, groupImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case question.Table:
+		query := c.Question.Query().
+			Where(question.IDIn(ids...))
+		query, err := query.CollectFields(ctx, questionImplementors...)
 		if err != nil {
 			return nil, err
 		}

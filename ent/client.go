@@ -15,7 +15,9 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/scopeset"
 	"github.com/database-playground/backend-v2/ent/user"
 )
@@ -25,8 +27,12 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Database is the client for interacting with the Database builders.
+	Database *DatabaseClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
+	// Question is the client for interacting with the Question builders.
+	Question *QuestionClient
 	// ScopeSet is the client for interacting with the ScopeSet builders.
 	ScopeSet *ScopeSetClient
 	// User is the client for interacting with the User builders.
@@ -44,7 +50,9 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Database = NewDatabaseClient(c.config)
 	c.Group = NewGroupClient(c.config)
+	c.Question = NewQuestionClient(c.config)
 	c.ScopeSet = NewScopeSetClient(c.config)
 	c.User = NewUserClient(c.config)
 }
@@ -139,7 +147,9 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:      ctx,
 		config:   cfg,
+		Database: NewDatabaseClient(cfg),
 		Group:    NewGroupClient(cfg),
+		Question: NewQuestionClient(cfg),
 		ScopeSet: NewScopeSetClient(cfg),
 		User:     NewUserClient(cfg),
 	}, nil
@@ -161,7 +171,9 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:      ctx,
 		config:   cfg,
+		Database: NewDatabaseClient(cfg),
 		Group:    NewGroupClient(cfg),
+		Question: NewQuestionClient(cfg),
 		ScopeSet: NewScopeSetClient(cfg),
 		User:     NewUserClient(cfg),
 	}, nil
@@ -170,7 +182,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Group.
+//		Database.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -192,7 +204,9 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Database.Use(hooks...)
 	c.Group.Use(hooks...)
+	c.Question.Use(hooks...)
 	c.ScopeSet.Use(hooks...)
 	c.User.Use(hooks...)
 }
@@ -200,7 +214,9 @@ func (c *Client) Use(hooks ...Hook) {
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
+	c.Database.Intercept(interceptors...)
 	c.Group.Intercept(interceptors...)
+	c.Question.Intercept(interceptors...)
 	c.ScopeSet.Intercept(interceptors...)
 	c.User.Intercept(interceptors...)
 }
@@ -208,14 +224,151 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *DatabaseMutation:
+		return c.Database.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
+	case *QuestionMutation:
+		return c.Question.mutate(ctx, m)
 	case *ScopeSetMutation:
 		return c.ScopeSet.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// DatabaseClient is a client for the Database schema.
+type DatabaseClient struct {
+	config
+}
+
+// NewDatabaseClient returns a client for the Database from the given config.
+func NewDatabaseClient(c config) *DatabaseClient {
+	return &DatabaseClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `database.Hooks(f(g(h())))`.
+func (c *DatabaseClient) Use(hooks ...Hook) {
+	c.hooks.Database = append(c.hooks.Database, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `database.Intercept(f(g(h())))`.
+func (c *DatabaseClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Database = append(c.inters.Database, interceptors...)
+}
+
+// Create returns a builder for creating a Database entity.
+func (c *DatabaseClient) Create() *DatabaseCreate {
+	mutation := newDatabaseMutation(c.config, OpCreate)
+	return &DatabaseCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Database entities.
+func (c *DatabaseClient) CreateBulk(builders ...*DatabaseCreate) *DatabaseCreateBulk {
+	return &DatabaseCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *DatabaseClient) MapCreateBulk(slice any, setFunc func(*DatabaseCreate, int)) *DatabaseCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &DatabaseCreateBulk{err: fmt.Errorf("calling to DatabaseClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*DatabaseCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &DatabaseCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Database.
+func (c *DatabaseClient) Update() *DatabaseUpdate {
+	mutation := newDatabaseMutation(c.config, OpUpdate)
+	return &DatabaseUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DatabaseClient) UpdateOne(d *Database) *DatabaseUpdateOne {
+	mutation := newDatabaseMutation(c.config, OpUpdateOne, withDatabase(d))
+	return &DatabaseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DatabaseClient) UpdateOneID(id int) *DatabaseUpdateOne {
+	mutation := newDatabaseMutation(c.config, OpUpdateOne, withDatabaseID(id))
+	return &DatabaseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Database.
+func (c *DatabaseClient) Delete() *DatabaseDelete {
+	mutation := newDatabaseMutation(c.config, OpDelete)
+	return &DatabaseDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DatabaseClient) DeleteOne(d *Database) *DatabaseDeleteOne {
+	return c.DeleteOneID(d.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *DatabaseClient) DeleteOneID(id int) *DatabaseDeleteOne {
+	builder := c.Delete().Where(database.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DatabaseDeleteOne{builder}
+}
+
+// Query returns a query builder for Database.
+func (c *DatabaseClient) Query() *DatabaseQuery {
+	return &DatabaseQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeDatabase},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Database entity by its id.
+func (c *DatabaseClient) Get(ctx context.Context, id int) (*Database, error) {
+	return c.Query().Where(database.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DatabaseClient) GetX(ctx context.Context, id int) *Database {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *DatabaseClient) Hooks() []Hook {
+	return c.hooks.Database
+}
+
+// Interceptors returns the client interceptors.
+func (c *DatabaseClient) Interceptors() []Interceptor {
+	return c.inters.Database
+}
+
+func (c *DatabaseClient) mutate(ctx context.Context, m *DatabaseMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&DatabaseCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&DatabaseUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&DatabaseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&DatabaseDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Database mutation op: %q", m.Op())
 	}
 }
 
@@ -367,6 +520,155 @@ func (c *GroupClient) mutate(ctx context.Context, m *GroupMutation) (Value, erro
 		return (&GroupDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Group mutation op: %q", m.Op())
+	}
+}
+
+// QuestionClient is a client for the Question schema.
+type QuestionClient struct {
+	config
+}
+
+// NewQuestionClient returns a client for the Question from the given config.
+func NewQuestionClient(c config) *QuestionClient {
+	return &QuestionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `question.Hooks(f(g(h())))`.
+func (c *QuestionClient) Use(hooks ...Hook) {
+	c.hooks.Question = append(c.hooks.Question, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `question.Intercept(f(g(h())))`.
+func (c *QuestionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Question = append(c.inters.Question, interceptors...)
+}
+
+// Create returns a builder for creating a Question entity.
+func (c *QuestionClient) Create() *QuestionCreate {
+	mutation := newQuestionMutation(c.config, OpCreate)
+	return &QuestionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Question entities.
+func (c *QuestionClient) CreateBulk(builders ...*QuestionCreate) *QuestionCreateBulk {
+	return &QuestionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *QuestionClient) MapCreateBulk(slice any, setFunc func(*QuestionCreate, int)) *QuestionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &QuestionCreateBulk{err: fmt.Errorf("calling to QuestionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*QuestionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &QuestionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Question.
+func (c *QuestionClient) Update() *QuestionUpdate {
+	mutation := newQuestionMutation(c.config, OpUpdate)
+	return &QuestionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *QuestionClient) UpdateOne(q *Question) *QuestionUpdateOne {
+	mutation := newQuestionMutation(c.config, OpUpdateOne, withQuestion(q))
+	return &QuestionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *QuestionClient) UpdateOneID(id int) *QuestionUpdateOne {
+	mutation := newQuestionMutation(c.config, OpUpdateOne, withQuestionID(id))
+	return &QuestionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Question.
+func (c *QuestionClient) Delete() *QuestionDelete {
+	mutation := newQuestionMutation(c.config, OpDelete)
+	return &QuestionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *QuestionClient) DeleteOne(q *Question) *QuestionDeleteOne {
+	return c.DeleteOneID(q.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *QuestionClient) DeleteOneID(id int) *QuestionDeleteOne {
+	builder := c.Delete().Where(question.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &QuestionDeleteOne{builder}
+}
+
+// Query returns a query builder for Question.
+func (c *QuestionClient) Query() *QuestionQuery {
+	return &QuestionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeQuestion},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Question entity by its id.
+func (c *QuestionClient) Get(ctx context.Context, id int) (*Question, error) {
+	return c.Query().Where(question.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *QuestionClient) GetX(ctx context.Context, id int) *Question {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryDatabase queries the database edge of a Question.
+func (c *QuestionClient) QueryDatabase(q *Question) *DatabaseQuery {
+	query := (&DatabaseClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := q.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(question.Table, question.FieldID, id),
+			sqlgraph.To(database.Table, database.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, question.DatabaseTable, question.DatabaseColumn),
+		)
+		fromV = sqlgraph.Neighbors(q.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *QuestionClient) Hooks() []Hook {
+	return c.hooks.Question
+}
+
+// Interceptors returns the client interceptors.
+func (c *QuestionClient) Interceptors() []Interceptor {
+	return c.inters.Question
+}
+
+func (c *QuestionClient) mutate(ctx context.Context, m *QuestionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&QuestionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&QuestionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&QuestionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&QuestionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Question mutation op: %q", m.Op())
 	}
 }
 
@@ -657,9 +959,9 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Group, ScopeSet, User []ent.Hook
+		Database, Group, Question, ScopeSet, User []ent.Hook
 	}
 	inters struct {
-		Group, ScopeSet, User []ent.Interceptor
+		Database, Group, Question, ScopeSet, User []ent.Interceptor
 	}
 )

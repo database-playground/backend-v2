@@ -9,6 +9,29 @@ import (
 )
 
 var (
+	// DatabasesColumns holds the columns for the "databases" table.
+	DatabasesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "slug", Type: field.TypeString, Unique: true},
+		{Name: "relation_figure", Type: field.TypeString, Unique: true},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "schema", Type: field.TypeString, Size: 2147483647},
+		{Name: "question_database", Type: field.TypeInt, Nullable: true},
+	}
+	// DatabasesTable holds the schema information for the "databases" table.
+	DatabasesTable = &schema.Table{
+		Name:       "databases",
+		Columns:    DatabasesColumns,
+		PrimaryKey: []*schema.Column{DatabasesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "databases_questions_database",
+				Columns:    []*schema.Column{DatabasesColumns[5]},
+				RefColumns: []*schema.Column{QuestionsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -23,6 +46,21 @@ var (
 		Name:       "groups",
 		Columns:    GroupsColumns,
 		PrimaryKey: []*schema.Column{GroupsColumns[0]},
+	}
+	// QuestionsColumns holds the columns for the "questions" table.
+	QuestionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "category", Type: field.TypeString, Unique: true},
+		{Name: "difficulty", Type: field.TypeEnum, Enums: []string{"unspecified", "easy", "medium", "hard"}, Default: "medium"},
+		{Name: "title", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Size: 2147483647},
+		{Name: "reference_answer", Type: field.TypeString, Size: 2147483647},
+	}
+	// QuestionsTable holds the schema information for the "questions" table.
+	QuestionsTable = &schema.Table{
+		Name:       "questions",
+		Columns:    QuestionsColumns,
+		PrimaryKey: []*schema.Column{QuestionsColumns[0]},
 	}
 	// ScopeSetsColumns holds the columns for the "scope_sets" table.
 	ScopeSetsColumns = []*schema.Column{
@@ -73,15 +111,24 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		DatabasesTable,
 		GroupsTable,
+		QuestionsTable,
 		ScopeSetsTable,
 		UsersTable,
 	}
 )
 
 func init() {
+	DatabasesTable.ForeignKeys[0].RefTable = QuestionsTable
+	DatabasesTable.Annotation = &entsql.Annotation{
+		IncrementStart: func(i int) *int { return &i }(12884901888),
+	}
 	GroupsTable.Annotation = &entsql.Annotation{
 		IncrementStart: func(i int) *int { return &i }(4294967296),
+	}
+	QuestionsTable.Annotation = &entsql.Annotation{
+		IncrementStart: func(i int) *int { return &i }(17179869184),
 	}
 	ScopeSetsTable.ForeignKeys[0].RefTable = GroupsTable
 	ScopeSetsTable.Annotation = &entsql.Annotation{

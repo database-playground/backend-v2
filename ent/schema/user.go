@@ -20,7 +20,8 @@ func (User) Fields() []ent.Field {
 		field.String("email").
 			NotEmpty().
 			Unique().
-			Immutable(),
+			Immutable().
+			Annotations(entgql.OrderField("EMAIL")),
 		field.String("avatar").
 			Optional(),
 	}

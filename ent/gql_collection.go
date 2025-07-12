@@ -5,11 +5,93 @@ package ent
 import (
 	"context"
 
+	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/scopeset"
 	"github.com/database-playground/backend-v2/ent/user"
 )
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (d *DatabaseQuery) CollectFields(ctx context.Context, satisfies ...string) (*DatabaseQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return d, nil
+	}
+	if err := d.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return d, nil
+}
+
+func (d *DatabaseQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(database.Columns))
+		selectedFields = []string{database.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+		case "slug":
+			if _, ok := fieldSeen[database.FieldSlug]; !ok {
+				selectedFields = append(selectedFields, database.FieldSlug)
+				fieldSeen[database.FieldSlug] = struct{}{}
+			}
+		case "relationFigure":
+			if _, ok := fieldSeen[database.FieldRelationFigure]; !ok {
+				selectedFields = append(selectedFields, database.FieldRelationFigure)
+				fieldSeen[database.FieldRelationFigure] = struct{}{}
+			}
+		case "description":
+			if _, ok := fieldSeen[database.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, database.FieldDescription)
+				fieldSeen[database.FieldDescription] = struct{}{}
+			}
+		case "schema":
+			if _, ok := fieldSeen[database.FieldSchema]; !ok {
+				selectedFields = append(selectedFields, database.FieldSchema)
+				fieldSeen[database.FieldSchema] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		d.Select(selectedFields...)
+	}
+	return nil
+}
+
+type databasePaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []DatabasePaginateOption
+}
+
+func newDatabasePaginateArgs(rv map[string]any) *databasePaginateArgs {
+	args := &databasePaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (gr *GroupQuery) CollectFields(ctx context.Context, satisfies ...string) (*GroupQuery, error) {
@@ -104,6 +186,125 @@ func newGroupPaginateArgs(rv map[string]any) *groupPaginateArgs {
 	}
 	if v := rv[beforeField]; v != nil {
 		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (q *QuestionQuery) CollectFields(ctx context.Context, satisfies ...string) (*QuestionQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return q, nil
+	}
+	if err := q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return q, nil
+}
+
+func (q *QuestionQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(question.Columns))
+		selectedFields = []string{question.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "database":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&DatabaseClient{config: q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, databaseImplementors)...); err != nil {
+				return err
+			}
+			q.WithNamedDatabase(alias, func(wq *DatabaseQuery) {
+				*wq = *query
+			})
+		case "category":
+			if _, ok := fieldSeen[question.FieldCategory]; !ok {
+				selectedFields = append(selectedFields, question.FieldCategory)
+				fieldSeen[question.FieldCategory] = struct{}{}
+			}
+		case "difficulty":
+			if _, ok := fieldSeen[question.FieldDifficulty]; !ok {
+				selectedFields = append(selectedFields, question.FieldDifficulty)
+				fieldSeen[question.FieldDifficulty] = struct{}{}
+			}
+		case "title":
+			if _, ok := fieldSeen[question.FieldTitle]; !ok {
+				selectedFields = append(selectedFields, question.FieldTitle)
+				fieldSeen[question.FieldTitle] = struct{}{}
+			}
+		case "description":
+			if _, ok := fieldSeen[question.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, question.FieldDescription)
+				fieldSeen[question.FieldDescription] = struct{}{}
+			}
+		case "referenceAnswer":
+			if _, ok := fieldSeen[question.FieldReferenceAnswer]; !ok {
+				selectedFields = append(selectedFields, question.FieldReferenceAnswer)
+				fieldSeen[question.FieldReferenceAnswer] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type questionPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []QuestionPaginateOption
+}
+
+func newQuestionPaginateArgs(rv map[string]any) *questionPaginateArgs {
+	args := &questionPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &QuestionOrder{Field: &QuestionOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithQuestionOrder(order))
+			}
+		case *QuestionOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithQuestionOrder(v))
+			}
+		}
 	}
 	return args
 }
@@ -278,6 +479,28 @@ func newUserPaginateArgs(rv map[string]any) *userPaginateArgs {
 	}
 	if v := rv[beforeField]; v != nil {
 		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &UserOrder{Field: &UserOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithUserOrder(order))
+			}
+		case *UserOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithUserOrder(v))
+			}
+		}
 	}
 	return args
 }

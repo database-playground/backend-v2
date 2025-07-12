@@ -20,6 +20,18 @@ func (gr *Group) ScopeSet(ctx context.Context) (result []*ScopeSet, err error) {
 	return result, err
 }
 
+func (q *Question) Database(ctx context.Context) (result []*Database, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = q.NamedDatabase(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = q.Edges.DatabaseOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = q.QueryDatabase().All(ctx)
+	}
+	return result, err
+}
+
 func (u *User) Group(ctx context.Context) (*Group, error) {
 	result, err := u.Edges.GroupOrErr()
 	if IsNotLoaded(err) {

@@ -8,8 +8,10 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/predicate"
+	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/scopeset"
 	"github.com/database-playground/backend-v2/ent/user"
 )
@@ -70,6 +72,33 @@ func (f TraverseFunc) Traverse(ctx context.Context, q ent.Query) error {
 	return f(ctx, query)
 }
 
+// The DatabaseFunc type is an adapter to allow the use of ordinary function as a Querier.
+type DatabaseFunc func(context.Context, *ent.DatabaseQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f DatabaseFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.DatabaseQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.DatabaseQuery", q)
+}
+
+// The TraverseDatabase type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseDatabase func(context.Context, *ent.DatabaseQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseDatabase) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseDatabase) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.DatabaseQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.DatabaseQuery", q)
+}
+
 // The GroupFunc type is an adapter to allow the use of ordinary function as a Querier.
 type GroupFunc func(context.Context, *ent.GroupQuery) (ent.Value, error)
 
@@ -95,6 +124,33 @@ func (f TraverseGroup) Traverse(ctx context.Context, q ent.Query) error {
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.GroupQuery", q)
+}
+
+// The QuestionFunc type is an adapter to allow the use of ordinary function as a Querier.
+type QuestionFunc func(context.Context, *ent.QuestionQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f QuestionFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.QuestionQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.QuestionQuery", q)
+}
+
+// The TraverseQuestion type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseQuestion func(context.Context, *ent.QuestionQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseQuestion) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseQuestion) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.QuestionQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.QuestionQuery", q)
 }
 
 // The ScopeSetFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -154,8 +210,12 @@ func (f TraverseUser) Traverse(ctx context.Context, q ent.Query) error {
 // NewQuery returns the generic Query interface for the given typed query.
 func NewQuery(q ent.Query) (Query, error) {
 	switch q := q.(type) {
+	case *ent.DatabaseQuery:
+		return &query[*ent.DatabaseQuery, predicate.Database, database.OrderOption]{typ: ent.TypeDatabase, tq: q}, nil
 	case *ent.GroupQuery:
 		return &query[*ent.GroupQuery, predicate.Group, group.OrderOption]{typ: ent.TypeGroup, tq: q}, nil
+	case *ent.QuestionQuery:
+		return &query[*ent.QuestionQuery, predicate.Question, question.OrderOption]{typ: ent.TypeQuestion, tq: q}, nil
 	case *ent.ScopeSetQuery:
 		return &query[*ent.ScopeSetQuery, predicate.ScopeSet, scopeset.OrderOption]{typ: ent.TypeScopeSet, tq: q}, nil
 	case *ent.UserQuery:

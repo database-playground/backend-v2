@@ -26,9 +26,19 @@ func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, erro
 	return nil, defs.ErrNotImplemented
 }
 
+// Databases is the resolver for the databases field.
+func (r *queryResolver) Databases(ctx context.Context) ([]*ent.Database, error) {
+	return r.ent.Database.Query().All(ctx)
+}
+
 // Groups is the resolver for the groups field.
 func (r *queryResolver) Groups(ctx context.Context) ([]*ent.Group, error) {
 	return r.ent.Group.Query().All(ctx)
+}
+
+// Questions is the resolver for the questions field.
+func (r *queryResolver) Questions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.QuestionOrder) (*ent.QuestionConnection, error) {
+	return r.ent.Question.Query().Paginate(ctx, after, first, before, last, ent.WithQuestionOrder(orderBy))
 }
 
 // ScopeSets is the resolver for the scopeSets field.
@@ -37,8 +47,8 @@ func (r *queryResolver) ScopeSets(ctx context.Context) ([]*ent.ScopeSet, error) 
 }
 
 // Users is the resolver for the users field.
-func (r *queryResolver) Users(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int) (*ent.UserConnection, error) {
-	return r.ent.User.Query().Paginate(ctx, after, first, before, last)
+func (r *queryResolver) Users(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.UserOrder) (*ent.UserConnection, error) {
+	return r.ent.User.Query().Paginate(ctx, after, first, before, last, ent.WithUserOrder(orderBy))
 }
 
 // Query returns QueryResolver implementation.

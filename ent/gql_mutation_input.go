@@ -2,6 +2,66 @@
 
 package ent
 
+import (
+	"github.com/database-playground/backend-v2/ent/question"
+)
+
+// CreateDatabaseInput represents a mutation input for creating databases.
+type CreateDatabaseInput struct {
+	Slug           string
+	RelationFigure string
+	Description    *string
+	Schema         string
+}
+
+// Mutate applies the CreateDatabaseInput on the DatabaseMutation builder.
+func (i *CreateDatabaseInput) Mutate(m *DatabaseMutation) {
+	m.SetSlug(i.Slug)
+	m.SetRelationFigure(i.RelationFigure)
+	if v := i.Description; v != nil {
+		m.SetDescription(*v)
+	}
+	m.SetSchema(i.Schema)
+}
+
+// SetInput applies the change-set in the CreateDatabaseInput on the DatabaseCreate builder.
+func (c *DatabaseCreate) SetInput(i CreateDatabaseInput) *DatabaseCreate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// UpdateDatabaseInput represents a mutation input for updating databases.
+type UpdateDatabaseInput struct {
+	ClearDescription bool
+	Description      *string
+	Schema           *string
+}
+
+// Mutate applies the UpdateDatabaseInput on the DatabaseMutation builder.
+func (i *UpdateDatabaseInput) Mutate(m *DatabaseMutation) {
+	if i.ClearDescription {
+		m.ClearDescription()
+	}
+	if v := i.Description; v != nil {
+		m.SetDescription(*v)
+	}
+	if v := i.Schema; v != nil {
+		m.SetSchema(*v)
+	}
+}
+
+// SetInput applies the change-set in the UpdateDatabaseInput on the DatabaseUpdate builder.
+func (c *DatabaseUpdate) SetInput(i UpdateDatabaseInput) *DatabaseUpdate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// SetInput applies the change-set in the UpdateDatabaseInput on the DatabaseUpdateOne builder.
+func (c *DatabaseUpdateOne) SetInput(i UpdateDatabaseInput) *DatabaseUpdateOne {
+	i.Mutate(c.Mutation())
+	return c
+}
+
 // CreateGroupInput represents a mutation input for creating groups.
 type CreateGroupInput struct {
 	Name        string
@@ -66,6 +126,84 @@ func (c *GroupUpdate) SetInput(i UpdateGroupInput) *GroupUpdate {
 
 // SetInput applies the change-set in the UpdateGroupInput on the GroupUpdateOne builder.
 func (c *GroupUpdateOne) SetInput(i UpdateGroupInput) *GroupUpdateOne {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// CreateQuestionInput represents a mutation input for creating questions.
+type CreateQuestionInput struct {
+	Category        string
+	Difficulty      *question.Difficulty
+	Title           string
+	Description     string
+	ReferenceAnswer string
+	DatabaseIDs     []int
+}
+
+// Mutate applies the CreateQuestionInput on the QuestionMutation builder.
+func (i *CreateQuestionInput) Mutate(m *QuestionMutation) {
+	m.SetCategory(i.Category)
+	if v := i.Difficulty; v != nil {
+		m.SetDifficulty(*v)
+	}
+	m.SetTitle(i.Title)
+	m.SetDescription(i.Description)
+	m.SetReferenceAnswer(i.ReferenceAnswer)
+	if v := i.DatabaseIDs; len(v) > 0 {
+		m.AddDatabaseIDs(v...)
+	}
+}
+
+// SetInput applies the change-set in the CreateQuestionInput on the QuestionCreate builder.
+func (c *QuestionCreate) SetInput(i CreateQuestionInput) *QuestionCreate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// UpdateQuestionInput represents a mutation input for updating questions.
+type UpdateQuestionInput struct {
+	Difficulty        *question.Difficulty
+	Title             *string
+	Description       *string
+	ReferenceAnswer   *string
+	ClearDatabase     bool
+	AddDatabaseIDs    []int
+	RemoveDatabaseIDs []int
+}
+
+// Mutate applies the UpdateQuestionInput on the QuestionMutation builder.
+func (i *UpdateQuestionInput) Mutate(m *QuestionMutation) {
+	if v := i.Difficulty; v != nil {
+		m.SetDifficulty(*v)
+	}
+	if v := i.Title; v != nil {
+		m.SetTitle(*v)
+	}
+	if v := i.Description; v != nil {
+		m.SetDescription(*v)
+	}
+	if v := i.ReferenceAnswer; v != nil {
+		m.SetReferenceAnswer(*v)
+	}
+	if i.ClearDatabase {
+		m.ClearDatabase()
+	}
+	if v := i.AddDatabaseIDs; len(v) > 0 {
+		m.AddDatabaseIDs(v...)
+	}
+	if v := i.RemoveDatabaseIDs; len(v) > 0 {
+		m.RemoveDatabaseIDs(v...)
+	}
+}
+
+// SetInput applies the change-set in the UpdateQuestionInput on the QuestionUpdate builder.
+func (c *QuestionUpdate) SetInput(i UpdateQuestionInput) *QuestionUpdate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// SetInput applies the change-set in the UpdateQuestionInput on the QuestionUpdateOne builder.
+func (c *QuestionUpdateOne) SetInput(i UpdateQuestionInput) *QuestionUpdateOne {
 	i.Mutate(c.Mutation())
 	return c
 }

@@ -6,8 +6,14 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Database is the predicate function for database builders.
+type Database func(*sql.Selector)
+
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
+
+// Question is the predicate function for question builders.
+type Question func(*sql.Selector)
 
 // ScopeSet is the predicate function for scopeset builders.
 type ScopeSet func(*sql.Selector)
