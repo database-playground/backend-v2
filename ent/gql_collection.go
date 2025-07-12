@@ -90,6 +90,9 @@ func newDatabasePaginateArgs(rv map[string]any) *databasePaginateArgs {
 	if v := rv[beforeField]; v != nil {
 		args.before = v.(*Cursor)
 	}
+	if v, ok := rv[whereField].(*DatabaseWhereInput); ok {
+		args.opts = append(args.opts, WithDatabaseFilter(v.Filter))
+	}
 	return args
 }
 
@@ -186,6 +189,9 @@ func newGroupPaginateArgs(rv map[string]any) *groupPaginateArgs {
 	}
 	if v := rv[beforeField]; v != nil {
 		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*GroupWhereInput); ok {
+		args.opts = append(args.opts, WithGroupFilter(v.Filter))
 	}
 	return args
 }
@@ -306,6 +312,9 @@ func newQuestionPaginateArgs(rv map[string]any) *questionPaginateArgs {
 			}
 		}
 	}
+	if v, ok := rv[whereField].(*QuestionWhereInput); ok {
+		args.opts = append(args.opts, WithQuestionFilter(v.Filter))
+	}
 	return args
 }
 
@@ -379,6 +388,9 @@ func newScopeSetPaginateArgs(rv map[string]any) *scopesetPaginateArgs {
 	}
 	if v := rv[beforeField]; v != nil {
 		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*ScopeSetWhereInput); ok {
+		args.opts = append(args.opts, WithScopeSetFilter(v.Filter))
 	}
 	return args
 }
@@ -501,6 +513,9 @@ func newUserPaginateArgs(rv map[string]any) *userPaginateArgs {
 				args.opts = append(args.opts, WithUserOrder(v))
 			}
 		}
+	}
+	if v, ok := rv[whereField].(*UserWhereInput); ok {
+		args.opts = append(args.opts, WithUserFilter(v.Filter))
 	}
 	return args
 }
