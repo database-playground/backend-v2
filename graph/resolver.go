@@ -39,6 +39,14 @@ func (r *Resolver) UserAccount(ctx context.Context) *useraccount.Context {
 	return useraccount.NewContext(entClient, r.auth)
 }
 
+func (r *Resolver) EntClient(ctx context.Context) *ent.Client {
+	if entClient := ent.FromContext(ctx); entClient != nil {
+		return entClient
+	}
+
+	return r.ent
+}
+
 func NewErrorPresenter() graphql.ErrorPresenterFunc {
 	return func(ctx context.Context, err error) *gqlerror.Error {
 		var gqlErr defs.GqlError

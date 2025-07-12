@@ -34,7 +34,7 @@ func (r *mutationResolver) UpdateMe(ctx context.Context, input ent.UpdateUserInp
 		return nil, defs.ErrDisallowUpdateGroup
 	}
 
-	entClient := ent.FromContext(ctx)
+	entClient := r.EntClient(ctx)
 
 	updatedUser, err := entClient.User.UpdateOneID(user.UserID).SetInput(input).Save(ctx)
 	if err != nil {
@@ -46,7 +46,7 @@ func (r *mutationResolver) UpdateMe(ctx context.Context, input ent.UpdateUserInp
 
 // UpdateUser is the resolver for the updateUser field.
 func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.UpdateUserInput) (*ent.User, error) {
-	entClient := ent.FromContext(ctx)
+	entClient := r.EntClient(ctx)
 
 	user, err := entClient.User.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
@@ -61,7 +61,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.Upd
 
 // DeleteUser is the resolver for the deleteUser field.
 func (r *mutationResolver) DeleteUser(ctx context.Context, id int) (bool, error) {
-	entClient := ent.FromContext(ctx)
+	entClient := r.EntClient(ctx)
 
 	err := entClient.User.DeleteOneID(id).Exec(ctx)
 	if err != nil {
@@ -76,7 +76,7 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id int) (bool, error)
 
 // CreateScopeSet is the resolver for the createScopeSet field.
 func (r *mutationResolver) CreateScopeSet(ctx context.Context, input ent.CreateScopeSetInput) (*ent.ScopeSet, error) {
-	entClient := ent.FromContext(ctx)
+	entClient := r.EntClient(ctx)
 
 	scopeSet, err := entClient.ScopeSet.Create().SetInput(input).Save(ctx)
 	if err != nil {
@@ -88,7 +88,7 @@ func (r *mutationResolver) CreateScopeSet(ctx context.Context, input ent.CreateS
 
 // UpdateScopeSet is the resolver for the updateScopeSet field.
 func (r *mutationResolver) UpdateScopeSet(ctx context.Context, id int, input ent.UpdateScopeSetInput) (*ent.ScopeSet, error) {
-	entClient := ent.FromContext(ctx)
+	entClient := r.EntClient(ctx)
 
 	scopeSet, err := entClient.ScopeSet.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
@@ -103,7 +103,7 @@ func (r *mutationResolver) UpdateScopeSet(ctx context.Context, id int, input ent
 
 // DeleteScopeSet is the resolver for the deleteScopeSet field.
 func (r *mutationResolver) DeleteScopeSet(ctx context.Context, id int) (bool, error) {
-	entClient := ent.FromContext(ctx)
+	entClient := r.EntClient(ctx)
 
 	err := entClient.ScopeSet.DeleteOneID(id).Exec(ctx)
 	if err != nil {
@@ -118,7 +118,7 @@ func (r *mutationResolver) DeleteScopeSet(ctx context.Context, id int) (bool, er
 
 // CreateGroup is the resolver for the createGroup field.
 func (r *mutationResolver) CreateGroup(ctx context.Context, input ent.CreateGroupInput) (*ent.Group, error) {
-	entClient := ent.FromContext(ctx)
+	entClient := r.EntClient(ctx)
 
 	group, err := entClient.Group.Create().SetInput(input).Save(ctx)
 	if err != nil {
@@ -133,7 +133,7 @@ func (r *mutationResolver) CreateGroup(ctx context.Context, input ent.CreateGrou
 
 // UpdateGroup is the resolver for the updateGroup field.
 func (r *mutationResolver) UpdateGroup(ctx context.Context, id int, input ent.UpdateGroupInput) (*ent.Group, error) {
-	entClient := ent.FromContext(ctx)
+	entClient := r.EntClient(ctx)
 
 	group, err := entClient.Group.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
@@ -148,7 +148,7 @@ func (r *mutationResolver) UpdateGroup(ctx context.Context, id int, input ent.Up
 
 // DeleteGroup is the resolver for the deleteGroup field.
 func (r *mutationResolver) DeleteGroup(ctx context.Context, id int) (bool, error) {
-	entClient := ent.FromContext(ctx)
+	entClient := r.EntClient(ctx)
 
 	err := entClient.Group.DeleteOneID(id).Exec(ctx)
 	if err != nil {
@@ -267,7 +267,7 @@ func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id int) (*ent.User, error) {
-	entClient := ent.FromContext(ctx)
+	entClient := r.EntClient(ctx)
 
 	user, err := entClient.User.Query().Where(user.ID(id)).First(ctx)
 	if err != nil {
@@ -282,7 +282,7 @@ func (r *queryResolver) User(ctx context.Context, id int) (*ent.User, error) {
 
 // Group is the resolver for the group field.
 func (r *queryResolver) Group(ctx context.Context, id int) (*ent.Group, error) {
-	entClient := ent.FromContext(ctx)
+	entClient := r.EntClient(ctx)
 
 	group, err := entClient.Group.Query().Where(group.ID(id)).First(ctx)
 	if err != nil {
@@ -315,7 +315,7 @@ func (r *queryResolver) ScopeSet(ctx context.Context, filter model.ScopeSetFilte
 		return nil, defs.ErrInvalidFilter
 	}
 
-	entClient := ent.FromContext(ctx)
+	entClient := r.EntClient(ctx)
 
 	scopeSet, err := entClient.ScopeSet.Query().Where(ps).First(ctx)
 	if err != nil {
