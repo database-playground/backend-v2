@@ -34,9 +34,7 @@ func NewSchema(ent *ent.Client, auth auth.Storage) graphql.ExecutableSchema {
 }
 
 func (r *Resolver) UserAccount(ctx context.Context) *useraccount.Context {
-	entClient := ent.FromContext(ctx)
-
-	return useraccount.NewContext(entClient, r.auth)
+	return useraccount.NewContext(r.EntClient(ctx), r.auth)
 }
 
 func (r *Resolver) EntClient(ctx context.Context) *ent.Client {

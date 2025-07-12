@@ -65,18 +65,15 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		c := client.New(srv)
 
-		// Create context with authenticated user and required scope
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: 1,
-			Scopes: []string{"me:write"},
-		})
-
 		// Execute mutation
 		var resp struct {
 			LogoutAll bool
 		}
 		err := c.Post(`mutation { logoutAll }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"me:write"},
+			}))
 		})
 
 		// Verify response
@@ -128,18 +125,15 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		c := client.New(srv)
 
-		// Create context with authenticated user but wrong scope
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: 1,
-			Scopes: []string{"user:read"},
-		})
-
 		// Execute mutation
 		var resp struct {
 			LogoutAll bool
 		}
 		err := c.Post(`mutation { logoutAll }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read"},
+			}))
 		})
 
 		// Verify error
@@ -168,18 +162,15 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		c := client.New(srv)
 
-		// Create context with authenticated user and required scope
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: 1,
-			Scopes: []string{"me:write"},
-		})
-
 		// Execute mutation
 		var resp struct {
 			LogoutAll bool
 		}
 		err := c.Post(`mutation { logoutAll }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"me:write"},
+			}))
 		})
 
 		// Verify error
@@ -222,18 +213,15 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		c := client.New(srv)
 
-		// Create context with authenticated user and required scope
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: 1,
-			Scopes: []string{"user:impersonate"},
-		})
-
 		// Execute mutation
 		var resp struct {
 			ImpersonateUser string
 		}
 		err = c.Post(`mutation { impersonateUser(userID: `+strconv.Itoa(userToImpersonate.ID)+`) }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:impersonate"},
+			}))
 		})
 
 		// Verify response
@@ -286,18 +274,15 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		c := client.New(srv)
 
-		// Create context with authenticated user but wrong scope
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: 1,
-			Scopes: []string{"user:read"},
-		})
-
 		// Execute mutation
 		var resp struct {
 			ImpersonateUser string
 		}
 		err := c.Post(`mutation { impersonateUser(userID: 123) }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read"},
+			}))
 		})
 
 		// Verify error
@@ -338,18 +323,15 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		c := client.New(srv)
 
-		// Create context with authenticated user and required scope
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: 1,
-			Scopes: []string{"user:impersonate"},
-		})
-
 		// Execute mutation
 		var resp struct {
 			ImpersonateUser string
 		}
 		err = c.Post(`mutation { impersonateUser(userID: `+strconv.Itoa(userToImpersonate.ID)+`) }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:impersonate"},
+			}))
 		})
 
 		// Verify error
@@ -373,18 +355,15 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		c := client.New(srv)
 
-		// Create context with authenticated user and required scope
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: 1,
-			Scopes: []string{"user:impersonate"},
-		})
-
 		// Execute mutation
 		var resp struct {
 			ImpersonateUser string
 		}
 		err := c.Post(`mutation { impersonateUser(userID: 123) }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:impersonate"},
+			}))
 		})
 
 		// Verify error
@@ -449,12 +428,6 @@ func TestQueryResolver_Me(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		gqlClient := client.New(srv)
 
-		// Create context with authenticated user and required scope
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: user.ID,
-			Scopes: []string{"me:read"},
-		})
-
 		// Execute query
 		var resp struct {
 			Me struct {
@@ -463,7 +436,12 @@ func TestQueryResolver_Me(t *testing.T) {
 			}
 		}
 		err = gqlClient.Post(`query { me { name email } }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(
+				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+					UserID: user.ID,
+					Scopes: []string{"me:read"},
+				}),
+			)
 		})
 
 		// Verify response
@@ -519,12 +497,6 @@ func TestQueryResolver_Me(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		gqlClient := client.New(srv)
 
-		// Create context with authenticated user but wrong scope
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: 1,
-			Scopes: []string{"me:write"},
-		})
-
 		// Execute query
 		var resp struct {
 			Me struct {
@@ -532,7 +504,10 @@ func TestQueryResolver_Me(t *testing.T) {
 			}
 		}
 		err := gqlClient.Post(`query { me { name } }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"me:write"},
+			}))
 		})
 
 		// Verify error
@@ -557,12 +532,6 @@ func TestQueryResolver_Me(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		gqlClient := client.New(srv)
 
-		// Create context with authenticated user but invalid user ID
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: 0,
-			Scopes: []string{"me:read"},
-		})
-
 		// Execute query
 		var resp struct {
 			Me struct {
@@ -570,7 +539,10 @@ func TestQueryResolver_Me(t *testing.T) {
 			}
 		}
 		err := gqlClient.Post(`query { me { name } }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 0,
+				Scopes: []string{"me:read"},
+			}))
 		})
 
 		// Verify error
@@ -602,11 +574,6 @@ func TestQueryResolver_User(t *testing.T) {
 		Save(context.Background())
 	require.NoError(t, err)
 
-	ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-		UserID: 1,
-		Scopes: []string{"user:read"},
-	})
-
 	t.Run("success", func(t *testing.T) {
 		var resp struct {
 			User struct {
@@ -615,7 +582,10 @@ func TestQueryResolver_User(t *testing.T) {
 			}
 		}
 		err := gqlClient.Post(`query { user(id: `+strconv.Itoa(user.ID)+`) { name email } }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read"},
+			}))
 		})
 		require.NoError(t, err)
 		require.Equal(t, "user1", resp.User.Name)
@@ -629,7 +599,10 @@ func TestQueryResolver_User(t *testing.T) {
 			}
 		}
 		err := gqlClient.Post(`query { user(id: 99999) { name } }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read"},
+			}))
 		})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), defs.ErrNotFound.Error())
@@ -643,11 +616,10 @@ func TestQueryResolver_User(t *testing.T) {
 		}
 
 		err := gqlClient.Post(`query { user(id: `+strconv.Itoa(user.ID)+`) { name } }`, &resp, func(bd *client.Request) {
-			badCtx := auth.WithUser(context.Background(), auth.TokenInfo{
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
 				UserID: 1,
-				Scopes: []string{},
-			})
-			bd.HTTP = bd.HTTP.WithContext(badCtx)
+				Scopes: []string{"user:write"},
+			}))
 		})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), defs.CodeUnauthorized)
@@ -683,11 +655,6 @@ func TestQueryResolver_Group(t *testing.T) {
 	group, err := createTestGroup(t, entClient)
 	require.NoError(t, err)
 
-	ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-		UserID: 1,
-		Scopes: []string{"group:read"},
-	})
-
 	t.Run("success", func(t *testing.T) {
 		var resp struct {
 			Group struct {
@@ -695,7 +662,10 @@ func TestQueryResolver_Group(t *testing.T) {
 			}
 		}
 		err := gqlClient.Post(`query { group(id: `+strconv.Itoa(group.ID)+`) { name } }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"group:read"},
+			}))
 		})
 		require.NoError(t, err)
 		require.Equal(t, "test", resp.Group.Name)
@@ -708,7 +678,10 @@ func TestQueryResolver_Group(t *testing.T) {
 			}
 		}
 		err := gqlClient.Post(`query { group(id: 99999) { name } }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"group:read"},
+			}))
 		})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), defs.ErrNotFound.Error())
@@ -722,11 +695,10 @@ func TestQueryResolver_Group(t *testing.T) {
 		}
 
 		err := gqlClient.Post(`query { group(id: `+strconv.Itoa(group.ID)+`) { name } }`, &resp, func(bd *client.Request) {
-			badCtx := auth.WithUser(context.Background(), auth.TokenInfo{
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
 				UserID: 1,
-				Scopes: []string{},
-			})
-			bd.HTTP = bd.HTTP.WithContext(badCtx)
+				Scopes: []string{"group:write"},
+			}))
 		})
 
 		require.Error(t, err)
@@ -766,11 +738,6 @@ func TestQueryResolver_ScopeSet(t *testing.T) {
 		Save(context.Background())
 	require.NoError(t, err)
 
-	ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-		UserID: 1,
-		Scopes: []string{"scopeset:read"},
-	})
-
 	t.Run("by id", func(t *testing.T) {
 		var resp struct {
 			ScopeSet struct {
@@ -779,7 +746,10 @@ func TestQueryResolver_ScopeSet(t *testing.T) {
 		}
 		query := `query { scopeSet(filter: { id: ` + strconv.Itoa(scopeset.ID) + ` }) { slug } }`
 		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"scopeset:read"},
+			}))
 		})
 		require.NoError(t, err)
 		require.Equal(t, "slug1", resp.ScopeSet.Slug)
@@ -793,7 +763,10 @@ func TestQueryResolver_ScopeSet(t *testing.T) {
 		}
 		query := `query { scopeSet(filter: { slug: "slug1" }) { slug } }`
 		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"scopeset:read"},
+			}))
 		})
 		require.NoError(t, err)
 		require.Equal(t, "slug1", resp.ScopeSet.Slug)
@@ -807,7 +780,10 @@ func TestQueryResolver_ScopeSet(t *testing.T) {
 		}
 		query := `query { scopeSet(filter: { }) { slug } }`
 		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"scopeset:read"},
+			}))
 		})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), defs.ErrInvalidFilter.Error())
@@ -821,7 +797,10 @@ func TestQueryResolver_ScopeSet(t *testing.T) {
 		}
 		query := `query { scopeSet(filter: { id: 1, slug: "slug1" }) { slug } }`
 		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"scopeset:read"},
+			}))
 		})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), defs.ErrInvalidFilter.Error())
@@ -835,7 +814,10 @@ func TestQueryResolver_ScopeSet(t *testing.T) {
 		}
 		query := `query { scopeSet(filter: { id: 99999 }) { slug } }`
 		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"scopeset:read"},
+			}))
 		})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), defs.ErrNotFound.Error())
@@ -849,11 +831,10 @@ func TestQueryResolver_ScopeSet(t *testing.T) {
 		}
 
 		err := gqlClient.Post(`query { scopeSet(filter: { id: `+strconv.Itoa(scopeset.ID)+` }) { slug } }`, &resp, func(bd *client.Request) {
-			badCtx := auth.WithUser(context.Background(), auth.TokenInfo{
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
 				UserID: 1,
-				Scopes: []string{},
-			})
-			bd.HTTP = bd.HTTP.WithContext(badCtx)
+				Scopes: []string{"unverified"},
+			}))
 		})
 
 		require.Error(t, err)
@@ -912,15 +893,6 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		gqlClient := client.New(srv)
 
-		// Create context with authenticated user and required scope
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: user.ID,
-			Scopes: []string{"me:read", "user:impersonate"},
-			Meta: map[string]string{
-				useraccount.MetaImpersonation: strconv.Itoa(impersonator.ID),
-			},
-		})
-
 		// Execute query
 		var resp struct {
 			Me struct {
@@ -931,7 +903,13 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 			}
 		}
 		err = gqlClient.Post(`query { me { name impersonatedBy { name } } }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: user.ID,
+				Scopes: []string{"me:read", "user:impersonate"},
+				Meta: map[string]string{
+					useraccount.MetaImpersonation: strconv.Itoa(impersonator.ID),
+				},
+			}))
 		})
 
 		// Verify response
@@ -1001,13 +979,6 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		gqlClient := client.New(srv)
 
-		// Create context with authenticated user and required scope but no impersonation metadata
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: user.ID,
-			Scopes: []string{"me:read", "user:impersonate"},
-			Meta:   map[string]string{},
-		})
-
 		// Execute query
 		var resp struct {
 			Me struct {
@@ -1018,7 +989,11 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 			}
 		}
 		err = gqlClient.Post(`query { me { name impersonatedBy { name } } }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: user.ID,
+				Scopes: []string{"me:read", "user:impersonate"},
+				Meta:   map[string]string{},
+			}))
 		})
 
 		// Verify response
@@ -1057,15 +1032,6 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		gqlClient := client.New(srv)
 
-		// Create context with authenticated user, required scope and non-existent impersonator ID
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: user.ID,
-			Scopes: []string{"me:read", "user:impersonate"},
-			Meta: map[string]string{
-				"impersonated_by": "999", // Non-existent user ID
-			},
-		})
-
 		// Execute query
 		var resp struct {
 			Me struct {
@@ -1075,7 +1041,13 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 			}
 		}
 		err = gqlClient.Post(`query { me { impersonatedBy { name } } }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: user.ID,
+				Scopes: []string{"me:read", "user:impersonate"},
+				Meta: map[string]string{
+					"impersonated_by": "999", // Non-existent user ID
+				},
+			}))
 		})
 
 		// Verify response - should return null for impersonatedBy without error
@@ -1114,12 +1086,6 @@ func TestMutationResolver_UpdateMe(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		gqlClient := client.New(srv)
 
-		// Create context with authenticated user and required scope
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: user.ID,
-			Scopes: []string{"me:write"},
-		})
-
 		// Execute mutation
 		var resp struct {
 			UpdateMe struct {
@@ -1127,7 +1093,10 @@ func TestMutationResolver_UpdateMe(t *testing.T) {
 			}
 		}
 		err = gqlClient.Post(`mutation { updateMe(input: { name: "testuser" }) { name } }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: user.ID,
+				Scopes: []string{"me:write"},
+			}))
 		})
 
 		// Verify response
@@ -1162,18 +1131,16 @@ func TestMutationResolver_UpdateMe(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		gqlClient := client.New(srv)
 
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: user.ID,
-			Scopes: []string{"me:write"},
-		})
-
 		var resp struct {
 			UpdateMe struct {
 				Name string
 			}
 		}
 		err = gqlClient.Post(`mutation { updateMe(input: { groupID: "1" }) { name } }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: user.ID,
+				Scopes: []string{"me:write"},
+			}))
 		})
 
 		// Verify error
@@ -1229,12 +1196,6 @@ func TestMutationResolver_UpdateMe(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		gqlClient := client.New(srv)
 
-		// Create context with authenticated user and required scope
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: 1,
-			Scopes: []string{"test"},
-		})
-
 		// Execute mutation
 		var resp struct {
 			UpdateMe struct {
@@ -1242,7 +1203,10 @@ func TestMutationResolver_UpdateMe(t *testing.T) {
 			}
 		}
 		err := gqlClient.Post(`mutation { updateMe(input: { name: "testuser" }) { name } }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"test"},
+			}))
 		})
 
 		// Verify error
@@ -1268,12 +1232,6 @@ func TestMutationResolver_UpdateMe(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		gqlClient := client.New(srv)
 
-		// Create context with authenticated user and required scope
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: 1,
-			Scopes: []string{"me:write"},
-		})
-
 		// Execute mutation
 		var resp struct {
 			UpdateMe struct {
@@ -1281,7 +1239,10 @@ func TestMutationResolver_UpdateMe(t *testing.T) {
 			}
 		}
 		err := gqlClient.Post(`mutation { updateMe(input: { name: "testuser" }) { name } }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"me:write"},
+			}))
 		})
 
 		// Verify error
@@ -1324,18 +1285,15 @@ func TestMutationResolver_DeleteMe(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		c := client.New(srv)
 
-		// Create context with authenticated user and required scope
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: user.ID,
-			Scopes: []string{"me:delete"},
-		})
-
 		// Execute mutation
 		var resp struct {
 			DeleteMe bool
 		}
 		err = c.Post(`mutation { deleteMe }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: user.ID,
+				Scopes: []string{"me:delete"},
+			}))
 		})
 
 		// Verify response
@@ -1486,18 +1444,15 @@ func TestMutationResolver_VerifyRegistration(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		c := client.New(srv)
 
-		// Create context with authenticated user and required scope
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: user.ID,
-			Scopes: []string{"verification:write"},
-		})
-
 		// Execute mutation
 		var resp struct {
 			VerifyRegistration bool
 		}
 		err = c.Post(`mutation { verifyRegistration }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: user.ID,
+				Scopes: []string{"verification:write"},
+			}))
 		})
 
 		// Verify response
@@ -1609,18 +1564,15 @@ func TestMutationResolver_VerifyRegistration(t *testing.T) {
 		srv.AddTransport(transport.POST{})
 		c := client.New(srv)
 
-		// Create context with authenticated user and required scope
-		ctx := auth.WithUser(context.Background(), auth.TokenInfo{
-			UserID: verifiedUser.ID,
-			Scopes: []string{"verification:write"},
-		})
-
 		// Execute mutation
 		var resp struct {
 			VerifyRegistration bool
 		}
 		err = c.Post(`mutation { verifyRegistration }`, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(ctx)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: verifiedUser.ID,
+				Scopes: []string{"verification:write"},
+			}))
 		})
 
 		// Verify error
