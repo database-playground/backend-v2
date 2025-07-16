@@ -102,44 +102,44 @@ func TestSetup(t *testing.T) {
 		// Verify the groups are linked to the correct scope sets
 		adminGroupWithScopes, err := entClient.Group.Query().
 			Where(group.NameEQ(useraccount.AdminGroupSlug)).
-			WithScopeSet().
+			WithScopeSets().
 			Only(ctx)
 		if err != nil {
 			t.Fatalf("Failed to query admin group with scope sets: %v", err)
 		}
-		if len(adminGroupWithScopes.Edges.ScopeSet) != 1 {
-			t.Errorf("Expected admin group to have 1 scope set, got %d", len(adminGroupWithScopes.Edges.ScopeSet))
+		if len(adminGroupWithScopes.Edges.ScopeSets) != 1 {
+			t.Errorf("Expected admin group to have 1 scope set, got %d", len(adminGroupWithScopes.Edges.ScopeSets))
 		}
-		if adminGroupWithScopes.Edges.ScopeSet[0].Slug != useraccount.AdminScopeSetSlug {
-			t.Errorf("Expected admin group to be linked to admin scope set, got %s", adminGroupWithScopes.Edges.ScopeSet[0].Slug)
+		if adminGroupWithScopes.Edges.ScopeSets[0].Slug != useraccount.AdminScopeSetSlug {
+			t.Errorf("Expected admin group to be linked to admin scope set, got %s", adminGroupWithScopes.Edges.ScopeSets[0].Slug)
 		}
 
 		newUserGroupWithScopes, err := entClient.Group.Query().
 			Where(group.NameEQ(useraccount.NewUserGroupSlug)).
-			WithScopeSet().
+			WithScopeSets().
 			Only(ctx)
 		if err != nil {
 			t.Fatalf("Failed to query new-user group with scope sets: %v", err)
 		}
-		if len(newUserGroupWithScopes.Edges.ScopeSet) != 1 {
-			t.Errorf("Expected new-user group to have 1 scope set, got %d", len(newUserGroupWithScopes.Edges.ScopeSet))
+		if len(newUserGroupWithScopes.Edges.ScopeSets) != 1 {
+			t.Errorf("Expected new-user group to have 1 scope set, got %d", len(newUserGroupWithScopes.Edges.ScopeSets))
 		}
-		if newUserGroupWithScopes.Edges.ScopeSet[0].Slug != useraccount.NewUserScopeSetSlug {
-			t.Errorf("Expected new-user group to be linked to new-user scope set, got %s", newUserGroupWithScopes.Edges.ScopeSet[0].Slug)
+		if newUserGroupWithScopes.Edges.ScopeSets[0].Slug != useraccount.NewUserScopeSetSlug {
+			t.Errorf("Expected new-user group to be linked to new-user scope set, got %s", newUserGroupWithScopes.Edges.ScopeSets[0].Slug)
 		}
 
 		unverifiedGroupWithScopes, err := entClient.Group.Query().
 			Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).
-			WithScopeSet().
+			WithScopeSets().
 			Only(ctx)
 		if err != nil {
 			t.Fatalf("Failed to query unverified group with scope sets: %v", err)
 		}
-		if len(unverifiedGroupWithScopes.Edges.ScopeSet) != 1 {
-			t.Errorf("Expected unverified group to have 1 scope set, got %d", len(unverifiedGroupWithScopes.Edges.ScopeSet))
+		if len(unverifiedGroupWithScopes.Edges.ScopeSets) != 1 {
+			t.Errorf("Expected unverified group to have 1 scope set, got %d", len(unverifiedGroupWithScopes.Edges.ScopeSets))
 		}
-		if unverifiedGroupWithScopes.Edges.ScopeSet[0].Slug != useraccount.UnverifiedScopeSetSlug {
-			t.Errorf("Expected unverified group to be linked to unverified scope set, got %s", unverifiedGroupWithScopes.Edges.ScopeSet[0].Slug)
+		if unverifiedGroupWithScopes.Edges.ScopeSets[0].Slug != useraccount.UnverifiedScopeSetSlug {
+			t.Errorf("Expected unverified group to be linked to unverified scope set, got %s", unverifiedGroupWithScopes.Edges.ScopeSets[0].Slug)
 		}
 	})
 

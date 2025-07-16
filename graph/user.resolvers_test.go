@@ -387,7 +387,7 @@ func createTestGroup(t *testing.T, client *ent.Client) (*ent.Group, error) {
 	// Create a group
 	group, err := client.Group.Create().
 		SetName("test").
-		AddScopeSet(scopeset).
+		AddScopeSets(scopeset).
 		Save(context.Background())
 	if err != nil {
 		return nil, err

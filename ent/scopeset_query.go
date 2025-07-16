@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -11,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/scopeset"
 )
@@ -18,13 +20,14 @@ import (
 // ScopeSetQuery is the builder for querying ScopeSet entities.
 type ScopeSetQuery struct {
 	config
-	ctx        *QueryContext
-	order      []scopeset.OrderOption
-	inters     []Interceptor
-	predicates []predicate.ScopeSet
-	withFKs    bool
-	modifiers  []func(*sql.Selector)
-	loadTotal  []func(context.Context, []*ScopeSet) error
+	ctx             *QueryContext
+	order           []scopeset.OrderOption
+	inters          []Interceptor
+	predicates      []predicate.ScopeSet
+	withGroups      *GroupQuery
+	modifiers       []func(*sql.Selector)
+	loadTotal       []func(context.Context, []*ScopeSet) error
+	withNamedGroups map[string]*GroupQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -59,6 +62,28 @@ func (ssq *ScopeSetQuery) Unique(unique bool) *ScopeSetQuery {
 func (ssq *ScopeSetQuery) Order(o ...scopeset.OrderOption) *ScopeSetQuery {
 	ssq.order = append(ssq.order, o...)
 	return ssq
+}
+
+// QueryGroups chains the current query on the "groups" edge.
+func (ssq *ScopeSetQuery) QueryGroups() *GroupQuery {
+	query := (&GroupClient{config: ssq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := ssq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := ssq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(scopeset.Table, scopeset.FieldID, selector),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, scopeset.GroupsTable, scopeset.GroupsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(ssq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first ScopeSet entity from the query.
@@ -253,10 +278,22 @@ func (ssq *ScopeSetQuery) Clone() *ScopeSetQuery {
 		order:      append([]scopeset.OrderOption{}, ssq.order...),
 		inters:     append([]Interceptor{}, ssq.inters...),
 		predicates: append([]predicate.ScopeSet{}, ssq.predicates...),
+		withGroups: ssq.withGroups.Clone(),
 		// clone intermediate query.
 		sql:  ssq.sql.Clone(),
 		path: ssq.path,
 	}
+}
+
+// WithGroups tells the query-builder to eager-load the nodes that are connected to
+// the "groups" edge. The optional arguments are used to configure the query builder of the edge.
+func (ssq *ScopeSetQuery) WithGroups(opts ...func(*GroupQuery)) *ScopeSetQuery {
+	query := (&GroupClient{config: ssq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	ssq.withGroups = query
+	return ssq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -335,19 +372,19 @@ func (ssq *ScopeSetQuery) prepareQuery(ctx context.Context) error {
 
 func (ssq *ScopeSetQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ScopeSet, error) {
 	var (
-		nodes   = []*ScopeSet{}
-		withFKs = ssq.withFKs
-		_spec   = ssq.querySpec()
+		nodes       = []*ScopeSet{}
+		_spec       = ssq.querySpec()
+		loadedTypes = [1]bool{
+			ssq.withGroups != nil,
+		}
 	)
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, scopeset.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*ScopeSet).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &ScopeSet{config: ssq.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if len(ssq.modifiers) > 0 {
@@ -362,12 +399,88 @@ func (ssq *ScopeSetQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Sc
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := ssq.withGroups; query != nil {
+		if err := ssq.loadGroups(ctx, query, nodes,
+			func(n *ScopeSet) { n.Edges.Groups = []*Group{} },
+			func(n *ScopeSet, e *Group) { n.Edges.Groups = append(n.Edges.Groups, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range ssq.withNamedGroups {
+		if err := ssq.loadGroups(ctx, query, nodes,
+			func(n *ScopeSet) { n.appendNamedGroups(name) },
+			func(n *ScopeSet, e *Group) { n.appendNamedGroups(name, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for i := range ssq.loadTotal {
 		if err := ssq.loadTotal[i](ctx, nodes); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
+}
+
+func (ssq *ScopeSetQuery) loadGroups(ctx context.Context, query *GroupQuery, nodes []*ScopeSet, init func(*ScopeSet), assign func(*ScopeSet, *Group)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[int]*ScopeSet)
+	nids := make(map[int]map[*ScopeSet]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(scopeset.GroupsTable)
+		s.Join(joinT).On(s.C(group.FieldID), joinT.C(scopeset.GroupsPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(scopeset.GroupsPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(scopeset.GroupsPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(sql.NullInt64)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := int(values[0].(*sql.NullInt64).Int64)
+				inValue := int(values[1].(*sql.NullInt64).Int64)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*ScopeSet]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Group](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "groups" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
 }
 
 func (ssq *ScopeSetQuery) sqlCount(ctx context.Context) (int, error) {
@@ -452,6 +565,20 @@ func (ssq *ScopeSetQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// WithNamedGroups tells the query-builder to eager-load the nodes that are connected to the "groups"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (ssq *ScopeSetQuery) WithNamedGroups(name string, opts ...func(*GroupQuery)) *ScopeSetQuery {
+	query := (&GroupClient{config: ssq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if ssq.withNamedGroups == nil {
+		ssq.withNamedGroups = make(map[string]*GroupQuery)
+	}
+	ssq.withNamedGroups[name] = query
+	return ssq
 }
 
 // ScopeSetGroupBy is the group-by builder for ScopeSet entities.

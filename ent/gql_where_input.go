@@ -444,9 +444,9 @@ type GroupWhereInput struct {
 	DescriptionEqualFold    *string  `json:"descriptionEqualFold,omitempty"`
 	DescriptionContainsFold *string  `json:"descriptionContainsFold,omitempty"`
 
-	// "scope_set" edge predicates.
-	HasScopeSet     *bool                 `json:"hasScopeSet,omitempty"`
-	HasScopeSetWith []*ScopeSetWhereInput `json:"hasScopeSetWith,omitempty"`
+	// "scope_sets" edge predicates.
+	HasScopeSets     *bool                 `json:"hasScopeSets,omitempty"`
+	HasScopeSetsWith []*ScopeSetWhereInput `json:"hasScopeSetsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -707,23 +707,23 @@ func (i *GroupWhereInput) P() (predicate.Group, error) {
 		predicates = append(predicates, group.DescriptionContainsFold(*i.DescriptionContainsFold))
 	}
 
-	if i.HasScopeSet != nil {
-		p := group.HasScopeSet()
-		if !*i.HasScopeSet {
+	if i.HasScopeSets != nil {
+		p := group.HasScopeSets()
+		if !*i.HasScopeSets {
 			p = group.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
-	if len(i.HasScopeSetWith) > 0 {
-		with := make([]predicate.ScopeSet, 0, len(i.HasScopeSetWith))
-		for _, w := range i.HasScopeSetWith {
+	if len(i.HasScopeSetsWith) > 0 {
+		with := make([]predicate.ScopeSet, 0, len(i.HasScopeSetsWith))
+		for _, w := range i.HasScopeSetsWith {
 			p, err := w.P()
 			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasScopeSetWith'", err)
+				return nil, fmt.Errorf("%w: field 'HasScopeSetsWith'", err)
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, group.HasScopeSetWith(with...))
+		predicates = append(predicates, group.HasScopeSetsWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
@@ -1163,6 +1163,10 @@ type ScopeSetWhereInput struct {
 	DescriptionNotNil       bool     `json:"descriptionNotNil,omitempty"`
 	DescriptionEqualFold    *string  `json:"descriptionEqualFold,omitempty"`
 	DescriptionContainsFold *string  `json:"descriptionContainsFold,omitempty"`
+
+	// "groups" edge predicates.
+	HasGroups     *bool              `json:"hasGroups,omitempty"`
+	HasGroupsWith []*GroupWhereInput `json:"hasGroupsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -1345,6 +1349,24 @@ func (i *ScopeSetWhereInput) P() (predicate.ScopeSet, error) {
 		predicates = append(predicates, scopeset.DescriptionContainsFold(*i.DescriptionContainsFold))
 	}
 
+	if i.HasGroups != nil {
+		p := scopeset.HasGroups()
+		if !*i.HasGroups {
+			p = scopeset.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasGroupsWith) > 0 {
+		with := make([]predicate.Group, 0, len(i.HasGroupsWith))
+		for _, w := range i.HasGroupsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasGroupsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, scopeset.HasGroupsWith(with...))
+	}
 	switch len(predicates) {
 	case 0:
 		return nil, ErrEmptyScopeSetWhereInput

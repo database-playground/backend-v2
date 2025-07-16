@@ -350,21 +350,21 @@ func DescriptionContainsFold(v string) predicate.Group {
 	return predicate.Group(sql.FieldContainsFold(FieldDescription, v))
 }
 
-// HasScopeSet applies the HasEdge predicate on the "scope_set" edge.
-func HasScopeSet() predicate.Group {
+// HasScopeSets applies the HasEdge predicate on the "scope_sets" edge.
+func HasScopeSets() predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ScopeSetTable, ScopeSetColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, ScopeSetsTable, ScopeSetsPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasScopeSetWith applies the HasEdge predicate on the "scope_set" edge with a given conditions (other predicates).
-func HasScopeSetWith(preds ...predicate.ScopeSet) predicate.Group {
+// HasScopeSetsWith applies the HasEdge predicate on the "scope_sets" edge with a given conditions (other predicates).
+func HasScopeSetsWith(preds ...predicate.ScopeSet) predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {
-		step := newScopeSetStep()
+		step := newScopeSetsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

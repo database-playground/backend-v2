@@ -480,15 +480,15 @@ func (c *GroupClient) GetX(ctx context.Context, id int) *Group {
 	return obj
 }
 
-// QueryScopeSet queries the scope_set edge of a Group.
-func (c *GroupClient) QueryScopeSet(gr *Group) *ScopeSetQuery {
+// QueryScopeSets queries the scope_sets edge of a Group.
+func (c *GroupClient) QueryScopeSets(gr *Group) *ScopeSetQuery {
 	query := (&ScopeSetClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(group.Table, group.FieldID, id),
 			sqlgraph.To(scopeset.Table, scopeset.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, group.ScopeSetTable, group.ScopeSetColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, group.ScopeSetsTable, group.ScopeSetsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
 		return fromV, nil
@@ -778,6 +778,22 @@ func (c *ScopeSetClient) GetX(ctx context.Context, id int) *ScopeSet {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryGroups queries the groups edge of a ScopeSet.
+func (c *ScopeSetClient) QueryGroups(ss *ScopeSet) *GroupQuery {
+	query := (&GroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ss.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(scopeset.Table, scopeset.FieldID, id),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, scopeset.GroupsTable, scopeset.GroupsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(ss.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.

@@ -118,7 +118,7 @@ func (gr *GroupQuery) collectField(ctx context.Context, oneNode bool, opCtx *gra
 	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
 
-		case "scopeSet":
+		case "scopeSets":
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
@@ -127,7 +127,7 @@ func (gr *GroupQuery) collectField(ctx context.Context, oneNode bool, opCtx *gra
 			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, scopesetImplementors)...); err != nil {
 				return err
 			}
-			gr.WithNamedScopeSet(alias, func(wq *ScopeSetQuery) {
+			gr.WithNamedScopeSets(alias, func(wq *ScopeSetQuery) {
 				*wq = *query
 			})
 		case "createdAt":
@@ -339,6 +339,19 @@ func (ss *ScopeSetQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 	)
 	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
+
+		case "groups":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&GroupClient{config: ss.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, groupImplementors)...); err != nil {
+				return err
+			}
+			ss.WithNamedGroups(alias, func(wq *GroupQuery) {
+				*wq = *query
+			})
 		case "slug":
 			if _, ok := fieldSeen[scopeset.FieldSlug]; !ok {
 				selectedFields = append(selectedFields, scopeset.FieldSlug)

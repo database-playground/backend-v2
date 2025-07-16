@@ -4,6 +4,7 @@ import (
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
 	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
@@ -22,6 +23,12 @@ func (ScopeSet) Fields() []ent.Field {
 		field.String("description").Optional(),
 		field.JSON("scopes", []string{}).
 			Default([]string{}),
+	}
+}
+
+func (ScopeSet) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.From("groups", Group.Type).Ref("scope_sets"),
 	}
 }
 

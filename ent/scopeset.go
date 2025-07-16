@@ -22,9 +22,33 @@ type ScopeSet struct {
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
 	// Scopes holds the value of the "scopes" field.
-	Scopes          []string `json:"scopes,omitempty"`
-	group_scope_set *int
-	selectValues    sql.SelectValues
+	Scopes []string `json:"scopes,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the ScopeSetQuery when eager-loading is set.
+	Edges        ScopeSetEdges `json:"edges"`
+	selectValues sql.SelectValues
+}
+
+// ScopeSetEdges holds the relations/edges for other nodes in the graph.
+type ScopeSetEdges struct {
+	// Groups holds the value of the groups edge.
+	Groups []*Group `json:"groups,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+	// totalCount holds the count of the edges above.
+	totalCount [1]map[string]int
+
+	namedGroups map[string][]*Group
+}
+
+// GroupsOrErr returns the Groups value or an error if the edge
+// was not loaded in eager-loading.
+func (e ScopeSetEdges) GroupsOrErr() ([]*Group, error) {
+	if e.loadedTypes[0] {
+		return e.Groups, nil
+	}
+	return nil, &NotLoadedError{edge: "groups"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -38,8 +62,6 @@ func (*ScopeSet) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case scopeset.FieldSlug, scopeset.FieldDescription:
 			values[i] = new(sql.NullString)
-		case scopeset.ForeignKeys[0]: // group_scope_set
-			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -81,13 +103,6 @@ func (ss *ScopeSet) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field scopes: %w", err)
 				}
 			}
-		case scopeset.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field group_scope_set", value)
-			} else if value.Valid {
-				ss.group_scope_set = new(int)
-				*ss.group_scope_set = int(value.Int64)
-			}
 		default:
 			ss.selectValues.Set(columns[i], values[i])
 		}
@@ -99,6 +114,11 @@ func (ss *ScopeSet) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (ss *ScopeSet) Value(name string) (ent.Value, error) {
 	return ss.selectValues.Get(name)
+}
+
+// QueryGroups queries the "groups" edge of the ScopeSet entity.
+func (ss *ScopeSet) QueryGroups() *GroupQuery {
+	return NewScopeSetClient(ss.config).QueryGroups(ss)
 }
 
 // Update returns a builder for updating this ScopeSet.
@@ -134,6 +154,30 @@ func (ss *ScopeSet) String() string {
 	builder.WriteString(fmt.Sprintf("%v", ss.Scopes))
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedGroups returns the Groups named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (ss *ScopeSet) NamedGroups(name string) ([]*Group, error) {
+	if ss.Edges.namedGroups == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := ss.Edges.namedGroups[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (ss *ScopeSet) appendNamedGroups(name string, edges ...*Group) {
+	if ss.Edges.namedGroups == nil {
+		ss.Edges.namedGroups = make(map[string][]*Group)
+	}
+	if len(edges) == 0 {
+		ss.Edges.namedGroups[name] = []*Group{}
+	} else {
+		ss.Edges.namedGroups[name] = append(ss.Edges.namedGroups[name], edges...)
+	}
 }
 
 // ScopeSets is a parsable slice of ScopeSet.

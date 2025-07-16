@@ -60,6 +60,7 @@ input CreateScopeSetInput {
   slug: String!
   description: String
   scopes: [String!]
+  groupIDs: [ID!]
 }
 """
 CreateUserInput is used for create User object.
@@ -182,7 +183,7 @@ type Group implements Node {
   deletedAt: Time
   name: String!
   description: String
-  scopeSet: [ScopeSet!]
+  scopeSets: [ScopeSet!]
 }
 """
 GroupWhereInput is used for filtering Group objects.
@@ -273,10 +274,10 @@ input GroupWhereInput {
   descriptionEqualFold: String
   descriptionContainsFold: String
   """
-  scope_set edge predicates
+  scope_sets edge predicates
   """
-  hasScopeSet: Boolean
-  hasScopeSetWith: [ScopeSetWhereInput!]
+  hasScopeSets: Boolean
+  hasScopeSetsWith: [ScopeSetWhereInput!]
 }
 """
 An object with an ID.
@@ -592,6 +593,7 @@ type ScopeSet implements Node {
   slug: String!
   description: String
   scopes: [String!]!
+  groups: [Group!]
 }
 """
 ScopeSetWhereInput is used for filtering ScopeSet objects.
@@ -646,6 +648,11 @@ input ScopeSetWhereInput {
   descriptionNotNil: Boolean
   descriptionEqualFold: String
   descriptionContainsFold: String
+  """
+  groups edge predicates
+  """
+  hasGroups: Boolean
+  hasGroupsWith: [GroupWhereInput!]
 }
 """
 The builtin Time type
@@ -673,7 +680,7 @@ input UpdateGroupInput {
   clearDescription: Boolean
   addScopeSetIDs: [ID!]
   removeScopeSetIDs: [ID!]
-  clearScopeSet: Boolean
+  clearScopeSets: Boolean
 }
 """
 UpdateQuestionInput is used for update Question object.
@@ -709,6 +716,9 @@ input UpdateScopeSetInput {
   clearDescription: Boolean
   scopes: [String!]
   appendScopes: [String!]
+  addGroupIDs: [ID!]
+  removeGroupIDs: [ID!]
+  clearGroups: Boolean
 }
 """
 UpdateUserInput is used for update User object.

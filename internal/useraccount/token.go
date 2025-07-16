@@ -43,7 +43,7 @@ func (c *Context) GrantToken(ctx context.Context, user *ent.User, machine string
 	}
 
 	// get scopes
-	scopes, err := user.QueryGroup().QueryScopeSet().All(ctx)
+	scopes, err := user.QueryGroup().QueryScopeSets().All(ctx)
 	if err != nil {
 		return "", err
 	}

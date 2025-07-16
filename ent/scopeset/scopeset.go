@@ -4,6 +4,7 @@ package scopeset
 
 import (
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -17,8 +18,15 @@ const (
 	FieldDescription = "description"
 	// FieldScopes holds the string denoting the scopes field in the database.
 	FieldScopes = "scopes"
+	// EdgeGroups holds the string denoting the groups edge name in mutations.
+	EdgeGroups = "groups"
 	// Table holds the table name of the scopeset in the database.
 	Table = "scope_sets"
+	// GroupsTable is the table that holds the groups relation/edge. The primary key declared below.
+	GroupsTable = "group_scope_sets"
+	// GroupsInverseTable is the table name for the Group entity.
+	// It exists in this package in order to avoid circular dependency with the "group" package.
+	GroupsInverseTable = "groups"
 )
 
 // Columns holds all SQL columns for scopeset fields.
@@ -29,21 +37,16 @@ var Columns = []string{
 	FieldScopes,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the "scope_sets"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"group_scope_set",
-}
+var (
+	// GroupsPrimaryKey and GroupsColumn2 are the table columns denoting the
+	// primary key for the groups relation (M2M).
+	GroupsPrimaryKey = []string{"group_id", "scope_set_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -73,4 +76,25 @@ func BySlug(opts ...sql.OrderTermOption) OrderOption {
 // ByDescription orders the results by the description field.
 func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDescription, opts...).ToFunc()
+}
+
+// ByGroupsCount orders the results by groups count.
+func ByGroupsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGroupsStep(), opts...)
+	}
+}
+
+// ByGroups orders the results by groups terms.
+func ByGroups(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGroupsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newGroupsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GroupsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, GroupsTable, GroupsPrimaryKey...),
+	)
 }

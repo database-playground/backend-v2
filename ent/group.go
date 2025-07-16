@@ -35,24 +35,24 @@ type Group struct {
 
 // GroupEdges holds the relations/edges for other nodes in the graph.
 type GroupEdges struct {
-	// ScopeSet holds the value of the scope_set edge.
-	ScopeSet []*ScopeSet `json:"scope_set,omitempty"`
+	// ScopeSets holds the value of the scope_sets edge.
+	ScopeSets []*ScopeSet `json:"scope_sets,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
 	// totalCount holds the count of the edges above.
 	totalCount [1]map[string]int
 
-	namedScopeSet map[string][]*ScopeSet
+	namedScopeSets map[string][]*ScopeSet
 }
 
-// ScopeSetOrErr returns the ScopeSet value or an error if the edge
+// ScopeSetsOrErr returns the ScopeSets value or an error if the edge
 // was not loaded in eager-loading.
-func (e GroupEdges) ScopeSetOrErr() ([]*ScopeSet, error) {
+func (e GroupEdges) ScopeSetsOrErr() ([]*ScopeSet, error) {
 	if e.loadedTypes[0] {
-		return e.ScopeSet, nil
+		return e.ScopeSets, nil
 	}
-	return nil, &NotLoadedError{edge: "scope_set"}
+	return nil, &NotLoadedError{edge: "scope_sets"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -130,9 +130,9 @@ func (gr *Group) Value(name string) (ent.Value, error) {
 	return gr.selectValues.Get(name)
 }
 
-// QueryScopeSet queries the "scope_set" edge of the Group entity.
-func (gr *Group) QueryScopeSet() *ScopeSetQuery {
-	return NewGroupClient(gr.config).QueryScopeSet(gr)
+// QueryScopeSets queries the "scope_sets" edge of the Group entity.
+func (gr *Group) QueryScopeSets() *ScopeSetQuery {
+	return NewGroupClient(gr.config).QueryScopeSets(gr)
 }
 
 // Update returns a builder for updating this Group.
@@ -176,27 +176,27 @@ func (gr *Group) String() string {
 	return builder.String()
 }
 
-// NamedScopeSet returns the ScopeSet named value or an error if the edge was not
+// NamedScopeSets returns the ScopeSets named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (gr *Group) NamedScopeSet(name string) ([]*ScopeSet, error) {
-	if gr.Edges.namedScopeSet == nil {
+func (gr *Group) NamedScopeSets(name string) ([]*ScopeSet, error) {
+	if gr.Edges.namedScopeSets == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
-	nodes, ok := gr.Edges.namedScopeSet[name]
+	nodes, ok := gr.Edges.namedScopeSets[name]
 	if !ok {
 		return nil, &NotLoadedError{edge: name}
 	}
 	return nodes, nil
 }
 
-func (gr *Group) appendNamedScopeSet(name string, edges ...*ScopeSet) {
-	if gr.Edges.namedScopeSet == nil {
-		gr.Edges.namedScopeSet = make(map[string][]*ScopeSet)
+func (gr *Group) appendNamedScopeSets(name string, edges ...*ScopeSet) {
+	if gr.Edges.namedScopeSets == nil {
+		gr.Edges.namedScopeSets = make(map[string][]*ScopeSet)
 	}
 	if len(edges) == 0 {
-		gr.Edges.namedScopeSet[name] = []*ScopeSet{}
+		gr.Edges.namedScopeSets[name] = []*ScopeSet{}
 	} else {
-		gr.Edges.namedScopeSet[name] = append(gr.Edges.namedScopeSet[name], edges...)
+		gr.Edges.namedScopeSets[name] = append(gr.Edges.namedScopeSets[name], edges...)
 	}
 }
 

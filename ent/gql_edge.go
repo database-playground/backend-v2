@@ -8,14 +8,14 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
-func (gr *Group) ScopeSet(ctx context.Context) (result []*ScopeSet, err error) {
+func (gr *Group) ScopeSets(ctx context.Context) (result []*ScopeSet, err error) {
 	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = gr.NamedScopeSet(graphql.GetFieldContext(ctx).Field.Alias)
+		result, err = gr.NamedScopeSets(graphql.GetFieldContext(ctx).Field.Alias)
 	} else {
-		result, err = gr.Edges.ScopeSetOrErr()
+		result, err = gr.Edges.ScopeSetsOrErr()
 	}
 	if IsNotLoaded(err) {
-		result, err = gr.QueryScopeSet().All(ctx)
+		result, err = gr.QueryScopeSets().All(ctx)
 	}
 	return result, err
 }
@@ -28,6 +28,18 @@ func (q *Question) Database(ctx context.Context) (result []*Database, err error)
 	}
 	if IsNotLoaded(err) {
 		result, err = q.QueryDatabase().All(ctx)
+	}
+	return result, err
+}
+
+func (ss *ScopeSet) Groups(ctx context.Context) (result []*Group, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = ss.NamedGroups(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = ss.Edges.GroupsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = ss.QueryGroups().All(ctx)
 	}
 	return result, err
 }

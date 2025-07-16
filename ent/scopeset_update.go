@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
+	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/scopeset"
 )
@@ -60,9 +61,45 @@ func (ssu *ScopeSetUpdate) AppendScopes(s []string) *ScopeSetUpdate {
 	return ssu
 }
 
+// AddGroupIDs adds the "groups" edge to the Group entity by IDs.
+func (ssu *ScopeSetUpdate) AddGroupIDs(ids ...int) *ScopeSetUpdate {
+	ssu.mutation.AddGroupIDs(ids...)
+	return ssu
+}
+
+// AddGroups adds the "groups" edges to the Group entity.
+func (ssu *ScopeSetUpdate) AddGroups(g ...*Group) *ScopeSetUpdate {
+	ids := make([]int, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return ssu.AddGroupIDs(ids...)
+}
+
 // Mutation returns the ScopeSetMutation object of the builder.
 func (ssu *ScopeSetUpdate) Mutation() *ScopeSetMutation {
 	return ssu.mutation
+}
+
+// ClearGroups clears all "groups" edges to the Group entity.
+func (ssu *ScopeSetUpdate) ClearGroups() *ScopeSetUpdate {
+	ssu.mutation.ClearGroups()
+	return ssu
+}
+
+// RemoveGroupIDs removes the "groups" edge to Group entities by IDs.
+func (ssu *ScopeSetUpdate) RemoveGroupIDs(ids ...int) *ScopeSetUpdate {
+	ssu.mutation.RemoveGroupIDs(ids...)
+	return ssu
+}
+
+// RemoveGroups removes "groups" edges to Group entities.
+func (ssu *ScopeSetUpdate) RemoveGroups(g ...*Group) *ScopeSetUpdate {
+	ids := make([]int, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return ssu.RemoveGroupIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -114,6 +151,51 @@ func (ssu *ScopeSetUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, scopeset.FieldScopes, value)
 		})
+	}
+	if ssu.mutation.GroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   scopeset.GroupsTable,
+			Columns: scopeset.GroupsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ssu.mutation.RemovedGroupsIDs(); len(nodes) > 0 && !ssu.mutation.GroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   scopeset.GroupsTable,
+			Columns: scopeset.GroupsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ssu.mutation.GroupsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   scopeset.GroupsTable,
+			Columns: scopeset.GroupsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, ssu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -167,9 +249,45 @@ func (ssuo *ScopeSetUpdateOne) AppendScopes(s []string) *ScopeSetUpdateOne {
 	return ssuo
 }
 
+// AddGroupIDs adds the "groups" edge to the Group entity by IDs.
+func (ssuo *ScopeSetUpdateOne) AddGroupIDs(ids ...int) *ScopeSetUpdateOne {
+	ssuo.mutation.AddGroupIDs(ids...)
+	return ssuo
+}
+
+// AddGroups adds the "groups" edges to the Group entity.
+func (ssuo *ScopeSetUpdateOne) AddGroups(g ...*Group) *ScopeSetUpdateOne {
+	ids := make([]int, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return ssuo.AddGroupIDs(ids...)
+}
+
 // Mutation returns the ScopeSetMutation object of the builder.
 func (ssuo *ScopeSetUpdateOne) Mutation() *ScopeSetMutation {
 	return ssuo.mutation
+}
+
+// ClearGroups clears all "groups" edges to the Group entity.
+func (ssuo *ScopeSetUpdateOne) ClearGroups() *ScopeSetUpdateOne {
+	ssuo.mutation.ClearGroups()
+	return ssuo
+}
+
+// RemoveGroupIDs removes the "groups" edge to Group entities by IDs.
+func (ssuo *ScopeSetUpdateOne) RemoveGroupIDs(ids ...int) *ScopeSetUpdateOne {
+	ssuo.mutation.RemoveGroupIDs(ids...)
+	return ssuo
+}
+
+// RemoveGroups removes "groups" edges to Group entities.
+func (ssuo *ScopeSetUpdateOne) RemoveGroups(g ...*Group) *ScopeSetUpdateOne {
+	ids := make([]int, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return ssuo.RemoveGroupIDs(ids...)
 }
 
 // Where appends a list predicates to the ScopeSetUpdate builder.
@@ -251,6 +369,51 @@ func (ssuo *ScopeSetUpdateOne) sqlSave(ctx context.Context) (_node *ScopeSet, er
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, scopeset.FieldScopes, value)
 		})
+	}
+	if ssuo.mutation.GroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   scopeset.GroupsTable,
+			Columns: scopeset.GroupsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ssuo.mutation.RemovedGroupsIDs(); len(nodes) > 0 && !ssuo.mutation.GroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   scopeset.GroupsTable,
+			Columns: scopeset.GroupsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ssuo.mutation.GroupsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   scopeset.GroupsTable,
+			Columns: scopeset.GroupsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &ScopeSet{config: ssuo.config}
 	_spec.Assign = _node.assignValues

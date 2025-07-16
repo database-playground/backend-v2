@@ -36,7 +36,7 @@ func TestGetOrRegister_NewUser(t *testing.T) {
 	assert.Equal(t, useraccount.UnverifiedGroupSlug, group.Name)
 
 	// Verify user has verification:* scope
-	scopeSets, err := user.QueryGroup().QueryScopeSet().All(context)
+	scopeSets, err := user.QueryGroup().QueryScopeSets().All(context)
 	require.NoError(t, err)
 	require.Len(t, scopeSets, 1)
 	assert.Contains(t, scopeSets[0].Scopes, "verification:*")
@@ -121,7 +121,7 @@ func TestVerify_Success(t *testing.T) {
 	assert.Equal(t, useraccount.NewUserGroupSlug, group.Name)
 
 	// Verify user has new-user scopes
-	scopeSets, err := updatedUser.QueryGroup().QueryScopeSet().All(context)
+	scopeSets, err := updatedUser.QueryGroup().QueryScopeSets().All(context)
 	require.NoError(t, err)
 	require.Len(t, scopeSets, 1)
 	assert.Contains(t, scopeSets[0].Scopes, "me:*")

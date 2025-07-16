@@ -548,21 +548,21 @@ func (m *DatabaseMutation) ResetEdge(name string) error {
 // GroupMutation represents an operation that mutates the Group nodes in the graph.
 type GroupMutation struct {
 	config
-	op               Op
-	typ              string
-	id               *int
-	created_at       *time.Time
-	updated_at       *time.Time
-	deleted_at       *time.Time
-	name             *string
-	description      *string
-	clearedFields    map[string]struct{}
-	scope_set        map[int]struct{}
-	removedscope_set map[int]struct{}
-	clearedscope_set bool
-	done             bool
-	oldValue         func(context.Context) (*Group, error)
-	predicates       []predicate.Group
+	op                Op
+	typ               string
+	id                *int
+	created_at        *time.Time
+	updated_at        *time.Time
+	deleted_at        *time.Time
+	name              *string
+	description       *string
+	clearedFields     map[string]struct{}
+	scope_sets        map[int]struct{}
+	removedscope_sets map[int]struct{}
+	clearedscope_sets bool
+	done              bool
+	oldValue          func(context.Context) (*Group, error)
+	predicates        []predicate.Group
 }
 
 var _ ent.Mutation = (*GroupMutation)(nil)
@@ -869,58 +869,58 @@ func (m *GroupMutation) ResetDescription() {
 	delete(m.clearedFields, group.FieldDescription)
 }
 
-// AddScopeSetIDs adds the "scope_set" edge to the ScopeSet entity by ids.
+// AddScopeSetIDs adds the "scope_sets" edge to the ScopeSet entity by ids.
 func (m *GroupMutation) AddScopeSetIDs(ids ...int) {
-	if m.scope_set == nil {
-		m.scope_set = make(map[int]struct{})
+	if m.scope_sets == nil {
+		m.scope_sets = make(map[int]struct{})
 	}
 	for i := range ids {
-		m.scope_set[ids[i]] = struct{}{}
+		m.scope_sets[ids[i]] = struct{}{}
 	}
 }
 
-// ClearScopeSet clears the "scope_set" edge to the ScopeSet entity.
-func (m *GroupMutation) ClearScopeSet() {
-	m.clearedscope_set = true
+// ClearScopeSets clears the "scope_sets" edge to the ScopeSet entity.
+func (m *GroupMutation) ClearScopeSets() {
+	m.clearedscope_sets = true
 }
 
-// ScopeSetCleared reports if the "scope_set" edge to the ScopeSet entity was cleared.
-func (m *GroupMutation) ScopeSetCleared() bool {
-	return m.clearedscope_set
+// ScopeSetsCleared reports if the "scope_sets" edge to the ScopeSet entity was cleared.
+func (m *GroupMutation) ScopeSetsCleared() bool {
+	return m.clearedscope_sets
 }
 
-// RemoveScopeSetIDs removes the "scope_set" edge to the ScopeSet entity by IDs.
+// RemoveScopeSetIDs removes the "scope_sets" edge to the ScopeSet entity by IDs.
 func (m *GroupMutation) RemoveScopeSetIDs(ids ...int) {
-	if m.removedscope_set == nil {
-		m.removedscope_set = make(map[int]struct{})
+	if m.removedscope_sets == nil {
+		m.removedscope_sets = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m.scope_set, ids[i])
-		m.removedscope_set[ids[i]] = struct{}{}
+		delete(m.scope_sets, ids[i])
+		m.removedscope_sets[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedScopeSet returns the removed IDs of the "scope_set" edge to the ScopeSet entity.
-func (m *GroupMutation) RemovedScopeSetIDs() (ids []int) {
-	for id := range m.removedscope_set {
+// RemovedScopeSets returns the removed IDs of the "scope_sets" edge to the ScopeSet entity.
+func (m *GroupMutation) RemovedScopeSetsIDs() (ids []int) {
+	for id := range m.removedscope_sets {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ScopeSetIDs returns the "scope_set" edge IDs in the mutation.
-func (m *GroupMutation) ScopeSetIDs() (ids []int) {
-	for id := range m.scope_set {
+// ScopeSetsIDs returns the "scope_sets" edge IDs in the mutation.
+func (m *GroupMutation) ScopeSetsIDs() (ids []int) {
+	for id := range m.scope_sets {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetScopeSet resets all changes to the "scope_set" edge.
-func (m *GroupMutation) ResetScopeSet() {
-	m.scope_set = nil
-	m.clearedscope_set = false
-	m.removedscope_set = nil
+// ResetScopeSets resets all changes to the "scope_sets" edge.
+func (m *GroupMutation) ResetScopeSets() {
+	m.scope_sets = nil
+	m.clearedscope_sets = false
+	m.removedscope_sets = nil
 }
 
 // Where appends a list predicates to the GroupMutation builder.
@@ -1140,8 +1140,8 @@ func (m *GroupMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *GroupMutation) AddedEdges() []string {
 	edges := make([]string, 0, 1)
-	if m.scope_set != nil {
-		edges = append(edges, group.EdgeScopeSet)
+	if m.scope_sets != nil {
+		edges = append(edges, group.EdgeScopeSets)
 	}
 	return edges
 }
@@ -1150,9 +1150,9 @@ func (m *GroupMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *GroupMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case group.EdgeScopeSet:
-		ids := make([]ent.Value, 0, len(m.scope_set))
-		for id := range m.scope_set {
+	case group.EdgeScopeSets:
+		ids := make([]ent.Value, 0, len(m.scope_sets))
+		for id := range m.scope_sets {
 			ids = append(ids, id)
 		}
 		return ids
@@ -1163,8 +1163,8 @@ func (m *GroupMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *GroupMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 1)
-	if m.removedscope_set != nil {
-		edges = append(edges, group.EdgeScopeSet)
+	if m.removedscope_sets != nil {
+		edges = append(edges, group.EdgeScopeSets)
 	}
 	return edges
 }
@@ -1173,9 +1173,9 @@ func (m *GroupMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *GroupMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case group.EdgeScopeSet:
-		ids := make([]ent.Value, 0, len(m.removedscope_set))
-		for id := range m.removedscope_set {
+	case group.EdgeScopeSets:
+		ids := make([]ent.Value, 0, len(m.removedscope_sets))
+		for id := range m.removedscope_sets {
 			ids = append(ids, id)
 		}
 		return ids
@@ -1186,8 +1186,8 @@ func (m *GroupMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *GroupMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 1)
-	if m.clearedscope_set {
-		edges = append(edges, group.EdgeScopeSet)
+	if m.clearedscope_sets {
+		edges = append(edges, group.EdgeScopeSets)
 	}
 	return edges
 }
@@ -1196,8 +1196,8 @@ func (m *GroupMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *GroupMutation) EdgeCleared(name string) bool {
 	switch name {
-	case group.EdgeScopeSet:
-		return m.clearedscope_set
+	case group.EdgeScopeSets:
+		return m.clearedscope_sets
 	}
 	return false
 }
@@ -1214,8 +1214,8 @@ func (m *GroupMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *GroupMutation) ResetEdge(name string) error {
 	switch name {
-	case group.EdgeScopeSet:
-		m.ResetScopeSet()
+	case group.EdgeScopeSets:
+		m.ResetScopeSets()
 		return nil
 	}
 	return fmt.Errorf("unknown Group edge %s", name)
@@ -1867,6 +1867,9 @@ type ScopeSetMutation struct {
 	scopes        *[]string
 	appendscopes  []string
 	clearedFields map[string]struct{}
+	groups        map[int]struct{}
+	removedgroups map[int]struct{}
+	clearedgroups bool
 	done          bool
 	oldValue      func(context.Context) (*ScopeSet, error)
 	predicates    []predicate.ScopeSet
@@ -2106,6 +2109,60 @@ func (m *ScopeSetMutation) ResetScopes() {
 	m.appendscopes = nil
 }
 
+// AddGroupIDs adds the "groups" edge to the Group entity by ids.
+func (m *ScopeSetMutation) AddGroupIDs(ids ...int) {
+	if m.groups == nil {
+		m.groups = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.groups[ids[i]] = struct{}{}
+	}
+}
+
+// ClearGroups clears the "groups" edge to the Group entity.
+func (m *ScopeSetMutation) ClearGroups() {
+	m.clearedgroups = true
+}
+
+// GroupsCleared reports if the "groups" edge to the Group entity was cleared.
+func (m *ScopeSetMutation) GroupsCleared() bool {
+	return m.clearedgroups
+}
+
+// RemoveGroupIDs removes the "groups" edge to the Group entity by IDs.
+func (m *ScopeSetMutation) RemoveGroupIDs(ids ...int) {
+	if m.removedgroups == nil {
+		m.removedgroups = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.groups, ids[i])
+		m.removedgroups[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedGroups returns the removed IDs of the "groups" edge to the Group entity.
+func (m *ScopeSetMutation) RemovedGroupsIDs() (ids []int) {
+	for id := range m.removedgroups {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// GroupsIDs returns the "groups" edge IDs in the mutation.
+func (m *ScopeSetMutation) GroupsIDs() (ids []int) {
+	for id := range m.groups {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetGroups resets all changes to the "groups" edge.
+func (m *ScopeSetMutation) ResetGroups() {
+	m.groups = nil
+	m.clearedgroups = false
+	m.removedgroups = nil
+}
+
 // Where appends a list predicates to the ScopeSetMutation builder.
 func (m *ScopeSetMutation) Where(ps ...predicate.ScopeSet) {
 	m.predicates = append(m.predicates, ps...)
@@ -2282,49 +2339,85 @@ func (m *ScopeSetMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ScopeSetMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.groups != nil {
+		edges = append(edges, scopeset.EdgeGroups)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *ScopeSetMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case scopeset.EdgeGroups:
+		ids := make([]ent.Value, 0, len(m.groups))
+		for id := range m.groups {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ScopeSetMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.removedgroups != nil {
+		edges = append(edges, scopeset.EdgeGroups)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *ScopeSetMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case scopeset.EdgeGroups:
+		ids := make([]ent.Value, 0, len(m.removedgroups))
+		for id := range m.removedgroups {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ScopeSetMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedgroups {
+		edges = append(edges, scopeset.EdgeGroups)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *ScopeSetMutation) EdgeCleared(name string) bool {
+	switch name {
+	case scopeset.EdgeGroups:
+		return m.clearedgroups
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *ScopeSetMutation) ClearEdge(name string) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown ScopeSet unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *ScopeSetMutation) ResetEdge(name string) error {
+	switch name {
+	case scopeset.EdgeGroups:
+		m.ResetGroups()
+		return nil
+	}
 	return fmt.Errorf("unknown ScopeSet edge %s", name)
 }
 

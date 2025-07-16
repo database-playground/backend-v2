@@ -103,14 +103,14 @@ func (gu *GroupUpdate) ClearDescription() *GroupUpdate {
 	return gu
 }
 
-// AddScopeSetIDs adds the "scope_set" edge to the ScopeSet entity by IDs.
+// AddScopeSetIDs adds the "scope_sets" edge to the ScopeSet entity by IDs.
 func (gu *GroupUpdate) AddScopeSetIDs(ids ...int) *GroupUpdate {
 	gu.mutation.AddScopeSetIDs(ids...)
 	return gu
 }
 
-// AddScopeSet adds the "scope_set" edges to the ScopeSet entity.
-func (gu *GroupUpdate) AddScopeSet(s ...*ScopeSet) *GroupUpdate {
+// AddScopeSets adds the "scope_sets" edges to the ScopeSet entity.
+func (gu *GroupUpdate) AddScopeSets(s ...*ScopeSet) *GroupUpdate {
 	ids := make([]int, len(s))
 	for i := range s {
 		ids[i] = s[i].ID
@@ -123,20 +123,20 @@ func (gu *GroupUpdate) Mutation() *GroupMutation {
 	return gu.mutation
 }
 
-// ClearScopeSet clears all "scope_set" edges to the ScopeSet entity.
-func (gu *GroupUpdate) ClearScopeSet() *GroupUpdate {
-	gu.mutation.ClearScopeSet()
+// ClearScopeSets clears all "scope_sets" edges to the ScopeSet entity.
+func (gu *GroupUpdate) ClearScopeSets() *GroupUpdate {
+	gu.mutation.ClearScopeSets()
 	return gu
 }
 
-// RemoveScopeSetIDs removes the "scope_set" edge to ScopeSet entities by IDs.
+// RemoveScopeSetIDs removes the "scope_sets" edge to ScopeSet entities by IDs.
 func (gu *GroupUpdate) RemoveScopeSetIDs(ids ...int) *GroupUpdate {
 	gu.mutation.RemoveScopeSetIDs(ids...)
 	return gu
 }
 
-// RemoveScopeSet removes "scope_set" edges to ScopeSet entities.
-func (gu *GroupUpdate) RemoveScopeSet(s ...*ScopeSet) *GroupUpdate {
+// RemoveScopeSets removes "scope_sets" edges to ScopeSet entities.
+func (gu *GroupUpdate) RemoveScopeSets(s ...*ScopeSet) *GroupUpdate {
 	ids := make([]int, len(s))
 	for i := range s {
 		ids[i] = s[i].ID
@@ -229,12 +229,12 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if gu.mutation.DescriptionCleared() {
 		_spec.ClearField(group.FieldDescription, field.TypeString)
 	}
-	if gu.mutation.ScopeSetCleared() {
+	if gu.mutation.ScopeSetsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   group.ScopeSetTable,
-			Columns: []string{group.ScopeSetColumn},
+			Table:   group.ScopeSetsTable,
+			Columns: group.ScopeSetsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(scopeset.FieldID, field.TypeInt),
@@ -242,12 +242,12 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := gu.mutation.RemovedScopeSetIDs(); len(nodes) > 0 && !gu.mutation.ScopeSetCleared() {
+	if nodes := gu.mutation.RemovedScopeSetsIDs(); len(nodes) > 0 && !gu.mutation.ScopeSetsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   group.ScopeSetTable,
-			Columns: []string{group.ScopeSetColumn},
+			Table:   group.ScopeSetsTable,
+			Columns: group.ScopeSetsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(scopeset.FieldID, field.TypeInt),
@@ -258,12 +258,12 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := gu.mutation.ScopeSetIDs(); len(nodes) > 0 {
+	if nodes := gu.mutation.ScopeSetsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   group.ScopeSetTable,
-			Columns: []string{group.ScopeSetColumn},
+			Table:   group.ScopeSetsTable,
+			Columns: group.ScopeSetsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(scopeset.FieldID, field.TypeInt),
@@ -368,14 +368,14 @@ func (guo *GroupUpdateOne) ClearDescription() *GroupUpdateOne {
 	return guo
 }
 
-// AddScopeSetIDs adds the "scope_set" edge to the ScopeSet entity by IDs.
+// AddScopeSetIDs adds the "scope_sets" edge to the ScopeSet entity by IDs.
 func (guo *GroupUpdateOne) AddScopeSetIDs(ids ...int) *GroupUpdateOne {
 	guo.mutation.AddScopeSetIDs(ids...)
 	return guo
 }
 
-// AddScopeSet adds the "scope_set" edges to the ScopeSet entity.
-func (guo *GroupUpdateOne) AddScopeSet(s ...*ScopeSet) *GroupUpdateOne {
+// AddScopeSets adds the "scope_sets" edges to the ScopeSet entity.
+func (guo *GroupUpdateOne) AddScopeSets(s ...*ScopeSet) *GroupUpdateOne {
 	ids := make([]int, len(s))
 	for i := range s {
 		ids[i] = s[i].ID
@@ -388,20 +388,20 @@ func (guo *GroupUpdateOne) Mutation() *GroupMutation {
 	return guo.mutation
 }
 
-// ClearScopeSet clears all "scope_set" edges to the ScopeSet entity.
-func (guo *GroupUpdateOne) ClearScopeSet() *GroupUpdateOne {
-	guo.mutation.ClearScopeSet()
+// ClearScopeSets clears all "scope_sets" edges to the ScopeSet entity.
+func (guo *GroupUpdateOne) ClearScopeSets() *GroupUpdateOne {
+	guo.mutation.ClearScopeSets()
 	return guo
 }
 
-// RemoveScopeSetIDs removes the "scope_set" edge to ScopeSet entities by IDs.
+// RemoveScopeSetIDs removes the "scope_sets" edge to ScopeSet entities by IDs.
 func (guo *GroupUpdateOne) RemoveScopeSetIDs(ids ...int) *GroupUpdateOne {
 	guo.mutation.RemoveScopeSetIDs(ids...)
 	return guo
 }
 
-// RemoveScopeSet removes "scope_set" edges to ScopeSet entities.
-func (guo *GroupUpdateOne) RemoveScopeSet(s ...*ScopeSet) *GroupUpdateOne {
+// RemoveScopeSets removes "scope_sets" edges to ScopeSet entities.
+func (guo *GroupUpdateOne) RemoveScopeSets(s ...*ScopeSet) *GroupUpdateOne {
 	ids := make([]int, len(s))
 	for i := range s {
 		ids[i] = s[i].ID
@@ -524,12 +524,12 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 	if guo.mutation.DescriptionCleared() {
 		_spec.ClearField(group.FieldDescription, field.TypeString)
 	}
-	if guo.mutation.ScopeSetCleared() {
+	if guo.mutation.ScopeSetsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   group.ScopeSetTable,
-			Columns: []string{group.ScopeSetColumn},
+			Table:   group.ScopeSetsTable,
+			Columns: group.ScopeSetsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(scopeset.FieldID, field.TypeInt),
@@ -537,12 +537,12 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := guo.mutation.RemovedScopeSetIDs(); len(nodes) > 0 && !guo.mutation.ScopeSetCleared() {
+	if nodes := guo.mutation.RemovedScopeSetsIDs(); len(nodes) > 0 && !guo.mutation.ScopeSetsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   group.ScopeSetTable,
-			Columns: []string{group.ScopeSetColumn},
+			Table:   group.ScopeSetsTable,
+			Columns: group.ScopeSetsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(scopeset.FieldID, field.TypeInt),
@@ -553,12 +553,12 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := guo.mutation.ScopeSetIDs(); len(nodes) > 0 {
+	if nodes := guo.mutation.ScopeSetsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   group.ScopeSetTable,
-			Columns: []string{group.ScopeSetColumn},
+			Table:   group.ScopeSetsTable,
+			Columns: group.ScopeSetsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(scopeset.FieldID, field.TypeInt),

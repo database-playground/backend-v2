@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/scopeset"
 )
 
@@ -43,6 +44,21 @@ func (ssc *ScopeSetCreate) SetNillableDescription(s *string) *ScopeSetCreate {
 func (ssc *ScopeSetCreate) SetScopes(s []string) *ScopeSetCreate {
 	ssc.mutation.SetScopes(s)
 	return ssc
+}
+
+// AddGroupIDs adds the "groups" edge to the Group entity by IDs.
+func (ssc *ScopeSetCreate) AddGroupIDs(ids ...int) *ScopeSetCreate {
+	ssc.mutation.AddGroupIDs(ids...)
+	return ssc
+}
+
+// AddGroups adds the "groups" edges to the Group entity.
+func (ssc *ScopeSetCreate) AddGroups(g ...*Group) *ScopeSetCreate {
+	ids := make([]int, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return ssc.AddGroupIDs(ids...)
 }
 
 // Mutation returns the ScopeSetMutation object of the builder.
@@ -136,6 +152,22 @@ func (ssc *ScopeSetCreate) createSpec() (*ScopeSet, *sqlgraph.CreateSpec) {
 	if value, ok := ssc.mutation.Scopes(); ok {
 		_spec.SetField(scopeset.FieldScopes, field.TypeJSON, value)
 		_node.Scopes = value
+	}
+	if nodes := ssc.mutation.GroupsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   scopeset.GroupsTable,
+			Columns: scopeset.GroupsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

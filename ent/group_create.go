@@ -83,14 +83,14 @@ func (gc *GroupCreate) SetNillableDescription(s *string) *GroupCreate {
 	return gc
 }
 
-// AddScopeSetIDs adds the "scope_set" edge to the ScopeSet entity by IDs.
+// AddScopeSetIDs adds the "scope_sets" edge to the ScopeSet entity by IDs.
 func (gc *GroupCreate) AddScopeSetIDs(ids ...int) *GroupCreate {
 	gc.mutation.AddScopeSetIDs(ids...)
 	return gc
 }
 
-// AddScopeSet adds the "scope_set" edges to the ScopeSet entity.
-func (gc *GroupCreate) AddScopeSet(s ...*ScopeSet) *GroupCreate {
+// AddScopeSets adds the "scope_sets" edges to the ScopeSet entity.
+func (gc *GroupCreate) AddScopeSets(s ...*ScopeSet) *GroupCreate {
 	ids := make([]int, len(s))
 	for i := range s {
 		ids[i] = s[i].ID
@@ -214,12 +214,12 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		_spec.SetField(group.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
-	if nodes := gc.mutation.ScopeSetIDs(); len(nodes) > 0 {
+	if nodes := gc.mutation.ScopeSetsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   group.ScopeSetTable,
-			Columns: []string{group.ScopeSetColumn},
+			Table:   group.ScopeSetsTable,
+			Columns: group.ScopeSetsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(scopeset.FieldID, field.TypeInt),

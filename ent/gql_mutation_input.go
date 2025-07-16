@@ -91,7 +91,7 @@ type UpdateGroupInput struct {
 	Name              *string
 	ClearDescription  bool
 	Description       *string
-	ClearScopeSet     bool
+	ClearScopeSets    bool
 	AddScopeSetIDs    []int
 	RemoveScopeSetIDs []int
 }
@@ -107,8 +107,8 @@ func (i *UpdateGroupInput) Mutate(m *GroupMutation) {
 	if v := i.Description; v != nil {
 		m.SetDescription(*v)
 	}
-	if i.ClearScopeSet {
-		m.ClearScopeSet()
+	if i.ClearScopeSets {
+		m.ClearScopeSets()
 	}
 	if v := i.AddScopeSetIDs; len(v) > 0 {
 		m.AddScopeSetIDs(v...)
@@ -213,6 +213,7 @@ type CreateScopeSetInput struct {
 	Slug        string
 	Description *string
 	Scopes      []string
+	GroupIDs    []int
 }
 
 // Mutate applies the CreateScopeSetInput on the ScopeSetMutation builder.
@@ -223,6 +224,9 @@ func (i *CreateScopeSetInput) Mutate(m *ScopeSetMutation) {
 	}
 	if v := i.Scopes; v != nil {
 		m.SetScopes(v)
+	}
+	if v := i.GroupIDs; len(v) > 0 {
+		m.AddGroupIDs(v...)
 	}
 }
 
@@ -238,6 +242,9 @@ type UpdateScopeSetInput struct {
 	Description      *string
 	Scopes           []string
 	AppendScopes     []string
+	ClearGroups      bool
+	AddGroupIDs      []int
+	RemoveGroupIDs   []int
 }
 
 // Mutate applies the UpdateScopeSetInput on the ScopeSetMutation builder.
@@ -253,6 +260,15 @@ func (i *UpdateScopeSetInput) Mutate(m *ScopeSetMutation) {
 	}
 	if i.AppendScopes != nil {
 		m.AppendScopes(i.Scopes)
+	}
+	if i.ClearGroups {
+		m.ClearGroups()
+	}
+	if v := i.AddGroupIDs; len(v) > 0 {
+		m.AddGroupIDs(v...)
+	}
+	if v := i.RemoveGroupIDs; len(v) > 0 {
+		m.RemoveGroupIDs(v...)
 	}
 }
 

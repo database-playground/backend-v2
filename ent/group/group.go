@@ -25,17 +25,15 @@ const (
 	FieldName = "name"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
-	// EdgeScopeSet holds the string denoting the scope_set edge name in mutations.
-	EdgeScopeSet = "scope_set"
+	// EdgeScopeSets holds the string denoting the scope_sets edge name in mutations.
+	EdgeScopeSets = "scope_sets"
 	// Table holds the table name of the group in the database.
 	Table = "groups"
-	// ScopeSetTable is the table that holds the scope_set relation/edge.
-	ScopeSetTable = "scope_sets"
-	// ScopeSetInverseTable is the table name for the ScopeSet entity.
+	// ScopeSetsTable is the table that holds the scope_sets relation/edge. The primary key declared below.
+	ScopeSetsTable = "group_scope_sets"
+	// ScopeSetsInverseTable is the table name for the ScopeSet entity.
 	// It exists in this package in order to avoid circular dependency with the "scopeset" package.
-	ScopeSetInverseTable = "scope_sets"
-	// ScopeSetColumn is the table column denoting the scope_set relation/edge.
-	ScopeSetColumn = "group_scope_set"
+	ScopeSetsInverseTable = "scope_sets"
 )
 
 // Columns holds all SQL columns for group fields.
@@ -47,6 +45,12 @@ var Columns = []string{
 	FieldName,
 	FieldDescription,
 }
+
+var (
+	// ScopeSetsPrimaryKey and ScopeSetsColumn2 are the table columns denoting the
+	// primary key for the scope_sets relation (M2M).
+	ScopeSetsPrimaryKey = []string{"group_id", "scope_set_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -109,23 +113,23 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
-// ByScopeSetCount orders the results by scope_set count.
-func ByScopeSetCount(opts ...sql.OrderTermOption) OrderOption {
+// ByScopeSetsCount orders the results by scope_sets count.
+func ByScopeSetsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newScopeSetStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newScopeSetsStep(), opts...)
 	}
 }
 
-// ByScopeSet orders the results by scope_set terms.
-func ByScopeSet(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByScopeSets orders the results by scope_sets terms.
+func ByScopeSets(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newScopeSetStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newScopeSetsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newScopeSetStep() *sqlgraph.Step {
+func newScopeSetsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(ScopeSetInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, ScopeSetTable, ScopeSetColumn),
+		sqlgraph.To(ScopeSetsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, ScopeSetsTable, ScopeSetsPrimaryKey...),
 	)
 }

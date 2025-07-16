@@ -33,7 +33,7 @@ func (Group) Mixin() []ent.Mixin {
 
 func (Group) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("scope_set", ScopeSet.Type),
+		edge.To("scope_sets", ScopeSet.Type),
 	}
 }
 
