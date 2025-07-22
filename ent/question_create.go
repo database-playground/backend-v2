@@ -58,19 +58,15 @@ func (qc *QuestionCreate) SetReferenceAnswer(s string) *QuestionCreate {
 	return qc
 }
 
-// AddDatabaseIDs adds the "database" edge to the Database entity by IDs.
-func (qc *QuestionCreate) AddDatabaseIDs(ids ...int) *QuestionCreate {
-	qc.mutation.AddDatabaseIDs(ids...)
+// SetDatabaseID sets the "database" edge to the Database entity by ID.
+func (qc *QuestionCreate) SetDatabaseID(id int) *QuestionCreate {
+	qc.mutation.SetDatabaseID(id)
 	return qc
 }
 
-// AddDatabase adds the "database" edges to the Database entity.
-func (qc *QuestionCreate) AddDatabase(d ...*Database) *QuestionCreate {
-	ids := make([]int, len(d))
-	for i := range d {
-		ids[i] = d[i].ID
-	}
-	return qc.AddDatabaseIDs(ids...)
+// SetDatabase sets the "database" edge to the Database entity.
+func (qc *QuestionCreate) SetDatabase(d *Database) *QuestionCreate {
+	return qc.SetDatabaseID(d.ID)
 }
 
 // Mutation returns the QuestionMutation object of the builder.
@@ -141,6 +137,9 @@ func (qc *QuestionCreate) check() error {
 	if _, ok := qc.mutation.ReferenceAnswer(); !ok {
 		return &ValidationError{Name: "reference_answer", err: errors.New(`ent: missing required field "Question.reference_answer"`)}
 	}
+	if len(qc.mutation.DatabaseIDs()) == 0 {
+		return &ValidationError{Name: "database", err: errors.New(`ent: missing required edge "Question.database"`)}
+	}
 	return nil
 }
 
@@ -189,8 +188,8 @@ func (qc *QuestionCreate) createSpec() (*Question, *sqlgraph.CreateSpec) {
 	}
 	if nodes := qc.mutation.DatabaseIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
 			Table:   question.DatabaseTable,
 			Columns: []string{question.DatabaseColumn},
 			Bidi:    false,
@@ -201,6 +200,7 @@ func (qc *QuestionCreate) createSpec() (*Question, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.database_questions = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

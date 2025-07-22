@@ -4,6 +4,7 @@ package database
 
 import (
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/database-playground/backend-v2/ent/predicate"
 )
 
@@ -340,6 +341,29 @@ func SchemaEqualFold(v string) predicate.Database {
 // SchemaContainsFold applies the ContainsFold predicate on the "schema" field.
 func SchemaContainsFold(v string) predicate.Database {
 	return predicate.Database(sql.FieldContainsFold(FieldSchema, v))
+}
+
+// HasQuestions applies the HasEdge predicate on the "questions" edge.
+func HasQuestions() predicate.Database {
+	return predicate.Database(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, QuestionsTable, QuestionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasQuestionsWith applies the HasEdge predicate on the "questions" edge with a given conditions (other predicates).
+func HasQuestionsWith(preds ...predicate.Question) predicate.Database {
+	return predicate.Database(func(s *sql.Selector) {
+		step := newQuestionsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // And groups predicates with the AND operator between them.

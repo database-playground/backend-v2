@@ -358,7 +358,7 @@ func HasDatabase() predicate.Question {
 	return predicate.Question(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, DatabaseTable, DatabaseColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, DatabaseTable, DatabaseColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})

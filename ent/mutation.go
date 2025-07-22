@@ -38,17 +38,20 @@ const (
 // DatabaseMutation represents an operation that mutates the Database nodes in the graph.
 type DatabaseMutation struct {
 	config
-	op              Op
-	typ             string
-	id              *int
-	slug            *string
-	relation_figure *string
-	description     *string
-	schema          *string
-	clearedFields   map[string]struct{}
-	done            bool
-	oldValue        func(context.Context) (*Database, error)
-	predicates      []predicate.Database
+	op               Op
+	typ              string
+	id               *int
+	slug             *string
+	relation_figure  *string
+	description      *string
+	schema           *string
+	clearedFields    map[string]struct{}
+	questions        map[int]struct{}
+	removedquestions map[int]struct{}
+	clearedquestions bool
+	done             bool
+	oldValue         func(context.Context) (*Database, error)
+	predicates       []predicate.Database
 }
 
 var _ ent.Mutation = (*DatabaseMutation)(nil)
@@ -306,6 +309,60 @@ func (m *DatabaseMutation) ResetSchema() {
 	m.schema = nil
 }
 
+// AddQuestionIDs adds the "questions" edge to the Question entity by ids.
+func (m *DatabaseMutation) AddQuestionIDs(ids ...int) {
+	if m.questions == nil {
+		m.questions = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.questions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearQuestions clears the "questions" edge to the Question entity.
+func (m *DatabaseMutation) ClearQuestions() {
+	m.clearedquestions = true
+}
+
+// QuestionsCleared reports if the "questions" edge to the Question entity was cleared.
+func (m *DatabaseMutation) QuestionsCleared() bool {
+	return m.clearedquestions
+}
+
+// RemoveQuestionIDs removes the "questions" edge to the Question entity by IDs.
+func (m *DatabaseMutation) RemoveQuestionIDs(ids ...int) {
+	if m.removedquestions == nil {
+		m.removedquestions = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.questions, ids[i])
+		m.removedquestions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedQuestions returns the removed IDs of the "questions" edge to the Question entity.
+func (m *DatabaseMutation) RemovedQuestionsIDs() (ids []int) {
+	for id := range m.removedquestions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// QuestionsIDs returns the "questions" edge IDs in the mutation.
+func (m *DatabaseMutation) QuestionsIDs() (ids []int) {
+	for id := range m.questions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetQuestions resets all changes to the "questions" edge.
+func (m *DatabaseMutation) ResetQuestions() {
+	m.questions = nil
+	m.clearedquestions = false
+	m.removedquestions = nil
+}
+
 // Where appends a list predicates to the DatabaseMutation builder.
 func (m *DatabaseMutation) Where(ps ...predicate.Database) {
 	m.predicates = append(m.predicates, ps...)
@@ -499,49 +556,85 @@ func (m *DatabaseMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *DatabaseMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.questions != nil {
+		edges = append(edges, database.EdgeQuestions)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *DatabaseMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case database.EdgeQuestions:
+		ids := make([]ent.Value, 0, len(m.questions))
+		for id := range m.questions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *DatabaseMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.removedquestions != nil {
+		edges = append(edges, database.EdgeQuestions)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *DatabaseMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case database.EdgeQuestions:
+		ids := make([]ent.Value, 0, len(m.removedquestions))
+		for id := range m.removedquestions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *DatabaseMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedquestions {
+		edges = append(edges, database.EdgeQuestions)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *DatabaseMutation) EdgeCleared(name string) bool {
+	switch name {
+	case database.EdgeQuestions:
+		return m.clearedquestions
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *DatabaseMutation) ClearEdge(name string) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown Database unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *DatabaseMutation) ResetEdge(name string) error {
+	switch name {
+	case database.EdgeQuestions:
+		m.ResetQuestions()
+		return nil
+	}
 	return fmt.Errorf("unknown Database edge %s", name)
 }
 
@@ -1233,8 +1326,7 @@ type QuestionMutation struct {
 	description      *string
 	reference_answer *string
 	clearedFields    map[string]struct{}
-	database         map[int]struct{}
-	removeddatabase  map[int]struct{}
+	database         *int
 	cleareddatabase  bool
 	done             bool
 	oldValue         func(context.Context) (*Question, error)
@@ -1519,14 +1611,9 @@ func (m *QuestionMutation) ResetReferenceAnswer() {
 	m.reference_answer = nil
 }
 
-// AddDatabaseIDs adds the "database" edge to the Database entity by ids.
-func (m *QuestionMutation) AddDatabaseIDs(ids ...int) {
-	if m.database == nil {
-		m.database = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.database[ids[i]] = struct{}{}
-	}
+// SetDatabaseID sets the "database" edge to the Database entity by id.
+func (m *QuestionMutation) SetDatabaseID(id int) {
+	m.database = &id
 }
 
 // ClearDatabase clears the "database" edge to the Database entity.
@@ -1539,29 +1626,20 @@ func (m *QuestionMutation) DatabaseCleared() bool {
 	return m.cleareddatabase
 }
 
-// RemoveDatabaseIDs removes the "database" edge to the Database entity by IDs.
-func (m *QuestionMutation) RemoveDatabaseIDs(ids ...int) {
-	if m.removeddatabase == nil {
-		m.removeddatabase = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.database, ids[i])
-		m.removeddatabase[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedDatabase returns the removed IDs of the "database" edge to the Database entity.
-func (m *QuestionMutation) RemovedDatabaseIDs() (ids []int) {
-	for id := range m.removeddatabase {
-		ids = append(ids, id)
+// DatabaseID returns the "database" edge ID in the mutation.
+func (m *QuestionMutation) DatabaseID() (id int, exists bool) {
+	if m.database != nil {
+		return *m.database, true
 	}
 	return
 }
 
 // DatabaseIDs returns the "database" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// DatabaseID instead. It exists only for internal usage by the builders.
 func (m *QuestionMutation) DatabaseIDs() (ids []int) {
-	for id := range m.database {
-		ids = append(ids, id)
+	if id := m.database; id != nil {
+		ids = append(ids, *id)
 	}
 	return
 }
@@ -1570,7 +1648,6 @@ func (m *QuestionMutation) DatabaseIDs() (ids []int) {
 func (m *QuestionMutation) ResetDatabase() {
 	m.database = nil
 	m.cleareddatabase = false
-	m.removeddatabase = nil
 }
 
 // Where appends a list predicates to the QuestionMutation builder.
@@ -1786,11 +1863,9 @@ func (m *QuestionMutation) AddedEdges() []string {
 func (m *QuestionMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case question.EdgeDatabase:
-		ids := make([]ent.Value, 0, len(m.database))
-		for id := range m.database {
-			ids = append(ids, id)
+		if id := m.database; id != nil {
+			return []ent.Value{*id}
 		}
-		return ids
 	}
 	return nil
 }
@@ -1798,23 +1873,12 @@ func (m *QuestionMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *QuestionMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 1)
-	if m.removeddatabase != nil {
-		edges = append(edges, question.EdgeDatabase)
-	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *QuestionMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case question.EdgeDatabase:
-		ids := make([]ent.Value, 0, len(m.removeddatabase))
-		for id := range m.removeddatabase {
-			ids = append(ids, id)
-		}
-		return ids
-	}
 	return nil
 }
 
@@ -1841,6 +1905,9 @@ func (m *QuestionMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *QuestionMutation) ClearEdge(name string) error {
 	switch name {
+	case question.EdgeDatabase:
+		m.ClearDatabase()
+		return nil
 	}
 	return fmt.Errorf("unknown Question unique edge %s", name)
 }

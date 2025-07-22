@@ -16,21 +16,12 @@ var (
 		{Name: "relation_figure", Type: field.TypeString, Unique: true},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "schema", Type: field.TypeString, Size: 2147483647},
-		{Name: "question_database", Type: field.TypeInt, Nullable: true},
 	}
 	// DatabasesTable holds the schema information for the "databases" table.
 	DatabasesTable = &schema.Table{
 		Name:       "databases",
 		Columns:    DatabasesColumns,
 		PrimaryKey: []*schema.Column{DatabasesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "databases_questions_database",
-				Columns:    []*schema.Column{DatabasesColumns[5]},
-				RefColumns: []*schema.Column{QuestionsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-		},
 	}
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
@@ -55,12 +46,21 @@ var (
 		{Name: "title", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Size: 2147483647},
 		{Name: "reference_answer", Type: field.TypeString, Size: 2147483647},
+		{Name: "database_questions", Type: field.TypeInt},
 	}
 	// QuestionsTable holds the schema information for the "questions" table.
 	QuestionsTable = &schema.Table{
 		Name:       "questions",
 		Columns:    QuestionsColumns,
 		PrimaryKey: []*schema.Column{QuestionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "questions_databases_questions",
+				Columns:    []*schema.Column{QuestionsColumns[6]},
+				RefColumns: []*schema.Column{DatabasesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
 	}
 	// ScopeSetsColumns holds the columns for the "scope_sets" table.
 	ScopeSetsColumns = []*schema.Column{
@@ -137,13 +137,13 @@ var (
 )
 
 func init() {
-	DatabasesTable.ForeignKeys[0].RefTable = QuestionsTable
 	DatabasesTable.Annotation = &entsql.Annotation{
 		IncrementStart: func(i int) *int { return &i }(12884901888),
 	}
 	GroupsTable.Annotation = &entsql.Annotation{
 		IncrementStart: func(i int) *int { return &i }(4294967296),
 	}
+	QuestionsTable.ForeignKeys[0].RefTable = DatabasesTable
 	QuestionsTable.Annotation = &entsql.Annotation{
 		IncrementStart: func(i int) *int { return &i }(17179869184),
 	}

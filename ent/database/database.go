@@ -4,6 +4,7 @@ package database
 
 import (
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -19,8 +20,17 @@ const (
 	FieldDescription = "description"
 	// FieldSchema holds the string denoting the schema field in the database.
 	FieldSchema = "schema"
+	// EdgeQuestions holds the string denoting the questions edge name in mutations.
+	EdgeQuestions = "questions"
 	// Table holds the table name of the database in the database.
 	Table = "databases"
+	// QuestionsTable is the table that holds the questions relation/edge.
+	QuestionsTable = "questions"
+	// QuestionsInverseTable is the table name for the Question entity.
+	// It exists in this package in order to avoid circular dependency with the "question" package.
+	QuestionsInverseTable = "questions"
+	// QuestionsColumn is the table column denoting the questions relation/edge.
+	QuestionsColumn = "database_questions"
 )
 
 // Columns holds all SQL columns for database fields.
@@ -32,21 +42,10 @@ var Columns = []string{
 	FieldSchema,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the "databases"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"question_database",
-}
-
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -88,4 +87,25 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 // BySchema orders the results by the schema field.
 func BySchema(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSchema, opts...).ToFunc()
+}
+
+// ByQuestionsCount orders the results by questions count.
+func ByQuestionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newQuestionsStep(), opts...)
+	}
+}
+
+// ByQuestions orders the results by questions terms.
+func ByQuestions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newQuestionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newQuestionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(QuestionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, QuestionsTable, QuestionsColumn),
+	)
 }

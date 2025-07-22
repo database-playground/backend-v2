@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -13,18 +14,20 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/predicate"
+	"github.com/database-playground/backend-v2/ent/question"
 )
 
 // DatabaseQuery is the builder for querying Database entities.
 type DatabaseQuery struct {
 	config
-	ctx        *QueryContext
-	order      []database.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Database
-	withFKs    bool
-	modifiers  []func(*sql.Selector)
-	loadTotal  []func(context.Context, []*Database) error
+	ctx                *QueryContext
+	order              []database.OrderOption
+	inters             []Interceptor
+	predicates         []predicate.Database
+	withQuestions      *QuestionQuery
+	modifiers          []func(*sql.Selector)
+	loadTotal          []func(context.Context, []*Database) error
+	withNamedQuestions map[string]*QuestionQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -59,6 +62,28 @@ func (dq *DatabaseQuery) Unique(unique bool) *DatabaseQuery {
 func (dq *DatabaseQuery) Order(o ...database.OrderOption) *DatabaseQuery {
 	dq.order = append(dq.order, o...)
 	return dq
+}
+
+// QueryQuestions chains the current query on the "questions" edge.
+func (dq *DatabaseQuery) QueryQuestions() *QuestionQuery {
+	query := (&QuestionClient{config: dq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(database.Table, database.FieldID, selector),
+			sqlgraph.To(question.Table, question.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, database.QuestionsTable, database.QuestionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Database entity from the query.
@@ -248,15 +273,27 @@ func (dq *DatabaseQuery) Clone() *DatabaseQuery {
 		return nil
 	}
 	return &DatabaseQuery{
-		config:     dq.config,
-		ctx:        dq.ctx.Clone(),
-		order:      append([]database.OrderOption{}, dq.order...),
-		inters:     append([]Interceptor{}, dq.inters...),
-		predicates: append([]predicate.Database{}, dq.predicates...),
+		config:        dq.config,
+		ctx:           dq.ctx.Clone(),
+		order:         append([]database.OrderOption{}, dq.order...),
+		inters:        append([]Interceptor{}, dq.inters...),
+		predicates:    append([]predicate.Database{}, dq.predicates...),
+		withQuestions: dq.withQuestions.Clone(),
 		// clone intermediate query.
 		sql:  dq.sql.Clone(),
 		path: dq.path,
 	}
+}
+
+// WithQuestions tells the query-builder to eager-load the nodes that are connected to
+// the "questions" edge. The optional arguments are used to configure the query builder of the edge.
+func (dq *DatabaseQuery) WithQuestions(opts ...func(*QuestionQuery)) *DatabaseQuery {
+	query := (&QuestionClient{config: dq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dq.withQuestions = query
+	return dq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -335,19 +372,19 @@ func (dq *DatabaseQuery) prepareQuery(ctx context.Context) error {
 
 func (dq *DatabaseQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Database, error) {
 	var (
-		nodes   = []*Database{}
-		withFKs = dq.withFKs
-		_spec   = dq.querySpec()
+		nodes       = []*Database{}
+		_spec       = dq.querySpec()
+		loadedTypes = [1]bool{
+			dq.withQuestions != nil,
+		}
 	)
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, database.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Database).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &Database{config: dq.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if len(dq.modifiers) > 0 {
@@ -362,12 +399,58 @@ func (dq *DatabaseQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Dat
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := dq.withQuestions; query != nil {
+		if err := dq.loadQuestions(ctx, query, nodes,
+			func(n *Database) { n.Edges.Questions = []*Question{} },
+			func(n *Database, e *Question) { n.Edges.Questions = append(n.Edges.Questions, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range dq.withNamedQuestions {
+		if err := dq.loadQuestions(ctx, query, nodes,
+			func(n *Database) { n.appendNamedQuestions(name) },
+			func(n *Database, e *Question) { n.appendNamedQuestions(name, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for i := range dq.loadTotal {
 		if err := dq.loadTotal[i](ctx, nodes); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
+}
+
+func (dq *DatabaseQuery) loadQuestions(ctx context.Context, query *QuestionQuery, nodes []*Database, init func(*Database), assign func(*Database, *Question)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Database)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Question(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(database.QuestionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.database_questions
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "database_questions" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "database_questions" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
 func (dq *DatabaseQuery) sqlCount(ctx context.Context) (int, error) {
@@ -452,6 +535,20 @@ func (dq *DatabaseQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// WithNamedQuestions tells the query-builder to eager-load the nodes that are connected to the "questions"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (dq *DatabaseQuery) WithNamedQuestions(name string, opts ...func(*QuestionQuery)) *DatabaseQuery {
+	query := (&QuestionClient{config: dq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if dq.withNamedQuestions == nil {
+		dq.withNamedQuestions = make(map[string]*QuestionQuery)
+	}
+	dq.withNamedQuestions[name] = query
+	return dq
 }
 
 // DatabaseGroupBy is the group-by builder for Database entities.

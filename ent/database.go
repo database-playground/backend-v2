@@ -23,9 +23,33 @@ type Database struct {
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
 	// SQL schema
-	Schema            string `json:"schema,omitempty"`
-	question_database *int
-	selectValues      sql.SelectValues
+	Schema string `json:"schema,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the DatabaseQuery when eager-loading is set.
+	Edges        DatabaseEdges `json:"edges"`
+	selectValues sql.SelectValues
+}
+
+// DatabaseEdges holds the relations/edges for other nodes in the graph.
+type DatabaseEdges struct {
+	// Questions holds the value of the questions edge.
+	Questions []*Question `json:"questions,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+	// totalCount holds the count of the edges above.
+	totalCount [1]map[string]int
+
+	namedQuestions map[string][]*Question
+}
+
+// QuestionsOrErr returns the Questions value or an error if the edge
+// was not loaded in eager-loading.
+func (e DatabaseEdges) QuestionsOrErr() ([]*Question, error) {
+	if e.loadedTypes[0] {
+		return e.Questions, nil
+	}
+	return nil, &NotLoadedError{edge: "questions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -37,8 +61,6 @@ func (*Database) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case database.FieldSlug, database.FieldRelationFigure, database.FieldDescription, database.FieldSchema:
 			values[i] = new(sql.NullString)
-		case database.ForeignKeys[0]: // question_database
-			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -84,13 +106,6 @@ func (d *Database) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				d.Schema = value.String
 			}
-		case database.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field question_database", value)
-			} else if value.Valid {
-				d.question_database = new(int)
-				*d.question_database = int(value.Int64)
-			}
 		default:
 			d.selectValues.Set(columns[i], values[i])
 		}
@@ -102,6 +117,11 @@ func (d *Database) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (d *Database) Value(name string) (ent.Value, error) {
 	return d.selectValues.Get(name)
+}
+
+// QueryQuestions queries the "questions" edge of the Database entity.
+func (d *Database) QueryQuestions() *QuestionQuery {
+	return NewDatabaseClient(d.config).QueryQuestions(d)
 }
 
 // Update returns a builder for updating this Database.
@@ -140,6 +160,30 @@ func (d *Database) String() string {
 	builder.WriteString(d.Schema)
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedQuestions returns the Questions named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (d *Database) NamedQuestions(name string) ([]*Question, error) {
+	if d.Edges.namedQuestions == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := d.Edges.namedQuestions[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (d *Database) appendNamedQuestions(name string, edges ...*Question) {
+	if d.Edges.namedQuestions == nil {
+		d.Edges.namedQuestions = make(map[string][]*Question)
+	}
+	if len(edges) == 0 {
+		d.Edges.namedQuestions[name] = []*Question{}
+	} else {
+		d.Edges.namedQuestions[name] = append(d.Edges.namedQuestions[name], edges...)
+	}
 }
 
 // Databases is a parsable slice of Database.

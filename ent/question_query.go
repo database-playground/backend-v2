@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -20,14 +19,14 @@ import (
 // QuestionQuery is the builder for querying Question entities.
 type QuestionQuery struct {
 	config
-	ctx               *QueryContext
-	order             []question.OrderOption
-	inters            []Interceptor
-	predicates        []predicate.Question
-	withDatabase      *DatabaseQuery
-	modifiers         []func(*sql.Selector)
-	loadTotal         []func(context.Context, []*Question) error
-	withNamedDatabase map[string]*DatabaseQuery
+	ctx          *QueryContext
+	order        []question.OrderOption
+	inters       []Interceptor
+	predicates   []predicate.Question
+	withDatabase *DatabaseQuery
+	withFKs      bool
+	modifiers    []func(*sql.Selector)
+	loadTotal    []func(context.Context, []*Question) error
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -78,7 +77,7 @@ func (qq *QuestionQuery) QueryDatabase() *DatabaseQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(question.Table, question.FieldID, selector),
 			sqlgraph.To(database.Table, database.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, question.DatabaseTable, question.DatabaseColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, question.DatabaseTable, question.DatabaseColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(qq.driver.Dialect(), step)
 		return fromU, nil
@@ -373,11 +372,18 @@ func (qq *QuestionQuery) prepareQuery(ctx context.Context) error {
 func (qq *QuestionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Question, error) {
 	var (
 		nodes       = []*Question{}
+		withFKs     = qq.withFKs
 		_spec       = qq.querySpec()
 		loadedTypes = [1]bool{
 			qq.withDatabase != nil,
 		}
 	)
+	if qq.withDatabase != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, question.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Question).scanValues(nil, columns)
 	}
@@ -400,16 +406,8 @@ func (qq *QuestionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Que
 		return nodes, nil
 	}
 	if query := qq.withDatabase; query != nil {
-		if err := qq.loadDatabase(ctx, query, nodes,
-			func(n *Question) { n.Edges.Database = []*Database{} },
-			func(n *Question, e *Database) { n.Edges.Database = append(n.Edges.Database, e) }); err != nil {
-			return nil, err
-		}
-	}
-	for name, query := range qq.withNamedDatabase {
-		if err := qq.loadDatabase(ctx, query, nodes,
-			func(n *Question) { n.appendNamedDatabase(name) },
-			func(n *Question, e *Database) { n.appendNamedDatabase(name, e) }); err != nil {
+		if err := qq.loadDatabase(ctx, query, nodes, nil,
+			func(n *Question, e *Database) { n.Edges.Database = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -422,33 +420,34 @@ func (qq *QuestionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Que
 }
 
 func (qq *QuestionQuery) loadDatabase(ctx context.Context, query *DatabaseQuery, nodes []*Question, init func(*Question), assign func(*Question, *Database)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*Question)
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Question)
 	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
+		if nodes[i].database_questions == nil {
+			continue
 		}
+		fk := *nodes[i].database_questions
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	query.withFKs = true
-	query.Where(predicate.Database(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(question.DatabaseColumn), fks...))
-	}))
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(database.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.question_database
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "question_database" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "question_database" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "database_questions" returned %v`, n.ID)
 		}
-		assign(node, n)
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
 	}
 	return nil
 }
@@ -535,20 +534,6 @@ func (qq *QuestionQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
-}
-
-// WithNamedDatabase tells the query-builder to eager-load the nodes that are connected to the "database"
-// edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (qq *QuestionQuery) WithNamedDatabase(name string, opts ...func(*DatabaseQuery)) *QuestionQuery {
-	query := (&DatabaseClient{config: qq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	if qq.withNamedDatabase == nil {
-		qq.withNamedDatabase = make(map[string]*DatabaseQuery)
-	}
-	qq.withNamedDatabase[name] = query
-	return qq
 }
 
 // QuestionGroupBy is the group-by builder for Question entities.

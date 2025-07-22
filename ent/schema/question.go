@@ -36,7 +36,10 @@ func (Question) Fields() []ent.Field {
 
 func (Question) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("database", Database.Type),
+		edge.From("database", Database.Type).
+			Ref("questions").
+			Unique().
+			Required(),
 	}
 }
 

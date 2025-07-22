@@ -12,6 +12,7 @@ type CreateDatabaseInput struct {
 	RelationFigure string
 	Description    *string
 	Schema         string
+	QuestionIDs    []int
 }
 
 // Mutate applies the CreateDatabaseInput on the DatabaseMutation builder.
@@ -22,6 +23,9 @@ func (i *CreateDatabaseInput) Mutate(m *DatabaseMutation) {
 		m.SetDescription(*v)
 	}
 	m.SetSchema(i.Schema)
+	if v := i.QuestionIDs; len(v) > 0 {
+		m.AddQuestionIDs(v...)
+	}
 }
 
 // SetInput applies the change-set in the CreateDatabaseInput on the DatabaseCreate builder.
@@ -32,9 +36,12 @@ func (c *DatabaseCreate) SetInput(i CreateDatabaseInput) *DatabaseCreate {
 
 // UpdateDatabaseInput represents a mutation input for updating databases.
 type UpdateDatabaseInput struct {
-	ClearDescription bool
-	Description      *string
-	Schema           *string
+	ClearDescription  bool
+	Description       *string
+	Schema            *string
+	ClearQuestions    bool
+	AddQuestionIDs    []int
+	RemoveQuestionIDs []int
 }
 
 // Mutate applies the UpdateDatabaseInput on the DatabaseMutation builder.
@@ -47,6 +54,15 @@ func (i *UpdateDatabaseInput) Mutate(m *DatabaseMutation) {
 	}
 	if v := i.Schema; v != nil {
 		m.SetSchema(*v)
+	}
+	if i.ClearQuestions {
+		m.ClearQuestions()
+	}
+	if v := i.AddQuestionIDs; len(v) > 0 {
+		m.AddQuestionIDs(v...)
+	}
+	if v := i.RemoveQuestionIDs; len(v) > 0 {
+		m.RemoveQuestionIDs(v...)
 	}
 }
 
@@ -137,7 +153,7 @@ type CreateQuestionInput struct {
 	Title           string
 	Description     string
 	ReferenceAnswer string
-	DatabaseIDs     []int
+	DatabaseID      int
 }
 
 // Mutate applies the CreateQuestionInput on the QuestionMutation builder.
@@ -149,9 +165,7 @@ func (i *CreateQuestionInput) Mutate(m *QuestionMutation) {
 	m.SetTitle(i.Title)
 	m.SetDescription(i.Description)
 	m.SetReferenceAnswer(i.ReferenceAnswer)
-	if v := i.DatabaseIDs; len(v) > 0 {
-		m.AddDatabaseIDs(v...)
-	}
+	m.SetDatabaseID(i.DatabaseID)
 }
 
 // SetInput applies the change-set in the CreateQuestionInput on the QuestionCreate builder.
@@ -162,13 +176,11 @@ func (c *QuestionCreate) SetInput(i CreateQuestionInput) *QuestionCreate {
 
 // UpdateQuestionInput represents a mutation input for updating questions.
 type UpdateQuestionInput struct {
-	Difficulty        *question.Difficulty
-	Title             *string
-	Description       *string
-	ReferenceAnswer   *string
-	ClearDatabase     bool
-	AddDatabaseIDs    []int
-	RemoveDatabaseIDs []int
+	Difficulty      *question.Difficulty
+	Title           *string
+	Description     *string
+	ReferenceAnswer *string
+	DatabaseID      *int
 }
 
 // Mutate applies the UpdateQuestionInput on the QuestionMutation builder.
@@ -185,14 +197,8 @@ func (i *UpdateQuestionInput) Mutate(m *QuestionMutation) {
 	if v := i.ReferenceAnswer; v != nil {
 		m.SetReferenceAnswer(*v)
 	}
-	if i.ClearDatabase {
-		m.ClearDatabase()
-	}
-	if v := i.AddDatabaseIDs; len(v) > 0 {
-		m.AddDatabaseIDs(v...)
-	}
-	if v := i.RemoveDatabaseIDs; len(v) > 0 {
-		m.RemoveDatabaseIDs(v...)
+	if v := i.DatabaseID; v != nil {
+		m.SetDatabaseID(*v)
 	}
 }
 

@@ -15,6 +15,7 @@ input CreateDatabaseInput {
   SQL schema
   """
   schema: String!
+  questionIDs: [ID!]
 }
 """
 CreateGroupInput is used for create Group object.
@@ -50,7 +51,7 @@ input CreateQuestionInput {
   Reference answer
   """
   referenceAnswer: String!
-  databaseIDs: [ID!]
+  databaseID: ID!
 }
 """
 CreateScopeSetInput is used for create ScopeSet object.
@@ -89,6 +90,7 @@ type Database implements Node {
   SQL schema
   """
   schema: String!
+  questions: [Question!]
 }
 """
 DatabaseWhereInput is used for filtering Database objects.
@@ -175,6 +177,11 @@ input DatabaseWhereInput {
   schemaHasSuffix: String
   schemaEqualFold: String
   schemaContainsFold: String
+  """
+  questions edge predicates
+  """
+  hasQuestions: Boolean
+  hasQuestionsWith: [QuestionWhereInput!]
 }
 type Group implements Node {
   id: ID!
@@ -431,7 +438,7 @@ type Question implements Node {
   Reference answer
   """
   referenceAnswer: String! @scope(scope: "answer:read")
-  database: [Database!]
+  database: Database!
 }
 """
 A connection to a list of items.
@@ -669,6 +676,9 @@ input UpdateDatabaseInput {
   SQL schema
   """
   schema: String
+  addQuestionIDs: [ID!]
+  removeQuestionIDs: [ID!]
+  clearQuestions: Boolean
 }
 """
 UpdateGroupInput is used for update Group object.
@@ -703,9 +713,7 @@ input UpdateQuestionInput {
   Reference answer
   """
   referenceAnswer: String
-  addDatabaseIDs: [ID!]
-  removeDatabaseIDs: [ID!]
-  clearDatabase: Boolean
+  databaseID: ID
 }
 """
 UpdateScopeSetInput is used for update ScopeSet object.

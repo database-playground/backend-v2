@@ -93,6 +93,10 @@ type DatabaseWhereInput struct {
 	SchemaHasSuffix    *string  `json:"schemaHasSuffix,omitempty"`
 	SchemaEqualFold    *string  `json:"schemaEqualFold,omitempty"`
 	SchemaContainsFold *string  `json:"schemaContainsFold,omitempty"`
+
+	// "questions" edge predicates.
+	HasQuestions     *bool                 `json:"hasQuestions,omitempty"`
+	HasQuestionsWith []*QuestionWhereInput `json:"hasQuestionsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -353,6 +357,24 @@ func (i *DatabaseWhereInput) P() (predicate.Database, error) {
 		predicates = append(predicates, database.SchemaContainsFold(*i.SchemaContainsFold))
 	}
 
+	if i.HasQuestions != nil {
+		p := database.HasQuestions()
+		if !*i.HasQuestions {
+			p = database.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasQuestionsWith) > 0 {
+		with := make([]predicate.Question, 0, len(i.HasQuestionsWith))
+		for _, w := range i.HasQuestionsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasQuestionsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, database.HasQuestionsWith(with...))
+	}
 	switch len(predicates) {
 	case 0:
 		return nil, ErrEmptyDatabaseWhereInput

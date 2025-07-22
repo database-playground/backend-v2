@@ -8,6 +8,18 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+func (d *Database) Questions(ctx context.Context) (result []*Question, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = d.NamedQuestions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = d.Edges.QuestionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = d.QueryQuestions().All(ctx)
+	}
+	return result, err
+}
+
 func (gr *Group) ScopeSets(ctx context.Context) (result []*ScopeSet, err error) {
 	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
 		result, err = gr.NamedScopeSets(graphql.GetFieldContext(ctx).Field.Alias)
@@ -20,14 +32,10 @@ func (gr *Group) ScopeSets(ctx context.Context) (result []*ScopeSet, err error) 
 	return result, err
 }
 
-func (q *Question) Database(ctx context.Context) (result []*Database, err error) {
-	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = q.NamedDatabase(graphql.GetFieldContext(ctx).Field.Alias)
-	} else {
-		result, err = q.Edges.DatabaseOrErr()
-	}
+func (q *Question) Database(ctx context.Context) (*Database, error) {
+	result, err := q.Edges.DatabaseOrErr()
 	if IsNotLoaded(err) {
-		result, err = q.QueryDatabase().All(ctx)
+		result, err = q.QueryDatabase().Only(ctx)
 	}
 	return result, err
 }

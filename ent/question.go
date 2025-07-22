@@ -8,6 +8,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/question"
 )
 
@@ -28,28 +29,29 @@ type Question struct {
 	ReferenceAnswer string `json:"reference_answer,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the QuestionQuery when eager-loading is set.
-	Edges        QuestionEdges `json:"edges"`
-	selectValues sql.SelectValues
+	Edges              QuestionEdges `json:"edges"`
+	database_questions *int
+	selectValues       sql.SelectValues
 }
 
 // QuestionEdges holds the relations/edges for other nodes in the graph.
 type QuestionEdges struct {
 	// Database holds the value of the database edge.
-	Database []*Database `json:"database,omitempty"`
+	Database *Database `json:"database,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
 	// totalCount holds the count of the edges above.
 	totalCount [1]map[string]int
-
-	namedDatabase map[string][]*Database
 }
 
 // DatabaseOrErr returns the Database value or an error if the edge
-// was not loaded in eager-loading.
-func (e QuestionEdges) DatabaseOrErr() ([]*Database, error) {
-	if e.loadedTypes[0] {
+// was not loaded in eager-loading, or loaded but was not found.
+func (e QuestionEdges) DatabaseOrErr() (*Database, error) {
+	if e.Database != nil {
 		return e.Database, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: database.Label}
 	}
 	return nil, &NotLoadedError{edge: "database"}
 }
@@ -63,6 +65,8 @@ func (*Question) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case question.FieldCategory, question.FieldDifficulty, question.FieldTitle, question.FieldDescription, question.FieldReferenceAnswer:
 			values[i] = new(sql.NullString)
+		case question.ForeignKeys[0]: // database_questions
+			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -113,6 +117,13 @@ func (q *Question) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field reference_answer", values[i])
 			} else if value.Valid {
 				q.ReferenceAnswer = value.String
+			}
+		case question.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field database_questions", value)
+			} else if value.Valid {
+				q.database_questions = new(int)
+				*q.database_questions = int(value.Int64)
 			}
 		default:
 			q.selectValues.Set(columns[i], values[i])
@@ -171,30 +182,6 @@ func (q *Question) String() string {
 	builder.WriteString(q.ReferenceAnswer)
 	builder.WriteByte(')')
 	return builder.String()
-}
-
-// NamedDatabase returns the Database named value or an error if the edge was not
-// loaded in eager-loading with this name.
-func (q *Question) NamedDatabase(name string) ([]*Database, error) {
-	if q.Edges.namedDatabase == nil {
-		return nil, &NotLoadedError{edge: name}
-	}
-	nodes, ok := q.Edges.namedDatabase[name]
-	if !ok {
-		return nil, &NotLoadedError{edge: name}
-	}
-	return nodes, nil
-}
-
-func (q *Question) appendNamedDatabase(name string, edges ...*Database) {
-	if q.Edges.namedDatabase == nil {
-		q.Edges.namedDatabase = make(map[string][]*Database)
-	}
-	if len(edges) == 0 {
-		q.Edges.namedDatabase[name] = []*Database{}
-	} else {
-		q.Edges.namedDatabase[name] = append(q.Edges.namedDatabase[name], edges...)
-	}
 }
 
 // Questions is a parsable slice of Question.

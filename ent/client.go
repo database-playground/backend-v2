@@ -347,6 +347,22 @@ func (c *DatabaseClient) GetX(ctx context.Context, id int) *Database {
 	return obj
 }
 
+// QueryQuestions queries the questions edge of a Database.
+func (c *DatabaseClient) QueryQuestions(d *Database) *QuestionQuery {
+	query := (&QuestionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := d.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(database.Table, database.FieldID, id),
+			sqlgraph.To(question.Table, question.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, database.QuestionsTable, database.QuestionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *DatabaseClient) Hooks() []Hook {
 	return c.hooks.Database
@@ -639,7 +655,7 @@ func (c *QuestionClient) QueryDatabase(q *Question) *DatabaseQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(question.Table, question.FieldID, id),
 			sqlgraph.To(database.Table, database.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, question.DatabaseTable, question.DatabaseColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, question.DatabaseTable, question.DatabaseColumn),
 		)
 		fromV = sqlgraph.Neighbors(q.driver.Dialect(), step)
 		return fromV, nil

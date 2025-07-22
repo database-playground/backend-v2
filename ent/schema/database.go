@@ -4,6 +4,7 @@ import (
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
 	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
@@ -18,6 +19,12 @@ func (Database) Fields() []ent.Field {
 		field.String("relation_figure").NotEmpty().Unique().Immutable().Comment("relation figure"),
 		field.String("description").Optional(),
 		field.Text("schema").NotEmpty().Comment("SQL schema"),
+	}
+}
+
+func (Database) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.To("questions", Question.Type),
 	}
 }
 

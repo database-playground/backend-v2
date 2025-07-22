@@ -35,6 +35,19 @@ func (d *DatabaseQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 	)
 	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
+
+		case "questions":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&QuestionClient{config: d.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, questionImplementors)...); err != nil {
+				return err
+			}
+			d.WithNamedQuestions(alias, func(wq *QuestionQuery) {
+				*wq = *query
+			})
 		case "slug":
 			if _, ok := fieldSeen[database.FieldSlug]; !ok {
 				selectedFields = append(selectedFields, database.FieldSlug)
@@ -224,12 +237,10 @@ func (q *QuestionQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 				path  = append(path, alias)
 				query = (&DatabaseClient{config: q.config}).Query()
 			)
-			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, databaseImplementors)...); err != nil {
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, databaseImplementors)...); err != nil {
 				return err
 			}
-			q.WithNamedDatabase(alias, func(wq *DatabaseQuery) {
-				*wq = *query
-			})
+			q.withDatabase = query
 		case "category":
 			if _, ok := fieldSeen[question.FieldCategory]; !ok {
 				selectedFields = append(selectedFields, question.FieldCategory)

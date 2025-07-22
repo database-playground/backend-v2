@@ -84,19 +84,15 @@ func (qu *QuestionUpdate) SetNillableReferenceAnswer(s *string) *QuestionUpdate 
 	return qu
 }
 
-// AddDatabaseIDs adds the "database" edge to the Database entity by IDs.
-func (qu *QuestionUpdate) AddDatabaseIDs(ids ...int) *QuestionUpdate {
-	qu.mutation.AddDatabaseIDs(ids...)
+// SetDatabaseID sets the "database" edge to the Database entity by ID.
+func (qu *QuestionUpdate) SetDatabaseID(id int) *QuestionUpdate {
+	qu.mutation.SetDatabaseID(id)
 	return qu
 }
 
-// AddDatabase adds the "database" edges to the Database entity.
-func (qu *QuestionUpdate) AddDatabase(d ...*Database) *QuestionUpdate {
-	ids := make([]int, len(d))
-	for i := range d {
-		ids[i] = d[i].ID
-	}
-	return qu.AddDatabaseIDs(ids...)
+// SetDatabase sets the "database" edge to the Database entity.
+func (qu *QuestionUpdate) SetDatabase(d *Database) *QuestionUpdate {
+	return qu.SetDatabaseID(d.ID)
 }
 
 // Mutation returns the QuestionMutation object of the builder.
@@ -104,25 +100,10 @@ func (qu *QuestionUpdate) Mutation() *QuestionMutation {
 	return qu.mutation
 }
 
-// ClearDatabase clears all "database" edges to the Database entity.
+// ClearDatabase clears the "database" edge to the Database entity.
 func (qu *QuestionUpdate) ClearDatabase() *QuestionUpdate {
 	qu.mutation.ClearDatabase()
 	return qu
-}
-
-// RemoveDatabaseIDs removes the "database" edge to Database entities by IDs.
-func (qu *QuestionUpdate) RemoveDatabaseIDs(ids ...int) *QuestionUpdate {
-	qu.mutation.RemoveDatabaseIDs(ids...)
-	return qu
-}
-
-// RemoveDatabase removes "database" edges to Database entities.
-func (qu *QuestionUpdate) RemoveDatabase(d ...*Database) *QuestionUpdate {
-	ids := make([]int, len(d))
-	for i := range d {
-		ids[i] = d[i].ID
-	}
-	return qu.RemoveDatabaseIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -159,6 +140,9 @@ func (qu *QuestionUpdate) check() error {
 			return &ValidationError{Name: "difficulty", err: fmt.Errorf(`ent: validator failed for field "Question.difficulty": %w`, err)}
 		}
 	}
+	if qu.mutation.DatabaseCleared() && len(qu.mutation.DatabaseIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Question.database"`)
+	}
 	return nil
 }
 
@@ -188,37 +172,21 @@ func (qu *QuestionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if qu.mutation.DatabaseCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
 			Table:   question.DatabaseTable,
 			Columns: []string{question.DatabaseColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(database.FieldID, field.TypeInt),
 			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := qu.mutation.RemovedDatabaseIDs(); len(nodes) > 0 && !qu.mutation.DatabaseCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   question.DatabaseTable,
-			Columns: []string{question.DatabaseColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(database.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := qu.mutation.DatabaseIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
 			Table:   question.DatabaseTable,
 			Columns: []string{question.DatabaseColumn},
 			Bidi:    false,
@@ -307,19 +275,15 @@ func (quo *QuestionUpdateOne) SetNillableReferenceAnswer(s *string) *QuestionUpd
 	return quo
 }
 
-// AddDatabaseIDs adds the "database" edge to the Database entity by IDs.
-func (quo *QuestionUpdateOne) AddDatabaseIDs(ids ...int) *QuestionUpdateOne {
-	quo.mutation.AddDatabaseIDs(ids...)
+// SetDatabaseID sets the "database" edge to the Database entity by ID.
+func (quo *QuestionUpdateOne) SetDatabaseID(id int) *QuestionUpdateOne {
+	quo.mutation.SetDatabaseID(id)
 	return quo
 }
 
-// AddDatabase adds the "database" edges to the Database entity.
-func (quo *QuestionUpdateOne) AddDatabase(d ...*Database) *QuestionUpdateOne {
-	ids := make([]int, len(d))
-	for i := range d {
-		ids[i] = d[i].ID
-	}
-	return quo.AddDatabaseIDs(ids...)
+// SetDatabase sets the "database" edge to the Database entity.
+func (quo *QuestionUpdateOne) SetDatabase(d *Database) *QuestionUpdateOne {
+	return quo.SetDatabaseID(d.ID)
 }
 
 // Mutation returns the QuestionMutation object of the builder.
@@ -327,25 +291,10 @@ func (quo *QuestionUpdateOne) Mutation() *QuestionMutation {
 	return quo.mutation
 }
 
-// ClearDatabase clears all "database" edges to the Database entity.
+// ClearDatabase clears the "database" edge to the Database entity.
 func (quo *QuestionUpdateOne) ClearDatabase() *QuestionUpdateOne {
 	quo.mutation.ClearDatabase()
 	return quo
-}
-
-// RemoveDatabaseIDs removes the "database" edge to Database entities by IDs.
-func (quo *QuestionUpdateOne) RemoveDatabaseIDs(ids ...int) *QuestionUpdateOne {
-	quo.mutation.RemoveDatabaseIDs(ids...)
-	return quo
-}
-
-// RemoveDatabase removes "database" edges to Database entities.
-func (quo *QuestionUpdateOne) RemoveDatabase(d ...*Database) *QuestionUpdateOne {
-	ids := make([]int, len(d))
-	for i := range d {
-		ids[i] = d[i].ID
-	}
-	return quo.RemoveDatabaseIDs(ids...)
 }
 
 // Where appends a list predicates to the QuestionUpdate builder.
@@ -395,6 +344,9 @@ func (quo *QuestionUpdateOne) check() error {
 			return &ValidationError{Name: "difficulty", err: fmt.Errorf(`ent: validator failed for field "Question.difficulty": %w`, err)}
 		}
 	}
+	if quo.mutation.DatabaseCleared() && len(quo.mutation.DatabaseIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Question.database"`)
+	}
 	return nil
 }
 
@@ -441,37 +393,21 @@ func (quo *QuestionUpdateOne) sqlSave(ctx context.Context) (_node *Question, err
 	}
 	if quo.mutation.DatabaseCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
 			Table:   question.DatabaseTable,
 			Columns: []string{question.DatabaseColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(database.FieldID, field.TypeInt),
 			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := quo.mutation.RemovedDatabaseIDs(); len(nodes) > 0 && !quo.mutation.DatabaseCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   question.DatabaseTable,
-			Columns: []string{question.DatabaseColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(database.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := quo.mutation.DatabaseIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
 			Table:   question.DatabaseTable,
 			Columns: []string{question.DatabaseColumn},
 			Bidi:    false,

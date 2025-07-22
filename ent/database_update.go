@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/predicate"
+	"github.com/database-playground/backend-v2/ent/question"
 )
 
 // DatabaseUpdate is the builder for updating Database entities.
@@ -61,9 +62,45 @@ func (du *DatabaseUpdate) SetNillableSchema(s *string) *DatabaseUpdate {
 	return du
 }
 
+// AddQuestionIDs adds the "questions" edge to the Question entity by IDs.
+func (du *DatabaseUpdate) AddQuestionIDs(ids ...int) *DatabaseUpdate {
+	du.mutation.AddQuestionIDs(ids...)
+	return du
+}
+
+// AddQuestions adds the "questions" edges to the Question entity.
+func (du *DatabaseUpdate) AddQuestions(q ...*Question) *DatabaseUpdate {
+	ids := make([]int, len(q))
+	for i := range q {
+		ids[i] = q[i].ID
+	}
+	return du.AddQuestionIDs(ids...)
+}
+
 // Mutation returns the DatabaseMutation object of the builder.
 func (du *DatabaseUpdate) Mutation() *DatabaseMutation {
 	return du.mutation
+}
+
+// ClearQuestions clears all "questions" edges to the Question entity.
+func (du *DatabaseUpdate) ClearQuestions() *DatabaseUpdate {
+	du.mutation.ClearQuestions()
+	return du
+}
+
+// RemoveQuestionIDs removes the "questions" edge to Question entities by IDs.
+func (du *DatabaseUpdate) RemoveQuestionIDs(ids ...int) *DatabaseUpdate {
+	du.mutation.RemoveQuestionIDs(ids...)
+	return du
+}
+
+// RemoveQuestions removes "questions" edges to Question entities.
+func (du *DatabaseUpdate) RemoveQuestions(q ...*Question) *DatabaseUpdate {
+	ids := make([]int, len(q))
+	for i := range q {
+		ids[i] = q[i].ID
+	}
+	return du.RemoveQuestionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -124,6 +161,51 @@ func (du *DatabaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := du.mutation.Schema(); ok {
 		_spec.SetField(database.FieldSchema, field.TypeString, value)
 	}
+	if du.mutation.QuestionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   database.QuestionsTable,
+			Columns: []string{database.QuestionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(question.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.RemovedQuestionsIDs(); len(nodes) > 0 && !du.mutation.QuestionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   database.QuestionsTable,
+			Columns: []string{database.QuestionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(question.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.QuestionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   database.QuestionsTable,
+			Columns: []string{database.QuestionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(question.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, du.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{database.Label}
@@ -178,9 +260,45 @@ func (duo *DatabaseUpdateOne) SetNillableSchema(s *string) *DatabaseUpdateOne {
 	return duo
 }
 
+// AddQuestionIDs adds the "questions" edge to the Question entity by IDs.
+func (duo *DatabaseUpdateOne) AddQuestionIDs(ids ...int) *DatabaseUpdateOne {
+	duo.mutation.AddQuestionIDs(ids...)
+	return duo
+}
+
+// AddQuestions adds the "questions" edges to the Question entity.
+func (duo *DatabaseUpdateOne) AddQuestions(q ...*Question) *DatabaseUpdateOne {
+	ids := make([]int, len(q))
+	for i := range q {
+		ids[i] = q[i].ID
+	}
+	return duo.AddQuestionIDs(ids...)
+}
+
 // Mutation returns the DatabaseMutation object of the builder.
 func (duo *DatabaseUpdateOne) Mutation() *DatabaseMutation {
 	return duo.mutation
+}
+
+// ClearQuestions clears all "questions" edges to the Question entity.
+func (duo *DatabaseUpdateOne) ClearQuestions() *DatabaseUpdateOne {
+	duo.mutation.ClearQuestions()
+	return duo
+}
+
+// RemoveQuestionIDs removes the "questions" edge to Question entities by IDs.
+func (duo *DatabaseUpdateOne) RemoveQuestionIDs(ids ...int) *DatabaseUpdateOne {
+	duo.mutation.RemoveQuestionIDs(ids...)
+	return duo
+}
+
+// RemoveQuestions removes "questions" edges to Question entities.
+func (duo *DatabaseUpdateOne) RemoveQuestions(q ...*Question) *DatabaseUpdateOne {
+	ids := make([]int, len(q))
+	for i := range q {
+		ids[i] = q[i].ID
+	}
+	return duo.RemoveQuestionIDs(ids...)
 }
 
 // Where appends a list predicates to the DatabaseUpdate builder.
@@ -270,6 +388,51 @@ func (duo *DatabaseUpdateOne) sqlSave(ctx context.Context) (_node *Database, err
 	}
 	if value, ok := duo.mutation.Schema(); ok {
 		_spec.SetField(database.FieldSchema, field.TypeString, value)
+	}
+	if duo.mutation.QuestionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   database.QuestionsTable,
+			Columns: []string{database.QuestionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(question.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.RemovedQuestionsIDs(); len(nodes) > 0 && !duo.mutation.QuestionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   database.QuestionsTable,
+			Columns: []string{database.QuestionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(question.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.QuestionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   database.QuestionsTable,
+			Columns: []string{database.QuestionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(question.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Database{config: duo.config}
 	_spec.Assign = _node.assignValues
