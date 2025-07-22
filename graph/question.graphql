@@ -1,9 +1,0 @@
-extend type Query {
-  searchQuestions(
-    filter: QuestionFilter
-    after: ID
-    first: Int
-    before: ID
-    last: Int
-  ): QuestionConnection!
-}

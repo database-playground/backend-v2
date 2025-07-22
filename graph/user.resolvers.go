@@ -345,8 +345,3 @@ func (r *userResolver) ImpersonatedBy(ctx context.Context, obj *ent.User) (*ent.
 
 	return userAccountSrv.GetUser(ctx, impersonatedBy)
 }
-
-// Mutation returns MutationResolver implementation.
-func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
-
-type mutationResolver struct{ *Resolver }

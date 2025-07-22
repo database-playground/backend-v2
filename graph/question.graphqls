@@ -1,0 +1,43 @@
+extend type Query {
+  """
+  Get a question by ID.
+  """
+  question(id: ID!): Question! @scope(scope: "question:read")
+
+  """
+  Get a database by ID.
+  """
+  database(id: ID!): Database! @scope(scope: "database:read")
+}
+
+extend type Mutation {
+  """
+  Create a question.
+  """
+  createQuestion(input: CreateQuestionInput!): Question! @scope(scope: "question:write")
+
+  """
+  Update a question.
+  """
+  updateQuestion(id: ID!, input: UpdateQuestionInput!): Question! @scope(scope: "question:write")
+
+  """
+  Delete a question.
+  """
+  deleteQuestion(id: ID!): Boolean! @scope(scope: "question:write")
+
+  """
+  Create a database.
+  """
+  createDatabase(input: CreateDatabaseInput!): Database! @scope(scope: "database:write")
+
+  """
+  Update a database.
+  """
+  updateDatabase(id: ID!, input: UpdateDatabaseInput!): Database! @scope(scope: "database:write")
+
+  """
+  Delete a database.
+  """
+  deleteDatabase(id: ID!): Boolean! @scope(scope: "database:write")
+}
