@@ -42,9 +42,9 @@ type DatabaseMutation struct {
 	typ              string
 	id               *int
 	slug             *string
-	relation_figure  *string
 	description      *string
 	schema           *string
+	relation_figure  *string
 	clearedFields    map[string]struct{}
 	questions        map[int]struct{}
 	removedquestions map[int]struct{}
@@ -188,42 +188,6 @@ func (m *DatabaseMutation) ResetSlug() {
 	m.slug = nil
 }
 
-// SetRelationFigure sets the "relation_figure" field.
-func (m *DatabaseMutation) SetRelationFigure(s string) {
-	m.relation_figure = &s
-}
-
-// RelationFigure returns the value of the "relation_figure" field in the mutation.
-func (m *DatabaseMutation) RelationFigure() (r string, exists bool) {
-	v := m.relation_figure
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldRelationFigure returns the old "relation_figure" field's value of the Database entity.
-// If the Database object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DatabaseMutation) OldRelationFigure(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldRelationFigure is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldRelationFigure requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRelationFigure: %w", err)
-	}
-	return oldValue.RelationFigure, nil
-}
-
-// ResetRelationFigure resets all changes to the "relation_figure" field.
-func (m *DatabaseMutation) ResetRelationFigure() {
-	m.relation_figure = nil
-}
-
 // SetDescription sets the "description" field.
 func (m *DatabaseMutation) SetDescription(s string) {
 	m.description = &s
@@ -307,6 +271,42 @@ func (m *DatabaseMutation) OldSchema(ctx context.Context) (v string, err error) 
 // ResetSchema resets all changes to the "schema" field.
 func (m *DatabaseMutation) ResetSchema() {
 	m.schema = nil
+}
+
+// SetRelationFigure sets the "relation_figure" field.
+func (m *DatabaseMutation) SetRelationFigure(s string) {
+	m.relation_figure = &s
+}
+
+// RelationFigure returns the value of the "relation_figure" field in the mutation.
+func (m *DatabaseMutation) RelationFigure() (r string, exists bool) {
+	v := m.relation_figure
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRelationFigure returns the old "relation_figure" field's value of the Database entity.
+// If the Database object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DatabaseMutation) OldRelationFigure(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRelationFigure is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRelationFigure requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRelationFigure: %w", err)
+	}
+	return oldValue.RelationFigure, nil
+}
+
+// ResetRelationFigure resets all changes to the "relation_figure" field.
+func (m *DatabaseMutation) ResetRelationFigure() {
+	m.relation_figure = nil
 }
 
 // AddQuestionIDs adds the "questions" edge to the Question entity by ids.
@@ -401,14 +401,14 @@ func (m *DatabaseMutation) Fields() []string {
 	if m.slug != nil {
 		fields = append(fields, database.FieldSlug)
 	}
-	if m.relation_figure != nil {
-		fields = append(fields, database.FieldRelationFigure)
-	}
 	if m.description != nil {
 		fields = append(fields, database.FieldDescription)
 	}
 	if m.schema != nil {
 		fields = append(fields, database.FieldSchema)
+	}
+	if m.relation_figure != nil {
+		fields = append(fields, database.FieldRelationFigure)
 	}
 	return fields
 }
@@ -420,12 +420,12 @@ func (m *DatabaseMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case database.FieldSlug:
 		return m.Slug()
-	case database.FieldRelationFigure:
-		return m.RelationFigure()
 	case database.FieldDescription:
 		return m.Description()
 	case database.FieldSchema:
 		return m.Schema()
+	case database.FieldRelationFigure:
+		return m.RelationFigure()
 	}
 	return nil, false
 }
@@ -437,12 +437,12 @@ func (m *DatabaseMutation) OldField(ctx context.Context, name string) (ent.Value
 	switch name {
 	case database.FieldSlug:
 		return m.OldSlug(ctx)
-	case database.FieldRelationFigure:
-		return m.OldRelationFigure(ctx)
 	case database.FieldDescription:
 		return m.OldDescription(ctx)
 	case database.FieldSchema:
 		return m.OldSchema(ctx)
+	case database.FieldRelationFigure:
+		return m.OldRelationFigure(ctx)
 	}
 	return nil, fmt.Errorf("unknown Database field %s", name)
 }
@@ -459,13 +459,6 @@ func (m *DatabaseMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSlug(v)
 		return nil
-	case database.FieldRelationFigure:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetRelationFigure(v)
-		return nil
 	case database.FieldDescription:
 		v, ok := value.(string)
 		if !ok {
@@ -479,6 +472,13 @@ func (m *DatabaseMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetSchema(v)
+		return nil
+	case database.FieldRelationFigure:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRelationFigure(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Database field %s", name)
@@ -541,14 +541,14 @@ func (m *DatabaseMutation) ResetField(name string) error {
 	case database.FieldSlug:
 		m.ResetSlug()
 		return nil
-	case database.FieldRelationFigure:
-		m.ResetRelationFigure()
-		return nil
 	case database.FieldDescription:
 		m.ResetDescription()
 		return nil
 	case database.FieldSchema:
 		m.ResetSchema()
+		return nil
+	case database.FieldRelationFigure:
+		m.ResetRelationFigure()
 		return nil
 	}
 	return fmt.Errorf("unknown Database field %s", name)

@@ -26,12 +26,6 @@ func (dc *DatabaseCreate) SetSlug(s string) *DatabaseCreate {
 	return dc
 }
 
-// SetRelationFigure sets the "relation_figure" field.
-func (dc *DatabaseCreate) SetRelationFigure(s string) *DatabaseCreate {
-	dc.mutation.SetRelationFigure(s)
-	return dc
-}
-
 // SetDescription sets the "description" field.
 func (dc *DatabaseCreate) SetDescription(s string) *DatabaseCreate {
 	dc.mutation.SetDescription(s)
@@ -49,6 +43,12 @@ func (dc *DatabaseCreate) SetNillableDescription(s *string) *DatabaseCreate {
 // SetSchema sets the "schema" field.
 func (dc *DatabaseCreate) SetSchema(s string) *DatabaseCreate {
 	dc.mutation.SetSchema(s)
+	return dc
+}
+
+// SetRelationFigure sets the "relation_figure" field.
+func (dc *DatabaseCreate) SetRelationFigure(s string) *DatabaseCreate {
+	dc.mutation.SetRelationFigure(s)
 	return dc
 }
 
@@ -109,20 +109,20 @@ func (dc *DatabaseCreate) check() error {
 			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Database.slug": %w`, err)}
 		}
 	}
-	if _, ok := dc.mutation.RelationFigure(); !ok {
-		return &ValidationError{Name: "relation_figure", err: errors.New(`ent: missing required field "Database.relation_figure"`)}
-	}
-	if v, ok := dc.mutation.RelationFigure(); ok {
-		if err := database.RelationFigureValidator(v); err != nil {
-			return &ValidationError{Name: "relation_figure", err: fmt.Errorf(`ent: validator failed for field "Database.relation_figure": %w`, err)}
-		}
-	}
 	if _, ok := dc.mutation.Schema(); !ok {
 		return &ValidationError{Name: "schema", err: errors.New(`ent: missing required field "Database.schema"`)}
 	}
 	if v, ok := dc.mutation.Schema(); ok {
 		if err := database.SchemaValidator(v); err != nil {
 			return &ValidationError{Name: "schema", err: fmt.Errorf(`ent: validator failed for field "Database.schema": %w`, err)}
+		}
+	}
+	if _, ok := dc.mutation.RelationFigure(); !ok {
+		return &ValidationError{Name: "relation_figure", err: errors.New(`ent: missing required field "Database.relation_figure"`)}
+	}
+	if v, ok := dc.mutation.RelationFigure(); ok {
+		if err := database.RelationFigureValidator(v); err != nil {
+			return &ValidationError{Name: "relation_figure", err: fmt.Errorf(`ent: validator failed for field "Database.relation_figure": %w`, err)}
 		}
 	}
 	return nil
@@ -155,10 +155,6 @@ func (dc *DatabaseCreate) createSpec() (*Database, *sqlgraph.CreateSpec) {
 		_spec.SetField(database.FieldSlug, field.TypeString, value)
 		_node.Slug = value
 	}
-	if value, ok := dc.mutation.RelationFigure(); ok {
-		_spec.SetField(database.FieldRelationFigure, field.TypeString, value)
-		_node.RelationFigure = value
-	}
 	if value, ok := dc.mutation.Description(); ok {
 		_spec.SetField(database.FieldDescription, field.TypeString, value)
 		_node.Description = value
@@ -166,6 +162,10 @@ func (dc *DatabaseCreate) createSpec() (*Database, *sqlgraph.CreateSpec) {
 	if value, ok := dc.mutation.Schema(); ok {
 		_spec.SetField(database.FieldSchema, field.TypeString, value)
 		_node.Schema = value
+	}
+	if value, ok := dc.mutation.RelationFigure(); ok {
+		_spec.SetField(database.FieldRelationFigure, field.TypeString, value)
+		_node.RelationFigure = value
 	}
 	if nodes := dc.mutation.QuestionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

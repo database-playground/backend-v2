@@ -13,9 +13,9 @@ var (
 	DatabasesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "slug", Type: field.TypeString, Unique: true},
-		{Name: "relation_figure", Type: field.TypeString, Unique: true},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "schema", Type: field.TypeString, Size: 2147483647},
+		{Name: "relation_figure", Type: field.TypeString, Unique: true},
 	}
 	// DatabasesTable holds the schema information for the "databases" table.
 	DatabasesTable = &schema.Table{

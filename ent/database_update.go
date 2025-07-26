@@ -62,6 +62,20 @@ func (du *DatabaseUpdate) SetNillableSchema(s *string) *DatabaseUpdate {
 	return du
 }
 
+// SetRelationFigure sets the "relation_figure" field.
+func (du *DatabaseUpdate) SetRelationFigure(s string) *DatabaseUpdate {
+	du.mutation.SetRelationFigure(s)
+	return du
+}
+
+// SetNillableRelationFigure sets the "relation_figure" field if the given value is not nil.
+func (du *DatabaseUpdate) SetNillableRelationFigure(s *string) *DatabaseUpdate {
+	if s != nil {
+		du.SetRelationFigure(*s)
+	}
+	return du
+}
+
 // AddQuestionIDs adds the "questions" edge to the Question entity by IDs.
 func (du *DatabaseUpdate) AddQuestionIDs(ids ...int) *DatabaseUpdate {
 	du.mutation.AddQuestionIDs(ids...)
@@ -137,6 +151,11 @@ func (du *DatabaseUpdate) check() error {
 			return &ValidationError{Name: "schema", err: fmt.Errorf(`ent: validator failed for field "Database.schema": %w`, err)}
 		}
 	}
+	if v, ok := du.mutation.RelationFigure(); ok {
+		if err := database.RelationFigureValidator(v); err != nil {
+			return &ValidationError{Name: "relation_figure", err: fmt.Errorf(`ent: validator failed for field "Database.relation_figure": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -160,6 +179,9 @@ func (du *DatabaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := du.mutation.Schema(); ok {
 		_spec.SetField(database.FieldSchema, field.TypeString, value)
+	}
+	if value, ok := du.mutation.RelationFigure(); ok {
+		_spec.SetField(database.FieldRelationFigure, field.TypeString, value)
 	}
 	if du.mutation.QuestionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -260,6 +282,20 @@ func (duo *DatabaseUpdateOne) SetNillableSchema(s *string) *DatabaseUpdateOne {
 	return duo
 }
 
+// SetRelationFigure sets the "relation_figure" field.
+func (duo *DatabaseUpdateOne) SetRelationFigure(s string) *DatabaseUpdateOne {
+	duo.mutation.SetRelationFigure(s)
+	return duo
+}
+
+// SetNillableRelationFigure sets the "relation_figure" field if the given value is not nil.
+func (duo *DatabaseUpdateOne) SetNillableRelationFigure(s *string) *DatabaseUpdateOne {
+	if s != nil {
+		duo.SetRelationFigure(*s)
+	}
+	return duo
+}
+
 // AddQuestionIDs adds the "questions" edge to the Question entity by IDs.
 func (duo *DatabaseUpdateOne) AddQuestionIDs(ids ...int) *DatabaseUpdateOne {
 	duo.mutation.AddQuestionIDs(ids...)
@@ -348,6 +384,11 @@ func (duo *DatabaseUpdateOne) check() error {
 			return &ValidationError{Name: "schema", err: fmt.Errorf(`ent: validator failed for field "Database.schema": %w`, err)}
 		}
 	}
+	if v, ok := duo.mutation.RelationFigure(); ok {
+		if err := database.RelationFigureValidator(v); err != nil {
+			return &ValidationError{Name: "relation_figure", err: fmt.Errorf(`ent: validator failed for field "Database.relation_figure": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -388,6 +429,9 @@ func (duo *DatabaseUpdateOne) sqlSave(ctx context.Context) (_node *Database, err
 	}
 	if value, ok := duo.mutation.Schema(); ok {
 		_spec.SetField(database.FieldSchema, field.TypeString, value)
+	}
+	if value, ok := duo.mutation.RelationFigure(); ok {
+		_spec.SetField(database.FieldRelationFigure, field.TypeString, value)
 	}
 	if duo.mutation.QuestionsCleared() {
 		edge := &sqlgraph.EdgeSpec{

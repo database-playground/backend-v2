@@ -53,11 +53,6 @@ func (d *DatabaseQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 				selectedFields = append(selectedFields, database.FieldSlug)
 				fieldSeen[database.FieldSlug] = struct{}{}
 			}
-		case "relationFigure":
-			if _, ok := fieldSeen[database.FieldRelationFigure]; !ok {
-				selectedFields = append(selectedFields, database.FieldRelationFigure)
-				fieldSeen[database.FieldRelationFigure] = struct{}{}
-			}
 		case "description":
 			if _, ok := fieldSeen[database.FieldDescription]; !ok {
 				selectedFields = append(selectedFields, database.FieldDescription)
@@ -67,6 +62,11 @@ func (d *DatabaseQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 			if _, ok := fieldSeen[database.FieldSchema]; !ok {
 				selectedFields = append(selectedFields, database.FieldSchema)
 				fieldSeen[database.FieldSchema] = struct{}{}
+			}
+		case "relationFigure":
+			if _, ok := fieldSeen[database.FieldRelationFigure]; !ok {
+				selectedFields = append(selectedFields, database.FieldRelationFigure)
+				fieldSeen[database.FieldRelationFigure] = struct{}{}
 			}
 		case "id":
 		case "__typename":

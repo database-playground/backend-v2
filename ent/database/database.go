@@ -14,12 +14,12 @@ const (
 	FieldID = "id"
 	// FieldSlug holds the string denoting the slug field in the database.
 	FieldSlug = "slug"
-	// FieldRelationFigure holds the string denoting the relation_figure field in the database.
-	FieldRelationFigure = "relation_figure"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
 	// FieldSchema holds the string denoting the schema field in the database.
 	FieldSchema = "schema"
+	// FieldRelationFigure holds the string denoting the relation_figure field in the database.
+	FieldRelationFigure = "relation_figure"
 	// EdgeQuestions holds the string denoting the questions edge name in mutations.
 	EdgeQuestions = "questions"
 	// Table holds the table name of the database in the database.
@@ -37,9 +37,9 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldSlug,
-	FieldRelationFigure,
 	FieldDescription,
 	FieldSchema,
+	FieldRelationFigure,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -55,10 +55,10 @@ func ValidColumn(column string) bool {
 var (
 	// SlugValidator is a validator for the "slug" field. It is called by the builders before save.
 	SlugValidator func(string) error
-	// RelationFigureValidator is a validator for the "relation_figure" field. It is called by the builders before save.
-	RelationFigureValidator func(string) error
 	// SchemaValidator is a validator for the "schema" field. It is called by the builders before save.
 	SchemaValidator func(string) error
+	// RelationFigureValidator is a validator for the "relation_figure" field. It is called by the builders before save.
+	RelationFigureValidator func(string) error
 )
 
 // OrderOption defines the ordering options for the Database queries.
@@ -74,11 +74,6 @@ func BySlug(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSlug, opts...).ToFunc()
 }
 
-// ByRelationFigure orders the results by the relation_figure field.
-func ByRelationFigure(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldRelationFigure, opts...).ToFunc()
-}
-
 // ByDescription orders the results by the description field.
 func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDescription, opts...).ToFunc()
@@ -87,6 +82,11 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 // BySchema orders the results by the schema field.
 func BySchema(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSchema, opts...).ToFunc()
+}
+
+// ByRelationFigure orders the results by the relation_figure field.
+func ByRelationFigure(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRelationFigure, opts...).ToFunc()
 }
 
 // ByQuestionsCount orders the results by questions count.

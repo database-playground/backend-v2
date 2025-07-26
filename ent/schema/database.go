@@ -16,9 +16,9 @@ type Database struct {
 func (Database) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("slug").NotEmpty().Unique().Immutable(),
-		field.String("relation_figure").NotEmpty().Unique().Immutable().Comment("relation figure"),
 		field.String("description").Optional(),
 		field.Text("schema").NotEmpty().Comment("SQL schema"),
+		field.String("relation_figure").NotEmpty().Unique().Comment("relation figure"),
 	}
 }
 

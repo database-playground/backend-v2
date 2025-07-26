@@ -47,21 +47,6 @@ type DatabaseWhereInput struct {
 	SlugEqualFold    *string  `json:"slugEqualFold,omitempty"`
 	SlugContainsFold *string  `json:"slugContainsFold,omitempty"`
 
-	// "relation_figure" field predicates.
-	RelationFigure             *string  `json:"relationFigure,omitempty"`
-	RelationFigureNEQ          *string  `json:"relationFigureNEQ,omitempty"`
-	RelationFigureIn           []string `json:"relationFigureIn,omitempty"`
-	RelationFigureNotIn        []string `json:"relationFigureNotIn,omitempty"`
-	RelationFigureGT           *string  `json:"relationFigureGT,omitempty"`
-	RelationFigureGTE          *string  `json:"relationFigureGTE,omitempty"`
-	RelationFigureLT           *string  `json:"relationFigureLT,omitempty"`
-	RelationFigureLTE          *string  `json:"relationFigureLTE,omitempty"`
-	RelationFigureContains     *string  `json:"relationFigureContains,omitempty"`
-	RelationFigureHasPrefix    *string  `json:"relationFigureHasPrefix,omitempty"`
-	RelationFigureHasSuffix    *string  `json:"relationFigureHasSuffix,omitempty"`
-	RelationFigureEqualFold    *string  `json:"relationFigureEqualFold,omitempty"`
-	RelationFigureContainsFold *string  `json:"relationFigureContainsFold,omitempty"`
-
 	// "description" field predicates.
 	Description             *string  `json:"description,omitempty"`
 	DescriptionNEQ          *string  `json:"descriptionNEQ,omitempty"`
@@ -93,6 +78,21 @@ type DatabaseWhereInput struct {
 	SchemaHasSuffix    *string  `json:"schemaHasSuffix,omitempty"`
 	SchemaEqualFold    *string  `json:"schemaEqualFold,omitempty"`
 	SchemaContainsFold *string  `json:"schemaContainsFold,omitempty"`
+
+	// "relation_figure" field predicates.
+	RelationFigure             *string  `json:"relationFigure,omitempty"`
+	RelationFigureNEQ          *string  `json:"relationFigureNEQ,omitempty"`
+	RelationFigureIn           []string `json:"relationFigureIn,omitempty"`
+	RelationFigureNotIn        []string `json:"relationFigureNotIn,omitempty"`
+	RelationFigureGT           *string  `json:"relationFigureGT,omitempty"`
+	RelationFigureGTE          *string  `json:"relationFigureGTE,omitempty"`
+	RelationFigureLT           *string  `json:"relationFigureLT,omitempty"`
+	RelationFigureLTE          *string  `json:"relationFigureLTE,omitempty"`
+	RelationFigureContains     *string  `json:"relationFigureContains,omitempty"`
+	RelationFigureHasPrefix    *string  `json:"relationFigureHasPrefix,omitempty"`
+	RelationFigureHasSuffix    *string  `json:"relationFigureHasSuffix,omitempty"`
+	RelationFigureEqualFold    *string  `json:"relationFigureEqualFold,omitempty"`
+	RelationFigureContainsFold *string  `json:"relationFigureContainsFold,omitempty"`
 
 	// "questions" edge predicates.
 	HasQuestions     *bool                 `json:"hasQuestions,omitempty"`
@@ -233,45 +233,6 @@ func (i *DatabaseWhereInput) P() (predicate.Database, error) {
 	if i.SlugContainsFold != nil {
 		predicates = append(predicates, database.SlugContainsFold(*i.SlugContainsFold))
 	}
-	if i.RelationFigure != nil {
-		predicates = append(predicates, database.RelationFigureEQ(*i.RelationFigure))
-	}
-	if i.RelationFigureNEQ != nil {
-		predicates = append(predicates, database.RelationFigureNEQ(*i.RelationFigureNEQ))
-	}
-	if len(i.RelationFigureIn) > 0 {
-		predicates = append(predicates, database.RelationFigureIn(i.RelationFigureIn...))
-	}
-	if len(i.RelationFigureNotIn) > 0 {
-		predicates = append(predicates, database.RelationFigureNotIn(i.RelationFigureNotIn...))
-	}
-	if i.RelationFigureGT != nil {
-		predicates = append(predicates, database.RelationFigureGT(*i.RelationFigureGT))
-	}
-	if i.RelationFigureGTE != nil {
-		predicates = append(predicates, database.RelationFigureGTE(*i.RelationFigureGTE))
-	}
-	if i.RelationFigureLT != nil {
-		predicates = append(predicates, database.RelationFigureLT(*i.RelationFigureLT))
-	}
-	if i.RelationFigureLTE != nil {
-		predicates = append(predicates, database.RelationFigureLTE(*i.RelationFigureLTE))
-	}
-	if i.RelationFigureContains != nil {
-		predicates = append(predicates, database.RelationFigureContains(*i.RelationFigureContains))
-	}
-	if i.RelationFigureHasPrefix != nil {
-		predicates = append(predicates, database.RelationFigureHasPrefix(*i.RelationFigureHasPrefix))
-	}
-	if i.RelationFigureHasSuffix != nil {
-		predicates = append(predicates, database.RelationFigureHasSuffix(*i.RelationFigureHasSuffix))
-	}
-	if i.RelationFigureEqualFold != nil {
-		predicates = append(predicates, database.RelationFigureEqualFold(*i.RelationFigureEqualFold))
-	}
-	if i.RelationFigureContainsFold != nil {
-		predicates = append(predicates, database.RelationFigureContainsFold(*i.RelationFigureContainsFold))
-	}
 	if i.Description != nil {
 		predicates = append(predicates, database.DescriptionEQ(*i.Description))
 	}
@@ -355,6 +316,45 @@ func (i *DatabaseWhereInput) P() (predicate.Database, error) {
 	}
 	if i.SchemaContainsFold != nil {
 		predicates = append(predicates, database.SchemaContainsFold(*i.SchemaContainsFold))
+	}
+	if i.RelationFigure != nil {
+		predicates = append(predicates, database.RelationFigureEQ(*i.RelationFigure))
+	}
+	if i.RelationFigureNEQ != nil {
+		predicates = append(predicates, database.RelationFigureNEQ(*i.RelationFigureNEQ))
+	}
+	if len(i.RelationFigureIn) > 0 {
+		predicates = append(predicates, database.RelationFigureIn(i.RelationFigureIn...))
+	}
+	if len(i.RelationFigureNotIn) > 0 {
+		predicates = append(predicates, database.RelationFigureNotIn(i.RelationFigureNotIn...))
+	}
+	if i.RelationFigureGT != nil {
+		predicates = append(predicates, database.RelationFigureGT(*i.RelationFigureGT))
+	}
+	if i.RelationFigureGTE != nil {
+		predicates = append(predicates, database.RelationFigureGTE(*i.RelationFigureGTE))
+	}
+	if i.RelationFigureLT != nil {
+		predicates = append(predicates, database.RelationFigureLT(*i.RelationFigureLT))
+	}
+	if i.RelationFigureLTE != nil {
+		predicates = append(predicates, database.RelationFigureLTE(*i.RelationFigureLTE))
+	}
+	if i.RelationFigureContains != nil {
+		predicates = append(predicates, database.RelationFigureContains(*i.RelationFigureContains))
+	}
+	if i.RelationFigureHasPrefix != nil {
+		predicates = append(predicates, database.RelationFigureHasPrefix(*i.RelationFigureHasPrefix))
+	}
+	if i.RelationFigureHasSuffix != nil {
+		predicates = append(predicates, database.RelationFigureHasSuffix(*i.RelationFigureHasSuffix))
+	}
+	if i.RelationFigureEqualFold != nil {
+		predicates = append(predicates, database.RelationFigureEqualFold(*i.RelationFigureEqualFold))
+	}
+	if i.RelationFigureContainsFold != nil {
+		predicates = append(predicates, database.RelationFigureContainsFold(*i.RelationFigureContainsFold))
 	}
 
 	if i.HasQuestions != nil {

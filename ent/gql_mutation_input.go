@@ -9,20 +9,20 @@ import (
 // CreateDatabaseInput represents a mutation input for creating databases.
 type CreateDatabaseInput struct {
 	Slug           string
-	RelationFigure string
 	Description    *string
 	Schema         string
+	RelationFigure string
 	QuestionIDs    []int
 }
 
 // Mutate applies the CreateDatabaseInput on the DatabaseMutation builder.
 func (i *CreateDatabaseInput) Mutate(m *DatabaseMutation) {
 	m.SetSlug(i.Slug)
-	m.SetRelationFigure(i.RelationFigure)
 	if v := i.Description; v != nil {
 		m.SetDescription(*v)
 	}
 	m.SetSchema(i.Schema)
+	m.SetRelationFigure(i.RelationFigure)
 	if v := i.QuestionIDs; len(v) > 0 {
 		m.AddQuestionIDs(v...)
 	}
@@ -39,6 +39,7 @@ type UpdateDatabaseInput struct {
 	ClearDescription  bool
 	Description       *string
 	Schema            *string
+	RelationFigure    *string
 	ClearQuestions    bool
 	AddQuestionIDs    []int
 	RemoveQuestionIDs []int
@@ -54,6 +55,9 @@ func (i *UpdateDatabaseInput) Mutate(m *DatabaseMutation) {
 	}
 	if v := i.Schema; v != nil {
 		m.SetSchema(*v)
+	}
+	if v := i.RelationFigure; v != nil {
+		m.SetRelationFigure(*v)
 	}
 	if i.ClearQuestions {
 		m.ClearQuestions()

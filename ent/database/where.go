@@ -58,11 +58,6 @@ func Slug(v string) predicate.Database {
 	return predicate.Database(sql.FieldEQ(FieldSlug, v))
 }
 
-// RelationFigure applies equality check predicate on the "relation_figure" field. It's identical to RelationFigureEQ.
-func RelationFigure(v string) predicate.Database {
-	return predicate.Database(sql.FieldEQ(FieldRelationFigure, v))
-}
-
 // Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
 func Description(v string) predicate.Database {
 	return predicate.Database(sql.FieldEQ(FieldDescription, v))
@@ -71,6 +66,11 @@ func Description(v string) predicate.Database {
 // Schema applies equality check predicate on the "schema" field. It's identical to SchemaEQ.
 func Schema(v string) predicate.Database {
 	return predicate.Database(sql.FieldEQ(FieldSchema, v))
+}
+
+// RelationFigure applies equality check predicate on the "relation_figure" field. It's identical to RelationFigureEQ.
+func RelationFigure(v string) predicate.Database {
+	return predicate.Database(sql.FieldEQ(FieldRelationFigure, v))
 }
 
 // SlugEQ applies the EQ predicate on the "slug" field.
@@ -136,71 +136,6 @@ func SlugEqualFold(v string) predicate.Database {
 // SlugContainsFold applies the ContainsFold predicate on the "slug" field.
 func SlugContainsFold(v string) predicate.Database {
 	return predicate.Database(sql.FieldContainsFold(FieldSlug, v))
-}
-
-// RelationFigureEQ applies the EQ predicate on the "relation_figure" field.
-func RelationFigureEQ(v string) predicate.Database {
-	return predicate.Database(sql.FieldEQ(FieldRelationFigure, v))
-}
-
-// RelationFigureNEQ applies the NEQ predicate on the "relation_figure" field.
-func RelationFigureNEQ(v string) predicate.Database {
-	return predicate.Database(sql.FieldNEQ(FieldRelationFigure, v))
-}
-
-// RelationFigureIn applies the In predicate on the "relation_figure" field.
-func RelationFigureIn(vs ...string) predicate.Database {
-	return predicate.Database(sql.FieldIn(FieldRelationFigure, vs...))
-}
-
-// RelationFigureNotIn applies the NotIn predicate on the "relation_figure" field.
-func RelationFigureNotIn(vs ...string) predicate.Database {
-	return predicate.Database(sql.FieldNotIn(FieldRelationFigure, vs...))
-}
-
-// RelationFigureGT applies the GT predicate on the "relation_figure" field.
-func RelationFigureGT(v string) predicate.Database {
-	return predicate.Database(sql.FieldGT(FieldRelationFigure, v))
-}
-
-// RelationFigureGTE applies the GTE predicate on the "relation_figure" field.
-func RelationFigureGTE(v string) predicate.Database {
-	return predicate.Database(sql.FieldGTE(FieldRelationFigure, v))
-}
-
-// RelationFigureLT applies the LT predicate on the "relation_figure" field.
-func RelationFigureLT(v string) predicate.Database {
-	return predicate.Database(sql.FieldLT(FieldRelationFigure, v))
-}
-
-// RelationFigureLTE applies the LTE predicate on the "relation_figure" field.
-func RelationFigureLTE(v string) predicate.Database {
-	return predicate.Database(sql.FieldLTE(FieldRelationFigure, v))
-}
-
-// RelationFigureContains applies the Contains predicate on the "relation_figure" field.
-func RelationFigureContains(v string) predicate.Database {
-	return predicate.Database(sql.FieldContains(FieldRelationFigure, v))
-}
-
-// RelationFigureHasPrefix applies the HasPrefix predicate on the "relation_figure" field.
-func RelationFigureHasPrefix(v string) predicate.Database {
-	return predicate.Database(sql.FieldHasPrefix(FieldRelationFigure, v))
-}
-
-// RelationFigureHasSuffix applies the HasSuffix predicate on the "relation_figure" field.
-func RelationFigureHasSuffix(v string) predicate.Database {
-	return predicate.Database(sql.FieldHasSuffix(FieldRelationFigure, v))
-}
-
-// RelationFigureEqualFold applies the EqualFold predicate on the "relation_figure" field.
-func RelationFigureEqualFold(v string) predicate.Database {
-	return predicate.Database(sql.FieldEqualFold(FieldRelationFigure, v))
-}
-
-// RelationFigureContainsFold applies the ContainsFold predicate on the "relation_figure" field.
-func RelationFigureContainsFold(v string) predicate.Database {
-	return predicate.Database(sql.FieldContainsFold(FieldRelationFigure, v))
 }
 
 // DescriptionEQ applies the EQ predicate on the "description" field.
@@ -341,6 +276,71 @@ func SchemaEqualFold(v string) predicate.Database {
 // SchemaContainsFold applies the ContainsFold predicate on the "schema" field.
 func SchemaContainsFold(v string) predicate.Database {
 	return predicate.Database(sql.FieldContainsFold(FieldSchema, v))
+}
+
+// RelationFigureEQ applies the EQ predicate on the "relation_figure" field.
+func RelationFigureEQ(v string) predicate.Database {
+	return predicate.Database(sql.FieldEQ(FieldRelationFigure, v))
+}
+
+// RelationFigureNEQ applies the NEQ predicate on the "relation_figure" field.
+func RelationFigureNEQ(v string) predicate.Database {
+	return predicate.Database(sql.FieldNEQ(FieldRelationFigure, v))
+}
+
+// RelationFigureIn applies the In predicate on the "relation_figure" field.
+func RelationFigureIn(vs ...string) predicate.Database {
+	return predicate.Database(sql.FieldIn(FieldRelationFigure, vs...))
+}
+
+// RelationFigureNotIn applies the NotIn predicate on the "relation_figure" field.
+func RelationFigureNotIn(vs ...string) predicate.Database {
+	return predicate.Database(sql.FieldNotIn(FieldRelationFigure, vs...))
+}
+
+// RelationFigureGT applies the GT predicate on the "relation_figure" field.
+func RelationFigureGT(v string) predicate.Database {
+	return predicate.Database(sql.FieldGT(FieldRelationFigure, v))
+}
+
+// RelationFigureGTE applies the GTE predicate on the "relation_figure" field.
+func RelationFigureGTE(v string) predicate.Database {
+	return predicate.Database(sql.FieldGTE(FieldRelationFigure, v))
+}
+
+// RelationFigureLT applies the LT predicate on the "relation_figure" field.
+func RelationFigureLT(v string) predicate.Database {
+	return predicate.Database(sql.FieldLT(FieldRelationFigure, v))
+}
+
+// RelationFigureLTE applies the LTE predicate on the "relation_figure" field.
+func RelationFigureLTE(v string) predicate.Database {
+	return predicate.Database(sql.FieldLTE(FieldRelationFigure, v))
+}
+
+// RelationFigureContains applies the Contains predicate on the "relation_figure" field.
+func RelationFigureContains(v string) predicate.Database {
+	return predicate.Database(sql.FieldContains(FieldRelationFigure, v))
+}
+
+// RelationFigureHasPrefix applies the HasPrefix predicate on the "relation_figure" field.
+func RelationFigureHasPrefix(v string) predicate.Database {
+	return predicate.Database(sql.FieldHasPrefix(FieldRelationFigure, v))
+}
+
+// RelationFigureHasSuffix applies the HasSuffix predicate on the "relation_figure" field.
+func RelationFigureHasSuffix(v string) predicate.Database {
+	return predicate.Database(sql.FieldHasSuffix(FieldRelationFigure, v))
+}
+
+// RelationFigureEqualFold applies the EqualFold predicate on the "relation_figure" field.
+func RelationFigureEqualFold(v string) predicate.Database {
+	return predicate.Database(sql.FieldEqualFold(FieldRelationFigure, v))
+}
+
+// RelationFigureContainsFold applies the ContainsFold predicate on the "relation_figure" field.
+func RelationFigureContainsFold(v string) predicate.Database {
+	return predicate.Database(sql.FieldContainsFold(FieldRelationFigure, v))
 }
 
 // HasQuestions applies the HasEdge predicate on the "questions" edge.

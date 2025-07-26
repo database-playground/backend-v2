@@ -23,14 +23,14 @@ func init() {
 	databaseDescSlug := databaseFields[0].Descriptor()
 	// database.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
 	database.SlugValidator = databaseDescSlug.Validators[0].(func(string) error)
-	// databaseDescRelationFigure is the schema descriptor for relation_figure field.
-	databaseDescRelationFigure := databaseFields[1].Descriptor()
-	// database.RelationFigureValidator is a validator for the "relation_figure" field. It is called by the builders before save.
-	database.RelationFigureValidator = databaseDescRelationFigure.Validators[0].(func(string) error)
 	// databaseDescSchema is the schema descriptor for schema field.
-	databaseDescSchema := databaseFields[3].Descriptor()
+	databaseDescSchema := databaseFields[2].Descriptor()
 	// database.SchemaValidator is a validator for the "schema" field. It is called by the builders before save.
 	database.SchemaValidator = databaseDescSchema.Validators[0].(func(string) error)
+	// databaseDescRelationFigure is the schema descriptor for relation_figure field.
+	databaseDescRelationFigure := databaseFields[3].Descriptor()
+	// database.RelationFigureValidator is a validator for the "relation_figure" field. It is called by the builders before save.
+	database.RelationFigureValidator = databaseDescRelationFigure.Validators[0].(func(string) error)
 	groupMixin := schema.Group{}.Mixin()
 	groupMixinHooks0 := groupMixin[0].Hooks()
 	group.Hooks[0] = groupMixinHooks0[0]

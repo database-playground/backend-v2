@@ -18,12 +18,12 @@ type Database struct {
 	ID int `json:"id,omitempty"`
 	// Slug holds the value of the "slug" field.
 	Slug string `json:"slug,omitempty"`
-	// relation figure
-	RelationFigure string `json:"relation_figure,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
 	// SQL schema
 	Schema string `json:"schema,omitempty"`
+	// relation figure
+	RelationFigure string `json:"relation_figure,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DatabaseQuery when eager-loading is set.
 	Edges        DatabaseEdges `json:"edges"`
@@ -59,7 +59,7 @@ func (*Database) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case database.FieldID:
 			values[i] = new(sql.NullInt64)
-		case database.FieldSlug, database.FieldRelationFigure, database.FieldDescription, database.FieldSchema:
+		case database.FieldSlug, database.FieldDescription, database.FieldSchema, database.FieldRelationFigure:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -88,12 +88,6 @@ func (d *Database) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				d.Slug = value.String
 			}
-		case database.FieldRelationFigure:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field relation_figure", values[i])
-			} else if value.Valid {
-				d.RelationFigure = value.String
-			}
 		case database.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
@@ -105,6 +99,12 @@ func (d *Database) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field schema", values[i])
 			} else if value.Valid {
 				d.Schema = value.String
+			}
+		case database.FieldRelationFigure:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field relation_figure", values[i])
+			} else if value.Valid {
+				d.RelationFigure = value.String
 			}
 		default:
 			d.selectValues.Set(columns[i], values[i])
@@ -150,14 +150,14 @@ func (d *Database) String() string {
 	builder.WriteString("slug=")
 	builder.WriteString(d.Slug)
 	builder.WriteString(", ")
-	builder.WriteString("relation_figure=")
-	builder.WriteString(d.RelationFigure)
-	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(d.Description)
 	builder.WriteString(", ")
 	builder.WriteString("schema=")
 	builder.WriteString(d.Schema)
+	builder.WriteString(", ")
+	builder.WriteString("relation_figure=")
+	builder.WriteString(d.RelationFigure)
 	builder.WriteByte(')')
 	return builder.String()
 }
