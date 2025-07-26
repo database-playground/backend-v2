@@ -14,12 +14,14 @@ extend type Mutation {
   """
   Create a question.
   """
-  createQuestion(input: CreateQuestionInput!): Question! @scope(scope: "question:write")
+  createQuestion(input: CreateQuestionInput!): Question!
+    @scope(scope: "question:write")
 
   """
   Update a question.
   """
-  updateQuestion(id: ID!, input: UpdateQuestionInput!): Question! @scope(scope: "question:write")
+  updateQuestion(id: ID!, input: UpdateQuestionInput!): Question!
+    @scope(scope: "question:write")
 
   """
   Delete a question.
@@ -29,15 +31,26 @@ extend type Mutation {
   """
   Create a database.
   """
-  createDatabase(input: CreateDatabaseInput!): Database! @scope(scope: "database:write")
+  createDatabase(input: CreateDatabaseInput!): Database!
+    @scope(scope: "database:write")
 
   """
   Update a database.
   """
-  updateDatabase(id: ID!, input: UpdateDatabaseInput!): Database! @scope(scope: "database:write")
+  updateDatabase(id: ID!, input: UpdateDatabaseInput!): Database!
+    @scope(scope: "database:write")
 
   """
   Delete a database.
   """
   deleteDatabase(id: ID!): Boolean! @scope(scope: "database:write")
+}
+
+extend type Question {
+  referenceAnswerResult: SqlResponse! @scope(scope: "question:read")
+}
+
+type SqlResponse {
+  columns: [String!]!
+  rows: [[String!]!]!
 }

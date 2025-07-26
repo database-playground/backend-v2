@@ -11,3 +11,8 @@ type ScopeSetFilter struct {
 	// The slug of the scope set.
 	Slug *string `json:"slug,omitempty"`
 }
+
+type SQLResponse struct {
+	Columns []string   `json:"columns"`
+	Rows    [][]string `json:"rows"`
+}

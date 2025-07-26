@@ -64,8 +64,12 @@ func (r *queryResolver) Users(ctx context.Context, after *entgql.Cursor[int], fi
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// Question returns QuestionResolver implementation.
+func (r *Resolver) Question() QuestionResolver { return &questionResolver{r} }
+
 // User returns UserResolver implementation.
 func (r *Resolver) User() UserResolver { return &userResolver{r} }
 
 type queryResolver struct{ *Resolver }
+type questionResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }

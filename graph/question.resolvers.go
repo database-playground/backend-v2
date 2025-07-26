@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/graph/model"
 )
 
 // CreateQuestion is the resolver for the createQuestion field.
@@ -104,6 +105,24 @@ func (r *queryResolver) Database(ctx context.Context, id int) (*ent.Database, er
 	}
 
 	return database, nil
+}
+
+// ReferenceAnswerResult is the resolver for the referenceAnswerResult field.
+func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Question) (*model.SQLResponse, error) {
+	database, err := obj.QueryDatabase().Only(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := r.sqlrunner.Query(ctx, database.Schema, obj.ReferenceAnswer)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.SQLResponse{
+		Columns: response.Columns,
+		Rows:    response.Rows,
+	}, nil
 }
 
 // Mutation returns MutationResolver implementation.

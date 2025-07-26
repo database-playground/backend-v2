@@ -15,6 +15,7 @@ func main() {
 		deps.FxCommonModule,
 		fx.Provide(
 			AuthStorage,
+			SqlRunner,
 			AnnotateMiddleware(AuthMiddleware),
 			AnnotateMiddleware(MachineMiddleware),
 			AnnotateMiddleware(CorsMiddleware),

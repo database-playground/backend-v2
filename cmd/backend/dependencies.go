@@ -20,6 +20,7 @@ import (
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/config"
 	"github.com/database-playground/backend-v2/internal/httputils"
+	"github.com/database-playground/backend-v2/internal/sqlrunner"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/rueidis"
@@ -60,9 +61,13 @@ func CorsMiddleware(cfg config.Config) Middleware {
 	}
 }
 
+func SqlRunner(cfg config.Config) *sqlrunner.SqlRunner {
+	return sqlrunner.NewSqlRunner(cfg.SqlRunner)
+}
+
 // GqlgenHandler creates a gqlgen handler.
-func GqlgenHandler(entClient *ent.Client, storage auth.Storage) *handler.Server {
-	srv := handler.New(graph.NewSchema(entClient, storage))
+func GqlgenHandler(entClient *ent.Client, storage auth.Storage, sqlrunner *sqlrunner.SqlRunner) *handler.Server {
+	srv := handler.New(graph.NewSchema(entClient, storage, sqlrunner))
 
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
