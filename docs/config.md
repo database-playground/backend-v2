@@ -51,3 +51,7 @@ Database Playground 使用 PostgreSQL 作為資料庫。
 
 Google OAuth 的登入起始連結為 `https://backend.yourdomain.tld/api/auth/google/login`，可選擇性帶入 `state` 參數。
 Google OAuth 的回呼連結為 `https://backend.yourdomain.tld/api/auth/google/callback`。
+
+## SQL Runner
+
+- `SQL_RUNNER_URI`：[SQL Runner API](https://github.com/database-playground/sqlrunner-v2) 的連線 URL，如 `https://sqlrunner.dbplay.app`。部署說明可參見 [Usage > Starting the service](https://github.com/database-playground/sqlrunner-v2/tree/main?tab=readme-ov-file#starting-the-service)。

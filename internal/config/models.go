@@ -12,10 +12,11 @@ type Config struct {
 	AllowedOrigins []string `env:"ALLOWED_ORIGINS"`
 	TrustProxies   []string `env:"TRUST_PROXIES"`
 
-	Database DatabaseConfig `envPrefix:"DATABASE_"`
-	Redis    RedisConfig    `envPrefix:"REDIS_"`
-	GAuth    GAuthConfig    `envPrefix:"GAUTH_"`
-	Server   ServerConfig   `envPrefix:"SERVER_"`
+	Database  DatabaseConfig  `envPrefix:"DATABASE_"`
+	Redis     RedisConfig     `envPrefix:"REDIS_"`
+	GAuth     GAuthConfig     `envPrefix:"GAUTH_"`
+	Server    ServerConfig    `envPrefix:"SERVER_"`
+	SqlRunner SqlRunnerConfig `envPrefix:"SQL_RUNNER_"`
 }
 
 func (c Config) Validate() error {
@@ -126,4 +127,16 @@ func (c ServerConfig) GetProto() string {
 	}
 
 	return "http"
+}
+
+type SqlRunnerConfig struct {
+	URI string `env:"URI"`
+}
+
+func (c SqlRunnerConfig) Validate() error {
+	if c.URI == "" {
+		return errors.New("SQL_RUNNER_URI is required")
+	}
+
+	return nil
 }
