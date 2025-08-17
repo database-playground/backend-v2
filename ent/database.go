@@ -70,7 +70,7 @@ func (*Database) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Database fields.
-func (d *Database) assignValues(columns []string, values []any) error {
+func (_m *Database) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -81,33 +81,33 @@ func (d *Database) assignValues(columns []string, values []any) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			d.ID = int(value.Int64)
+			_m.ID = int(value.Int64)
 		case database.FieldSlug:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field slug", values[i])
 			} else if value.Valid {
-				d.Slug = value.String
+				_m.Slug = value.String
 			}
 		case database.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				d.Description = value.String
+				_m.Description = value.String
 			}
 		case database.FieldSchema:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field schema", values[i])
 			} else if value.Valid {
-				d.Schema = value.String
+				_m.Schema = value.String
 			}
 		case database.FieldRelationFigure:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field relation_figure", values[i])
 			} else if value.Valid {
-				d.RelationFigure = value.String
+				_m.RelationFigure = value.String
 			}
 		default:
-			d.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -115,74 +115,74 @@ func (d *Database) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Database.
 // This includes values selected through modifiers, order, etc.
-func (d *Database) Value(name string) (ent.Value, error) {
-	return d.selectValues.Get(name)
+func (_m *Database) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryQuestions queries the "questions" edge of the Database entity.
-func (d *Database) QueryQuestions() *QuestionQuery {
-	return NewDatabaseClient(d.config).QueryQuestions(d)
+func (_m *Database) QueryQuestions() *QuestionQuery {
+	return NewDatabaseClient(_m.config).QueryQuestions(_m)
 }
 
 // Update returns a builder for updating this Database.
 // Note that you need to call Database.Unwrap() before calling this method if this Database
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (d *Database) Update() *DatabaseUpdateOne {
-	return NewDatabaseClient(d.config).UpdateOne(d)
+func (_m *Database) Update() *DatabaseUpdateOne {
+	return NewDatabaseClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the Database entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (d *Database) Unwrap() *Database {
-	_tx, ok := d.config.driver.(*txDriver)
+func (_m *Database) Unwrap() *Database {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: Database is not a transactional entity")
 	}
-	d.config.driver = _tx.drv
-	return d
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (d *Database) String() string {
+func (_m *Database) String() string {
 	var builder strings.Builder
 	builder.WriteString("Database(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", d.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("slug=")
-	builder.WriteString(d.Slug)
+	builder.WriteString(_m.Slug)
 	builder.WriteString(", ")
 	builder.WriteString("description=")
-	builder.WriteString(d.Description)
+	builder.WriteString(_m.Description)
 	builder.WriteString(", ")
 	builder.WriteString("schema=")
-	builder.WriteString(d.Schema)
+	builder.WriteString(_m.Schema)
 	builder.WriteString(", ")
 	builder.WriteString("relation_figure=")
-	builder.WriteString(d.RelationFigure)
+	builder.WriteString(_m.RelationFigure)
 	builder.WriteByte(')')
 	return builder.String()
 }
 
 // NamedQuestions returns the Questions named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (d *Database) NamedQuestions(name string) ([]*Question, error) {
-	if d.Edges.namedQuestions == nil {
+func (_m *Database) NamedQuestions(name string) ([]*Question, error) {
+	if _m.Edges.namedQuestions == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
-	nodes, ok := d.Edges.namedQuestions[name]
+	nodes, ok := _m.Edges.namedQuestions[name]
 	if !ok {
 		return nil, &NotLoadedError{edge: name}
 	}
 	return nodes, nil
 }
 
-func (d *Database) appendNamedQuestions(name string, edges ...*Question) {
-	if d.Edges.namedQuestions == nil {
-		d.Edges.namedQuestions = make(map[string][]*Question)
+func (_m *Database) appendNamedQuestions(name string, edges ...*Question) {
+	if _m.Edges.namedQuestions == nil {
+		_m.Edges.namedQuestions = make(map[string][]*Question)
 	}
 	if len(edges) == 0 {
-		d.Edges.namedQuestions[name] = []*Question{}
+		_m.Edges.namedQuestions[name] = []*Question{}
 	} else {
-		d.Edges.namedQuestions[name] = append(d.Edges.namedQuestions[name], edges...)
+		_m.Edges.namedQuestions[name] = append(_m.Edges.namedQuestions[name], edges...)
 	}
 }
 

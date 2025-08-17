@@ -21,65 +21,65 @@ type DatabaseCreate struct {
 }
 
 // SetSlug sets the "slug" field.
-func (dc *DatabaseCreate) SetSlug(s string) *DatabaseCreate {
-	dc.mutation.SetSlug(s)
-	return dc
+func (_c *DatabaseCreate) SetSlug(v string) *DatabaseCreate {
+	_c.mutation.SetSlug(v)
+	return _c
 }
 
 // SetDescription sets the "description" field.
-func (dc *DatabaseCreate) SetDescription(s string) *DatabaseCreate {
-	dc.mutation.SetDescription(s)
-	return dc
+func (_c *DatabaseCreate) SetDescription(v string) *DatabaseCreate {
+	_c.mutation.SetDescription(v)
+	return _c
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (dc *DatabaseCreate) SetNillableDescription(s *string) *DatabaseCreate {
-	if s != nil {
-		dc.SetDescription(*s)
+func (_c *DatabaseCreate) SetNillableDescription(v *string) *DatabaseCreate {
+	if v != nil {
+		_c.SetDescription(*v)
 	}
-	return dc
+	return _c
 }
 
 // SetSchema sets the "schema" field.
-func (dc *DatabaseCreate) SetSchema(s string) *DatabaseCreate {
-	dc.mutation.SetSchema(s)
-	return dc
+func (_c *DatabaseCreate) SetSchema(v string) *DatabaseCreate {
+	_c.mutation.SetSchema(v)
+	return _c
 }
 
 // SetRelationFigure sets the "relation_figure" field.
-func (dc *DatabaseCreate) SetRelationFigure(s string) *DatabaseCreate {
-	dc.mutation.SetRelationFigure(s)
-	return dc
+func (_c *DatabaseCreate) SetRelationFigure(v string) *DatabaseCreate {
+	_c.mutation.SetRelationFigure(v)
+	return _c
 }
 
 // AddQuestionIDs adds the "questions" edge to the Question entity by IDs.
-func (dc *DatabaseCreate) AddQuestionIDs(ids ...int) *DatabaseCreate {
-	dc.mutation.AddQuestionIDs(ids...)
-	return dc
+func (_c *DatabaseCreate) AddQuestionIDs(ids ...int) *DatabaseCreate {
+	_c.mutation.AddQuestionIDs(ids...)
+	return _c
 }
 
 // AddQuestions adds the "questions" edges to the Question entity.
-func (dc *DatabaseCreate) AddQuestions(q ...*Question) *DatabaseCreate {
-	ids := make([]int, len(q))
-	for i := range q {
-		ids[i] = q[i].ID
+func (_c *DatabaseCreate) AddQuestions(v ...*Question) *DatabaseCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return dc.AddQuestionIDs(ids...)
+	return _c.AddQuestionIDs(ids...)
 }
 
 // Mutation returns the DatabaseMutation object of the builder.
-func (dc *DatabaseCreate) Mutation() *DatabaseMutation {
-	return dc.mutation
+func (_c *DatabaseCreate) Mutation() *DatabaseMutation {
+	return _c.mutation
 }
 
 // Save creates the Database in the database.
-func (dc *DatabaseCreate) Save(ctx context.Context) (*Database, error) {
-	return withHooks(ctx, dc.sqlSave, dc.mutation, dc.hooks)
+func (_c *DatabaseCreate) Save(ctx context.Context) (*Database, error) {
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (dc *DatabaseCreate) SaveX(ctx context.Context) *Database {
-	v, err := dc.Save(ctx)
+func (_c *DatabaseCreate) SaveX(ctx context.Context) *Database {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -87,40 +87,40 @@ func (dc *DatabaseCreate) SaveX(ctx context.Context) *Database {
 }
 
 // Exec executes the query.
-func (dc *DatabaseCreate) Exec(ctx context.Context) error {
-	_, err := dc.Save(ctx)
+func (_c *DatabaseCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (dc *DatabaseCreate) ExecX(ctx context.Context) {
-	if err := dc.Exec(ctx); err != nil {
+func (_c *DatabaseCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (dc *DatabaseCreate) check() error {
-	if _, ok := dc.mutation.Slug(); !ok {
+func (_c *DatabaseCreate) check() error {
+	if _, ok := _c.mutation.Slug(); !ok {
 		return &ValidationError{Name: "slug", err: errors.New(`ent: missing required field "Database.slug"`)}
 	}
-	if v, ok := dc.mutation.Slug(); ok {
+	if v, ok := _c.mutation.Slug(); ok {
 		if err := database.SlugValidator(v); err != nil {
 			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Database.slug": %w`, err)}
 		}
 	}
-	if _, ok := dc.mutation.Schema(); !ok {
+	if _, ok := _c.mutation.Schema(); !ok {
 		return &ValidationError{Name: "schema", err: errors.New(`ent: missing required field "Database.schema"`)}
 	}
-	if v, ok := dc.mutation.Schema(); ok {
+	if v, ok := _c.mutation.Schema(); ok {
 		if err := database.SchemaValidator(v); err != nil {
 			return &ValidationError{Name: "schema", err: fmt.Errorf(`ent: validator failed for field "Database.schema": %w`, err)}
 		}
 	}
-	if _, ok := dc.mutation.RelationFigure(); !ok {
+	if _, ok := _c.mutation.RelationFigure(); !ok {
 		return &ValidationError{Name: "relation_figure", err: errors.New(`ent: missing required field "Database.relation_figure"`)}
 	}
-	if v, ok := dc.mutation.RelationFigure(); ok {
+	if v, ok := _c.mutation.RelationFigure(); ok {
 		if err := database.RelationFigureValidator(v); err != nil {
 			return &ValidationError{Name: "relation_figure", err: fmt.Errorf(`ent: validator failed for field "Database.relation_figure": %w`, err)}
 		}
@@ -128,12 +128,12 @@ func (dc *DatabaseCreate) check() error {
 	return nil
 }
 
-func (dc *DatabaseCreate) sqlSave(ctx context.Context) (*Database, error) {
-	if err := dc.check(); err != nil {
+func (_c *DatabaseCreate) sqlSave(ctx context.Context) (*Database, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := dc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, dc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -141,33 +141,33 @@ func (dc *DatabaseCreate) sqlSave(ctx context.Context) (*Database, error) {
 	}
 	id := _spec.ID.Value.(int64)
 	_node.ID = int(id)
-	dc.mutation.id = &_node.ID
-	dc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (dc *DatabaseCreate) createSpec() (*Database, *sqlgraph.CreateSpec) {
+func (_c *DatabaseCreate) createSpec() (*Database, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Database{config: dc.config}
+		_node = &Database{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(database.Table, sqlgraph.NewFieldSpec(database.FieldID, field.TypeInt))
 	)
-	if value, ok := dc.mutation.Slug(); ok {
+	if value, ok := _c.mutation.Slug(); ok {
 		_spec.SetField(database.FieldSlug, field.TypeString, value)
 		_node.Slug = value
 	}
-	if value, ok := dc.mutation.Description(); ok {
+	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(database.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
-	if value, ok := dc.mutation.Schema(); ok {
+	if value, ok := _c.mutation.Schema(); ok {
 		_spec.SetField(database.FieldSchema, field.TypeString, value)
 		_node.Schema = value
 	}
-	if value, ok := dc.mutation.RelationFigure(); ok {
+	if value, ok := _c.mutation.RelationFigure(); ok {
 		_spec.SetField(database.FieldRelationFigure, field.TypeString, value)
 		_node.RelationFigure = value
 	}
-	if nodes := dc.mutation.QuestionsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.QuestionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -194,16 +194,16 @@ type DatabaseCreateBulk struct {
 }
 
 // Save creates the Database entities in the database.
-func (dcb *DatabaseCreateBulk) Save(ctx context.Context) ([]*Database, error) {
-	if dcb.err != nil {
-		return nil, dcb.err
+func (_c *DatabaseCreateBulk) Save(ctx context.Context) ([]*Database, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(dcb.builders))
-	nodes := make([]*Database, len(dcb.builders))
-	mutators := make([]Mutator, len(dcb.builders))
-	for i := range dcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*Database, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := dcb.builders[i]
+			builder := _c.builders[i]
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*DatabaseMutation)
 				if !ok {
@@ -216,11 +216,11 @@ func (dcb *DatabaseCreateBulk) Save(ctx context.Context) ([]*Database, error) {
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, dcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, dcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -244,7 +244,7 @@ func (dcb *DatabaseCreateBulk) Save(ctx context.Context) ([]*Database, error) {
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, dcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -252,8 +252,8 @@ func (dcb *DatabaseCreateBulk) Save(ctx context.Context) ([]*Database, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (dcb *DatabaseCreateBulk) SaveX(ctx context.Context) []*Database {
-	v, err := dcb.Save(ctx)
+func (_c *DatabaseCreateBulk) SaveX(ctx context.Context) []*Database {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -261,14 +261,14 @@ func (dcb *DatabaseCreateBulk) SaveX(ctx context.Context) []*Database {
 }
 
 // Exec executes the query.
-func (dcb *DatabaseCreateBulk) Exec(ctx context.Context) error {
-	_, err := dcb.Save(ctx)
+func (_c *DatabaseCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (dcb *DatabaseCreateBulk) ExecX(ctx context.Context) {
-	if err := dcb.Exec(ctx); err != nil {
+func (_c *DatabaseCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

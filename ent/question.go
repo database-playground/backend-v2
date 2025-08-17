@@ -76,7 +76,7 @@ func (*Question) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Question fields.
-func (q *Question) assignValues(columns []string, values []any) error {
+func (_m *Question) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -87,46 +87,46 @@ func (q *Question) assignValues(columns []string, values []any) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			q.ID = int(value.Int64)
+			_m.ID = int(value.Int64)
 		case question.FieldCategory:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field category", values[i])
 			} else if value.Valid {
-				q.Category = value.String
+				_m.Category = value.String
 			}
 		case question.FieldDifficulty:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field difficulty", values[i])
 			} else if value.Valid {
-				q.Difficulty = question.Difficulty(value.String)
+				_m.Difficulty = question.Difficulty(value.String)
 			}
 		case question.FieldTitle:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field title", values[i])
 			} else if value.Valid {
-				q.Title = value.String
+				_m.Title = value.String
 			}
 		case question.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				q.Description = value.String
+				_m.Description = value.String
 			}
 		case question.FieldReferenceAnswer:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field reference_answer", values[i])
 			} else if value.Valid {
-				q.ReferenceAnswer = value.String
+				_m.ReferenceAnswer = value.String
 			}
 		case question.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field database_questions", value)
 			} else if value.Valid {
-				q.database_questions = new(int)
-				*q.database_questions = int(value.Int64)
+				_m.database_questions = new(int)
+				*_m.database_questions = int(value.Int64)
 			}
 		default:
-			q.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -134,52 +134,52 @@ func (q *Question) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Question.
 // This includes values selected through modifiers, order, etc.
-func (q *Question) Value(name string) (ent.Value, error) {
-	return q.selectValues.Get(name)
+func (_m *Question) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryDatabase queries the "database" edge of the Question entity.
-func (q *Question) QueryDatabase() *DatabaseQuery {
-	return NewQuestionClient(q.config).QueryDatabase(q)
+func (_m *Question) QueryDatabase() *DatabaseQuery {
+	return NewQuestionClient(_m.config).QueryDatabase(_m)
 }
 
 // Update returns a builder for updating this Question.
 // Note that you need to call Question.Unwrap() before calling this method if this Question
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (q *Question) Update() *QuestionUpdateOne {
-	return NewQuestionClient(q.config).UpdateOne(q)
+func (_m *Question) Update() *QuestionUpdateOne {
+	return NewQuestionClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the Question entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (q *Question) Unwrap() *Question {
-	_tx, ok := q.config.driver.(*txDriver)
+func (_m *Question) Unwrap() *Question {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: Question is not a transactional entity")
 	}
-	q.config.driver = _tx.drv
-	return q
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (q *Question) String() string {
+func (_m *Question) String() string {
 	var builder strings.Builder
 	builder.WriteString("Question(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", q.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("category=")
-	builder.WriteString(q.Category)
+	builder.WriteString(_m.Category)
 	builder.WriteString(", ")
 	builder.WriteString("difficulty=")
-	builder.WriteString(fmt.Sprintf("%v", q.Difficulty))
+	builder.WriteString(fmt.Sprintf("%v", _m.Difficulty))
 	builder.WriteString(", ")
 	builder.WriteString("title=")
-	builder.WriteString(q.Title)
+	builder.WriteString(_m.Title)
 	builder.WriteString(", ")
 	builder.WriteString("description=")
-	builder.WriteString(q.Description)
+	builder.WriteString(_m.Description)
 	builder.WriteString(", ")
 	builder.WriteString("reference_answer=")
-	builder.WriteString(q.ReferenceAnswer)
+	builder.WriteString(_m.ReferenceAnswer)
 	builder.WriteByte(')')
 	return builder.String()
 }

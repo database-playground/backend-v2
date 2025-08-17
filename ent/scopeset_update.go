@@ -24,92 +24,92 @@ type ScopeSetUpdate struct {
 }
 
 // Where appends a list predicates to the ScopeSetUpdate builder.
-func (ssu *ScopeSetUpdate) Where(ps ...predicate.ScopeSet) *ScopeSetUpdate {
-	ssu.mutation.Where(ps...)
-	return ssu
+func (_u *ScopeSetUpdate) Where(ps ...predicate.ScopeSet) *ScopeSetUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (ssu *ScopeSetUpdate) SetDescription(s string) *ScopeSetUpdate {
-	ssu.mutation.SetDescription(s)
-	return ssu
+func (_u *ScopeSetUpdate) SetDescription(v string) *ScopeSetUpdate {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (ssu *ScopeSetUpdate) SetNillableDescription(s *string) *ScopeSetUpdate {
-	if s != nil {
-		ssu.SetDescription(*s)
+func (_u *ScopeSetUpdate) SetNillableDescription(v *string) *ScopeSetUpdate {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return ssu
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (ssu *ScopeSetUpdate) ClearDescription() *ScopeSetUpdate {
-	ssu.mutation.ClearDescription()
-	return ssu
+func (_u *ScopeSetUpdate) ClearDescription() *ScopeSetUpdate {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetScopes sets the "scopes" field.
-func (ssu *ScopeSetUpdate) SetScopes(s []string) *ScopeSetUpdate {
-	ssu.mutation.SetScopes(s)
-	return ssu
+func (_u *ScopeSetUpdate) SetScopes(v []string) *ScopeSetUpdate {
+	_u.mutation.SetScopes(v)
+	return _u
 }
 
-// AppendScopes appends s to the "scopes" field.
-func (ssu *ScopeSetUpdate) AppendScopes(s []string) *ScopeSetUpdate {
-	ssu.mutation.AppendScopes(s)
-	return ssu
+// AppendScopes appends value to the "scopes" field.
+func (_u *ScopeSetUpdate) AppendScopes(v []string) *ScopeSetUpdate {
+	_u.mutation.AppendScopes(v)
+	return _u
 }
 
 // AddGroupIDs adds the "groups" edge to the Group entity by IDs.
-func (ssu *ScopeSetUpdate) AddGroupIDs(ids ...int) *ScopeSetUpdate {
-	ssu.mutation.AddGroupIDs(ids...)
-	return ssu
+func (_u *ScopeSetUpdate) AddGroupIDs(ids ...int) *ScopeSetUpdate {
+	_u.mutation.AddGroupIDs(ids...)
+	return _u
 }
 
 // AddGroups adds the "groups" edges to the Group entity.
-func (ssu *ScopeSetUpdate) AddGroups(g ...*Group) *ScopeSetUpdate {
-	ids := make([]int, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
+func (_u *ScopeSetUpdate) AddGroups(v ...*Group) *ScopeSetUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ssu.AddGroupIDs(ids...)
+	return _u.AddGroupIDs(ids...)
 }
 
 // Mutation returns the ScopeSetMutation object of the builder.
-func (ssu *ScopeSetUpdate) Mutation() *ScopeSetMutation {
-	return ssu.mutation
+func (_u *ScopeSetUpdate) Mutation() *ScopeSetMutation {
+	return _u.mutation
 }
 
 // ClearGroups clears all "groups" edges to the Group entity.
-func (ssu *ScopeSetUpdate) ClearGroups() *ScopeSetUpdate {
-	ssu.mutation.ClearGroups()
-	return ssu
+func (_u *ScopeSetUpdate) ClearGroups() *ScopeSetUpdate {
+	_u.mutation.ClearGroups()
+	return _u
 }
 
 // RemoveGroupIDs removes the "groups" edge to Group entities by IDs.
-func (ssu *ScopeSetUpdate) RemoveGroupIDs(ids ...int) *ScopeSetUpdate {
-	ssu.mutation.RemoveGroupIDs(ids...)
-	return ssu
+func (_u *ScopeSetUpdate) RemoveGroupIDs(ids ...int) *ScopeSetUpdate {
+	_u.mutation.RemoveGroupIDs(ids...)
+	return _u
 }
 
 // RemoveGroups removes "groups" edges to Group entities.
-func (ssu *ScopeSetUpdate) RemoveGroups(g ...*Group) *ScopeSetUpdate {
-	ids := make([]int, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
+func (_u *ScopeSetUpdate) RemoveGroups(v ...*Group) *ScopeSetUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ssu.RemoveGroupIDs(ids...)
+	return _u.RemoveGroupIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (ssu *ScopeSetUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, ssu.sqlSave, ssu.mutation, ssu.hooks)
+func (_u *ScopeSetUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (ssu *ScopeSetUpdate) SaveX(ctx context.Context) int {
-	affected, err := ssu.Save(ctx)
+func (_u *ScopeSetUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -117,42 +117,42 @@ func (ssu *ScopeSetUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (ssu *ScopeSetUpdate) Exec(ctx context.Context) error {
-	_, err := ssu.Save(ctx)
+func (_u *ScopeSetUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (ssu *ScopeSetUpdate) ExecX(ctx context.Context) {
-	if err := ssu.Exec(ctx); err != nil {
+func (_u *ScopeSetUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
-func (ssu *ScopeSetUpdate) sqlSave(ctx context.Context) (n int, err error) {
+func (_u *ScopeSetUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	_spec := sqlgraph.NewUpdateSpec(scopeset.Table, scopeset.Columns, sqlgraph.NewFieldSpec(scopeset.FieldID, field.TypeInt))
-	if ps := ssu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := ssu.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(scopeset.FieldDescription, field.TypeString, value)
 	}
-	if ssu.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(scopeset.FieldDescription, field.TypeString)
 	}
-	if value, ok := ssu.mutation.Scopes(); ok {
+	if value, ok := _u.mutation.Scopes(); ok {
 		_spec.SetField(scopeset.FieldScopes, field.TypeJSON, value)
 	}
-	if value, ok := ssu.mutation.AppendedScopes(); ok {
+	if value, ok := _u.mutation.AppendedScopes(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, scopeset.FieldScopes, value)
 		})
 	}
-	if ssu.mutation.GroupsCleared() {
+	if _u.mutation.GroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -165,7 +165,7 @@ func (ssu *ScopeSetUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ssu.mutation.RemovedGroupsIDs(); len(nodes) > 0 && !ssu.mutation.GroupsCleared() {
+	if nodes := _u.mutation.RemovedGroupsIDs(); len(nodes) > 0 && !_u.mutation.GroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -181,7 +181,7 @@ func (ssu *ScopeSetUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ssu.mutation.GroupsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.GroupsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -197,7 +197,7 @@ func (ssu *ScopeSetUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if n, err = sqlgraph.UpdateNodes(ctx, ssu.driver, _spec); err != nil {
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{scopeset.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -205,8 +205,8 @@ func (ssu *ScopeSetUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	ssu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // ScopeSetUpdateOne is the builder for updating a single ScopeSet entity.
@@ -218,99 +218,99 @@ type ScopeSetUpdateOne struct {
 }
 
 // SetDescription sets the "description" field.
-func (ssuo *ScopeSetUpdateOne) SetDescription(s string) *ScopeSetUpdateOne {
-	ssuo.mutation.SetDescription(s)
-	return ssuo
+func (_u *ScopeSetUpdateOne) SetDescription(v string) *ScopeSetUpdateOne {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (ssuo *ScopeSetUpdateOne) SetNillableDescription(s *string) *ScopeSetUpdateOne {
-	if s != nil {
-		ssuo.SetDescription(*s)
+func (_u *ScopeSetUpdateOne) SetNillableDescription(v *string) *ScopeSetUpdateOne {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return ssuo
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (ssuo *ScopeSetUpdateOne) ClearDescription() *ScopeSetUpdateOne {
-	ssuo.mutation.ClearDescription()
-	return ssuo
+func (_u *ScopeSetUpdateOne) ClearDescription() *ScopeSetUpdateOne {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetScopes sets the "scopes" field.
-func (ssuo *ScopeSetUpdateOne) SetScopes(s []string) *ScopeSetUpdateOne {
-	ssuo.mutation.SetScopes(s)
-	return ssuo
+func (_u *ScopeSetUpdateOne) SetScopes(v []string) *ScopeSetUpdateOne {
+	_u.mutation.SetScopes(v)
+	return _u
 }
 
-// AppendScopes appends s to the "scopes" field.
-func (ssuo *ScopeSetUpdateOne) AppendScopes(s []string) *ScopeSetUpdateOne {
-	ssuo.mutation.AppendScopes(s)
-	return ssuo
+// AppendScopes appends value to the "scopes" field.
+func (_u *ScopeSetUpdateOne) AppendScopes(v []string) *ScopeSetUpdateOne {
+	_u.mutation.AppendScopes(v)
+	return _u
 }
 
 // AddGroupIDs adds the "groups" edge to the Group entity by IDs.
-func (ssuo *ScopeSetUpdateOne) AddGroupIDs(ids ...int) *ScopeSetUpdateOne {
-	ssuo.mutation.AddGroupIDs(ids...)
-	return ssuo
+func (_u *ScopeSetUpdateOne) AddGroupIDs(ids ...int) *ScopeSetUpdateOne {
+	_u.mutation.AddGroupIDs(ids...)
+	return _u
 }
 
 // AddGroups adds the "groups" edges to the Group entity.
-func (ssuo *ScopeSetUpdateOne) AddGroups(g ...*Group) *ScopeSetUpdateOne {
-	ids := make([]int, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
+func (_u *ScopeSetUpdateOne) AddGroups(v ...*Group) *ScopeSetUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ssuo.AddGroupIDs(ids...)
+	return _u.AddGroupIDs(ids...)
 }
 
 // Mutation returns the ScopeSetMutation object of the builder.
-func (ssuo *ScopeSetUpdateOne) Mutation() *ScopeSetMutation {
-	return ssuo.mutation
+func (_u *ScopeSetUpdateOne) Mutation() *ScopeSetMutation {
+	return _u.mutation
 }
 
 // ClearGroups clears all "groups" edges to the Group entity.
-func (ssuo *ScopeSetUpdateOne) ClearGroups() *ScopeSetUpdateOne {
-	ssuo.mutation.ClearGroups()
-	return ssuo
+func (_u *ScopeSetUpdateOne) ClearGroups() *ScopeSetUpdateOne {
+	_u.mutation.ClearGroups()
+	return _u
 }
 
 // RemoveGroupIDs removes the "groups" edge to Group entities by IDs.
-func (ssuo *ScopeSetUpdateOne) RemoveGroupIDs(ids ...int) *ScopeSetUpdateOne {
-	ssuo.mutation.RemoveGroupIDs(ids...)
-	return ssuo
+func (_u *ScopeSetUpdateOne) RemoveGroupIDs(ids ...int) *ScopeSetUpdateOne {
+	_u.mutation.RemoveGroupIDs(ids...)
+	return _u
 }
 
 // RemoveGroups removes "groups" edges to Group entities.
-func (ssuo *ScopeSetUpdateOne) RemoveGroups(g ...*Group) *ScopeSetUpdateOne {
-	ids := make([]int, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
+func (_u *ScopeSetUpdateOne) RemoveGroups(v ...*Group) *ScopeSetUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ssuo.RemoveGroupIDs(ids...)
+	return _u.RemoveGroupIDs(ids...)
 }
 
 // Where appends a list predicates to the ScopeSetUpdate builder.
-func (ssuo *ScopeSetUpdateOne) Where(ps ...predicate.ScopeSet) *ScopeSetUpdateOne {
-	ssuo.mutation.Where(ps...)
-	return ssuo
+func (_u *ScopeSetUpdateOne) Where(ps ...predicate.ScopeSet) *ScopeSetUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (ssuo *ScopeSetUpdateOne) Select(field string, fields ...string) *ScopeSetUpdateOne {
-	ssuo.fields = append([]string{field}, fields...)
-	return ssuo
+func (_u *ScopeSetUpdateOne) Select(field string, fields ...string) *ScopeSetUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated ScopeSet entity.
-func (ssuo *ScopeSetUpdateOne) Save(ctx context.Context) (*ScopeSet, error) {
-	return withHooks(ctx, ssuo.sqlSave, ssuo.mutation, ssuo.hooks)
+func (_u *ScopeSetUpdateOne) Save(ctx context.Context) (*ScopeSet, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (ssuo *ScopeSetUpdateOne) SaveX(ctx context.Context) *ScopeSet {
-	node, err := ssuo.Save(ctx)
+func (_u *ScopeSetUpdateOne) SaveX(ctx context.Context) *ScopeSet {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -318,26 +318,26 @@ func (ssuo *ScopeSetUpdateOne) SaveX(ctx context.Context) *ScopeSet {
 }
 
 // Exec executes the query on the entity.
-func (ssuo *ScopeSetUpdateOne) Exec(ctx context.Context) error {
-	_, err := ssuo.Save(ctx)
+func (_u *ScopeSetUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (ssuo *ScopeSetUpdateOne) ExecX(ctx context.Context) {
-	if err := ssuo.Exec(ctx); err != nil {
+func (_u *ScopeSetUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
-func (ssuo *ScopeSetUpdateOne) sqlSave(ctx context.Context) (_node *ScopeSet, err error) {
+func (_u *ScopeSetUpdateOne) sqlSave(ctx context.Context) (_node *ScopeSet, err error) {
 	_spec := sqlgraph.NewUpdateSpec(scopeset.Table, scopeset.Columns, sqlgraph.NewFieldSpec(scopeset.FieldID, field.TypeInt))
-	id, ok := ssuo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ScopeSet.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := ssuo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, scopeset.FieldID)
 		for _, f := range fields {
@@ -349,28 +349,28 @@ func (ssuo *ScopeSetUpdateOne) sqlSave(ctx context.Context) (_node *ScopeSet, er
 			}
 		}
 	}
-	if ps := ssuo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := ssuo.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(scopeset.FieldDescription, field.TypeString, value)
 	}
-	if ssuo.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(scopeset.FieldDescription, field.TypeString)
 	}
-	if value, ok := ssuo.mutation.Scopes(); ok {
+	if value, ok := _u.mutation.Scopes(); ok {
 		_spec.SetField(scopeset.FieldScopes, field.TypeJSON, value)
 	}
-	if value, ok := ssuo.mutation.AppendedScopes(); ok {
+	if value, ok := _u.mutation.AppendedScopes(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, scopeset.FieldScopes, value)
 		})
 	}
-	if ssuo.mutation.GroupsCleared() {
+	if _u.mutation.GroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -383,7 +383,7 @@ func (ssuo *ScopeSetUpdateOne) sqlSave(ctx context.Context) (_node *ScopeSet, er
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ssuo.mutation.RemovedGroupsIDs(); len(nodes) > 0 && !ssuo.mutation.GroupsCleared() {
+	if nodes := _u.mutation.RemovedGroupsIDs(); len(nodes) > 0 && !_u.mutation.GroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -399,7 +399,7 @@ func (ssuo *ScopeSetUpdateOne) sqlSave(ctx context.Context) (_node *ScopeSet, er
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ssuo.mutation.GroupsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.GroupsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -415,10 +415,10 @@ func (ssuo *ScopeSetUpdateOne) sqlSave(ctx context.Context) (_node *ScopeSet, er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &ScopeSet{config: ssuo.config}
+	_node = &ScopeSet{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, ssuo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{scopeset.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -426,6 +426,6 @@ func (ssuo *ScopeSetUpdateOne) sqlSave(ctx context.Context) (_node *ScopeSet, er
 		}
 		return nil, err
 	}
-	ssuo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

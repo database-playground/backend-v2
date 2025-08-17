@@ -21,68 +21,68 @@ type QuestionCreate struct {
 }
 
 // SetCategory sets the "category" field.
-func (qc *QuestionCreate) SetCategory(s string) *QuestionCreate {
-	qc.mutation.SetCategory(s)
-	return qc
+func (_c *QuestionCreate) SetCategory(v string) *QuestionCreate {
+	_c.mutation.SetCategory(v)
+	return _c
 }
 
 // SetDifficulty sets the "difficulty" field.
-func (qc *QuestionCreate) SetDifficulty(q question.Difficulty) *QuestionCreate {
-	qc.mutation.SetDifficulty(q)
-	return qc
+func (_c *QuestionCreate) SetDifficulty(v question.Difficulty) *QuestionCreate {
+	_c.mutation.SetDifficulty(v)
+	return _c
 }
 
 // SetNillableDifficulty sets the "difficulty" field if the given value is not nil.
-func (qc *QuestionCreate) SetNillableDifficulty(q *question.Difficulty) *QuestionCreate {
-	if q != nil {
-		qc.SetDifficulty(*q)
+func (_c *QuestionCreate) SetNillableDifficulty(v *question.Difficulty) *QuestionCreate {
+	if v != nil {
+		_c.SetDifficulty(*v)
 	}
-	return qc
+	return _c
 }
 
 // SetTitle sets the "title" field.
-func (qc *QuestionCreate) SetTitle(s string) *QuestionCreate {
-	qc.mutation.SetTitle(s)
-	return qc
+func (_c *QuestionCreate) SetTitle(v string) *QuestionCreate {
+	_c.mutation.SetTitle(v)
+	return _c
 }
 
 // SetDescription sets the "description" field.
-func (qc *QuestionCreate) SetDescription(s string) *QuestionCreate {
-	qc.mutation.SetDescription(s)
-	return qc
+func (_c *QuestionCreate) SetDescription(v string) *QuestionCreate {
+	_c.mutation.SetDescription(v)
+	return _c
 }
 
 // SetReferenceAnswer sets the "reference_answer" field.
-func (qc *QuestionCreate) SetReferenceAnswer(s string) *QuestionCreate {
-	qc.mutation.SetReferenceAnswer(s)
-	return qc
+func (_c *QuestionCreate) SetReferenceAnswer(v string) *QuestionCreate {
+	_c.mutation.SetReferenceAnswer(v)
+	return _c
 }
 
 // SetDatabaseID sets the "database" edge to the Database entity by ID.
-func (qc *QuestionCreate) SetDatabaseID(id int) *QuestionCreate {
-	qc.mutation.SetDatabaseID(id)
-	return qc
+func (_c *QuestionCreate) SetDatabaseID(id int) *QuestionCreate {
+	_c.mutation.SetDatabaseID(id)
+	return _c
 }
 
 // SetDatabase sets the "database" edge to the Database entity.
-func (qc *QuestionCreate) SetDatabase(d *Database) *QuestionCreate {
-	return qc.SetDatabaseID(d.ID)
+func (_c *QuestionCreate) SetDatabase(v *Database) *QuestionCreate {
+	return _c.SetDatabaseID(v.ID)
 }
 
 // Mutation returns the QuestionMutation object of the builder.
-func (qc *QuestionCreate) Mutation() *QuestionMutation {
-	return qc.mutation
+func (_c *QuestionCreate) Mutation() *QuestionMutation {
+	return _c.mutation
 }
 
 // Save creates the Question in the database.
-func (qc *QuestionCreate) Save(ctx context.Context) (*Question, error) {
-	qc.defaults()
-	return withHooks(ctx, qc.sqlSave, qc.mutation, qc.hooks)
+func (_c *QuestionCreate) Save(ctx context.Context) (*Question, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (qc *QuestionCreate) SaveX(ctx context.Context) *Question {
-	v, err := qc.Save(ctx)
+func (_c *QuestionCreate) SaveX(ctx context.Context) *Question {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -90,65 +90,65 @@ func (qc *QuestionCreate) SaveX(ctx context.Context) *Question {
 }
 
 // Exec executes the query.
-func (qc *QuestionCreate) Exec(ctx context.Context) error {
-	_, err := qc.Save(ctx)
+func (_c *QuestionCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (qc *QuestionCreate) ExecX(ctx context.Context) {
-	if err := qc.Exec(ctx); err != nil {
+func (_c *QuestionCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (qc *QuestionCreate) defaults() {
-	if _, ok := qc.mutation.Difficulty(); !ok {
+func (_c *QuestionCreate) defaults() {
+	if _, ok := _c.mutation.Difficulty(); !ok {
 		v := question.DefaultDifficulty
-		qc.mutation.SetDifficulty(v)
+		_c.mutation.SetDifficulty(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (qc *QuestionCreate) check() error {
-	if _, ok := qc.mutation.Category(); !ok {
+func (_c *QuestionCreate) check() error {
+	if _, ok := _c.mutation.Category(); !ok {
 		return &ValidationError{Name: "category", err: errors.New(`ent: missing required field "Question.category"`)}
 	}
-	if v, ok := qc.mutation.Category(); ok {
+	if v, ok := _c.mutation.Category(); ok {
 		if err := question.CategoryValidator(v); err != nil {
 			return &ValidationError{Name: "category", err: fmt.Errorf(`ent: validator failed for field "Question.category": %w`, err)}
 		}
 	}
-	if _, ok := qc.mutation.Difficulty(); !ok {
+	if _, ok := _c.mutation.Difficulty(); !ok {
 		return &ValidationError{Name: "difficulty", err: errors.New(`ent: missing required field "Question.difficulty"`)}
 	}
-	if v, ok := qc.mutation.Difficulty(); ok {
+	if v, ok := _c.mutation.Difficulty(); ok {
 		if err := question.DifficultyValidator(v); err != nil {
 			return &ValidationError{Name: "difficulty", err: fmt.Errorf(`ent: validator failed for field "Question.difficulty": %w`, err)}
 		}
 	}
-	if _, ok := qc.mutation.Title(); !ok {
+	if _, ok := _c.mutation.Title(); !ok {
 		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "Question.title"`)}
 	}
-	if _, ok := qc.mutation.Description(); !ok {
+	if _, ok := _c.mutation.Description(); !ok {
 		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "Question.description"`)}
 	}
-	if _, ok := qc.mutation.ReferenceAnswer(); !ok {
+	if _, ok := _c.mutation.ReferenceAnswer(); !ok {
 		return &ValidationError{Name: "reference_answer", err: errors.New(`ent: missing required field "Question.reference_answer"`)}
 	}
-	if len(qc.mutation.DatabaseIDs()) == 0 {
+	if len(_c.mutation.DatabaseIDs()) == 0 {
 		return &ValidationError{Name: "database", err: errors.New(`ent: missing required edge "Question.database"`)}
 	}
 	return nil
 }
 
-func (qc *QuestionCreate) sqlSave(ctx context.Context) (*Question, error) {
-	if err := qc.check(); err != nil {
+func (_c *QuestionCreate) sqlSave(ctx context.Context) (*Question, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := qc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, qc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -156,37 +156,37 @@ func (qc *QuestionCreate) sqlSave(ctx context.Context) (*Question, error) {
 	}
 	id := _spec.ID.Value.(int64)
 	_node.ID = int(id)
-	qc.mutation.id = &_node.ID
-	qc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (qc *QuestionCreate) createSpec() (*Question, *sqlgraph.CreateSpec) {
+func (_c *QuestionCreate) createSpec() (*Question, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Question{config: qc.config}
+		_node = &Question{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(question.Table, sqlgraph.NewFieldSpec(question.FieldID, field.TypeInt))
 	)
-	if value, ok := qc.mutation.Category(); ok {
+	if value, ok := _c.mutation.Category(); ok {
 		_spec.SetField(question.FieldCategory, field.TypeString, value)
 		_node.Category = value
 	}
-	if value, ok := qc.mutation.Difficulty(); ok {
+	if value, ok := _c.mutation.Difficulty(); ok {
 		_spec.SetField(question.FieldDifficulty, field.TypeEnum, value)
 		_node.Difficulty = value
 	}
-	if value, ok := qc.mutation.Title(); ok {
+	if value, ok := _c.mutation.Title(); ok {
 		_spec.SetField(question.FieldTitle, field.TypeString, value)
 		_node.Title = value
 	}
-	if value, ok := qc.mutation.Description(); ok {
+	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(question.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
-	if value, ok := qc.mutation.ReferenceAnswer(); ok {
+	if value, ok := _c.mutation.ReferenceAnswer(); ok {
 		_spec.SetField(question.FieldReferenceAnswer, field.TypeString, value)
 		_node.ReferenceAnswer = value
 	}
-	if nodes := qc.mutation.DatabaseIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.DatabaseIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -214,16 +214,16 @@ type QuestionCreateBulk struct {
 }
 
 // Save creates the Question entities in the database.
-func (qcb *QuestionCreateBulk) Save(ctx context.Context) ([]*Question, error) {
-	if qcb.err != nil {
-		return nil, qcb.err
+func (_c *QuestionCreateBulk) Save(ctx context.Context) ([]*Question, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(qcb.builders))
-	nodes := make([]*Question, len(qcb.builders))
-	mutators := make([]Mutator, len(qcb.builders))
-	for i := range qcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*Question, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := qcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*QuestionMutation)
@@ -237,11 +237,11 @@ func (qcb *QuestionCreateBulk) Save(ctx context.Context) ([]*Question, error) {
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, qcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, qcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -265,7 +265,7 @@ func (qcb *QuestionCreateBulk) Save(ctx context.Context) ([]*Question, error) {
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, qcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -273,8 +273,8 @@ func (qcb *QuestionCreateBulk) Save(ctx context.Context) ([]*Question, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (qcb *QuestionCreateBulk) SaveX(ctx context.Context) []*Question {
-	v, err := qcb.Save(ctx)
+func (_c *QuestionCreateBulk) SaveX(ctx context.Context) []*Question {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -282,14 +282,14 @@ func (qcb *QuestionCreateBulk) SaveX(ctx context.Context) []*Question {
 }
 
 // Exec executes the query.
-func (qcb *QuestionCreateBulk) Exec(ctx context.Context) error {
-	_, err := qcb.Save(ctx)
+func (_c *QuestionCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (qcb *QuestionCreateBulk) ExecX(ctx context.Context) {
-	if err := qcb.Exec(ctx); err != nil {
+func (_c *QuestionCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

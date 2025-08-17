@@ -15,18 +15,18 @@ import (
 )
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (d *DatabaseQuery) CollectFields(ctx context.Context, satisfies ...string) (*DatabaseQuery, error) {
+func (_q *DatabaseQuery) CollectFields(ctx context.Context, satisfies ...string) (*DatabaseQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
-		return d, nil
+		return _q, nil
 	}
-	if err := d.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
 		return nil, err
 	}
-	return d, nil
+	return _q, nil
 }
 
-func (d *DatabaseQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+func (_q *DatabaseQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
 	var (
 		unknownSeen    bool
@@ -40,12 +40,12 @@ func (d *DatabaseQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = (&QuestionClient{config: d.config}).Query()
+				query = (&QuestionClient{config: _q.config}).Query()
 			)
 			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, questionImplementors)...); err != nil {
 				return err
 			}
-			d.WithNamedQuestions(alias, func(wq *QuestionQuery) {
+			_q.WithNamedQuestions(alias, func(wq *QuestionQuery) {
 				*wq = *query
 			})
 		case "slug":
@@ -75,7 +75,7 @@ func (d *DatabaseQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 		}
 	}
 	if !unknownSeen {
-		d.Select(selectedFields...)
+		_q.Select(selectedFields...)
 	}
 	return nil
 }
@@ -110,18 +110,18 @@ func newDatabasePaginateArgs(rv map[string]any) *databasePaginateArgs {
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (gr *GroupQuery) CollectFields(ctx context.Context, satisfies ...string) (*GroupQuery, error) {
+func (_q *GroupQuery) CollectFields(ctx context.Context, satisfies ...string) (*GroupQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
-		return gr, nil
+		return _q, nil
 	}
-	if err := gr.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
 		return nil, err
 	}
-	return gr, nil
+	return _q, nil
 }
 
-func (gr *GroupQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+func (_q *GroupQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
 	var (
 		unknownSeen    bool
@@ -135,12 +135,12 @@ func (gr *GroupQuery) collectField(ctx context.Context, oneNode bool, opCtx *gra
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = (&ScopeSetClient{config: gr.config}).Query()
+				query = (&ScopeSetClient{config: _q.config}).Query()
 			)
 			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, scopesetImplementors)...); err != nil {
 				return err
 			}
-			gr.WithNamedScopeSets(alias, func(wq *ScopeSetQuery) {
+			_q.WithNamedScopeSets(alias, func(wq *ScopeSetQuery) {
 				*wq = *query
 			})
 		case "createdAt":
@@ -175,7 +175,7 @@ func (gr *GroupQuery) collectField(ctx context.Context, oneNode bool, opCtx *gra
 		}
 	}
 	if !unknownSeen {
-		gr.Select(selectedFields...)
+		_q.Select(selectedFields...)
 	}
 	return nil
 }
@@ -210,18 +210,18 @@ func newGroupPaginateArgs(rv map[string]any) *groupPaginateArgs {
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (q *QuestionQuery) CollectFields(ctx context.Context, satisfies ...string) (*QuestionQuery, error) {
+func (_q *QuestionQuery) CollectFields(ctx context.Context, satisfies ...string) (*QuestionQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
-		return q, nil
+		return _q, nil
 	}
-	if err := q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
 		return nil, err
 	}
-	return q, nil
+	return _q, nil
 }
 
-func (q *QuestionQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+func (_q *QuestionQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
 	var (
 		unknownSeen    bool
@@ -235,12 +235,12 @@ func (q *QuestionQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = (&DatabaseClient{config: q.config}).Query()
+				query = (&DatabaseClient{config: _q.config}).Query()
 			)
 			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, databaseImplementors)...); err != nil {
 				return err
 			}
-			q.withDatabase = query
+			_q.withDatabase = query
 		case "category":
 			if _, ok := fieldSeen[question.FieldCategory]; !ok {
 				selectedFields = append(selectedFields, question.FieldCategory)
@@ -273,7 +273,7 @@ func (q *QuestionQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 		}
 	}
 	if !unknownSeen {
-		q.Select(selectedFields...)
+		_q.Select(selectedFields...)
 	}
 	return nil
 }
@@ -330,18 +330,18 @@ func newQuestionPaginateArgs(rv map[string]any) *questionPaginateArgs {
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (ss *ScopeSetQuery) CollectFields(ctx context.Context, satisfies ...string) (*ScopeSetQuery, error) {
+func (_q *ScopeSetQuery) CollectFields(ctx context.Context, satisfies ...string) (*ScopeSetQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
-		return ss, nil
+		return _q, nil
 	}
-	if err := ss.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
 		return nil, err
 	}
-	return ss, nil
+	return _q, nil
 }
 
-func (ss *ScopeSetQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+func (_q *ScopeSetQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
 	var (
 		unknownSeen    bool
@@ -355,12 +355,12 @@ func (ss *ScopeSetQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = (&GroupClient{config: ss.config}).Query()
+				query = (&GroupClient{config: _q.config}).Query()
 			)
 			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, groupImplementors)...); err != nil {
 				return err
 			}
-			ss.WithNamedGroups(alias, func(wq *GroupQuery) {
+			_q.WithNamedGroups(alias, func(wq *GroupQuery) {
 				*wq = *query
 			})
 		case "slug":
@@ -385,7 +385,7 @@ func (ss *ScopeSetQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 		}
 	}
 	if !unknownSeen {
-		ss.Select(selectedFields...)
+		_q.Select(selectedFields...)
 	}
 	return nil
 }
@@ -420,18 +420,18 @@ func newScopeSetPaginateArgs(rv map[string]any) *scopesetPaginateArgs {
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (u *UserQuery) CollectFields(ctx context.Context, satisfies ...string) (*UserQuery, error) {
+func (_q *UserQuery) CollectFields(ctx context.Context, satisfies ...string) (*UserQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
-		return u, nil
+		return _q, nil
 	}
-	if err := u.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
 		return nil, err
 	}
-	return u, nil
+	return _q, nil
 }
 
-func (u *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
 	var (
 		unknownSeen    bool
@@ -445,12 +445,12 @@ func (u *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *graph
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = (&GroupClient{config: u.config}).Query()
+				query = (&GroupClient{config: _q.config}).Query()
 			)
 			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, groupImplementors)...); err != nil {
 				return err
 			}
-			u.withGroup = query
+			_q.withGroup = query
 		case "createdAt":
 			if _, ok := fieldSeen[user.FieldCreatedAt]; !ok {
 				selectedFields = append(selectedFields, user.FieldCreatedAt)
@@ -488,7 +488,7 @@ func (u *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *graph
 		}
 	}
 	if !unknownSeen {
-		u.Select(selectedFields...)
+		_q.Select(selectedFields...)
 	}
 	return nil
 }
@@ -569,7 +569,7 @@ func fieldArgs(ctx context.Context, whereInput any, path ...string) map[string]a
 func unmarshalArgs(ctx context.Context, whereInput any, args map[string]any) map[string]any {
 	for _, k := range []string{firstField, lastField} {
 		v, ok := args[k]
-		if !ok {
+		if !ok || v == nil {
 			continue
 		}
 		i, err := graphql.UnmarshalInt(v)

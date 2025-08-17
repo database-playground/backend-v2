@@ -71,7 +71,7 @@ func (*ScopeSet) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the ScopeSet fields.
-func (ss *ScopeSet) assignValues(columns []string, values []any) error {
+func (_m *ScopeSet) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -82,29 +82,29 @@ func (ss *ScopeSet) assignValues(columns []string, values []any) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			ss.ID = int(value.Int64)
+			_m.ID = int(value.Int64)
 		case scopeset.FieldSlug:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field slug", values[i])
 			} else if value.Valid {
-				ss.Slug = value.String
+				_m.Slug = value.String
 			}
 		case scopeset.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				ss.Description = value.String
+				_m.Description = value.String
 			}
 		case scopeset.FieldScopes:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field scopes", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &ss.Scopes); err != nil {
+				if err := json.Unmarshal(*value, &_m.Scopes); err != nil {
 					return fmt.Errorf("unmarshal field scopes: %w", err)
 				}
 			}
 		default:
-			ss.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -112,71 +112,71 @@ func (ss *ScopeSet) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the ScopeSet.
 // This includes values selected through modifiers, order, etc.
-func (ss *ScopeSet) Value(name string) (ent.Value, error) {
-	return ss.selectValues.Get(name)
+func (_m *ScopeSet) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryGroups queries the "groups" edge of the ScopeSet entity.
-func (ss *ScopeSet) QueryGroups() *GroupQuery {
-	return NewScopeSetClient(ss.config).QueryGroups(ss)
+func (_m *ScopeSet) QueryGroups() *GroupQuery {
+	return NewScopeSetClient(_m.config).QueryGroups(_m)
 }
 
 // Update returns a builder for updating this ScopeSet.
 // Note that you need to call ScopeSet.Unwrap() before calling this method if this ScopeSet
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (ss *ScopeSet) Update() *ScopeSetUpdateOne {
-	return NewScopeSetClient(ss.config).UpdateOne(ss)
+func (_m *ScopeSet) Update() *ScopeSetUpdateOne {
+	return NewScopeSetClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the ScopeSet entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (ss *ScopeSet) Unwrap() *ScopeSet {
-	_tx, ok := ss.config.driver.(*txDriver)
+func (_m *ScopeSet) Unwrap() *ScopeSet {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: ScopeSet is not a transactional entity")
 	}
-	ss.config.driver = _tx.drv
-	return ss
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (ss *ScopeSet) String() string {
+func (_m *ScopeSet) String() string {
 	var builder strings.Builder
 	builder.WriteString("ScopeSet(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", ss.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("slug=")
-	builder.WriteString(ss.Slug)
+	builder.WriteString(_m.Slug)
 	builder.WriteString(", ")
 	builder.WriteString("description=")
-	builder.WriteString(ss.Description)
+	builder.WriteString(_m.Description)
 	builder.WriteString(", ")
 	builder.WriteString("scopes=")
-	builder.WriteString(fmt.Sprintf("%v", ss.Scopes))
+	builder.WriteString(fmt.Sprintf("%v", _m.Scopes))
 	builder.WriteByte(')')
 	return builder.String()
 }
 
 // NamedGroups returns the Groups named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (ss *ScopeSet) NamedGroups(name string) ([]*Group, error) {
-	if ss.Edges.namedGroups == nil {
+func (_m *ScopeSet) NamedGroups(name string) ([]*Group, error) {
+	if _m.Edges.namedGroups == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
-	nodes, ok := ss.Edges.namedGroups[name]
+	nodes, ok := _m.Edges.namedGroups[name]
 	if !ok {
 		return nil, &NotLoadedError{edge: name}
 	}
 	return nodes, nil
 }
 
-func (ss *ScopeSet) appendNamedGroups(name string, edges ...*Group) {
-	if ss.Edges.namedGroups == nil {
-		ss.Edges.namedGroups = make(map[string][]*Group)
+func (_m *ScopeSet) appendNamedGroups(name string, edges ...*Group) {
+	if _m.Edges.namedGroups == nil {
+		_m.Edges.namedGroups = make(map[string][]*Group)
 	}
 	if len(edges) == 0 {
-		ss.Edges.namedGroups[name] = []*Group{}
+		_m.Edges.namedGroups[name] = []*Group{}
 	} else {
-		ss.Edges.namedGroups[name] = append(ss.Edges.namedGroups[name], edges...)
+		_m.Edges.namedGroups[name] = append(_m.Edges.namedGroups[name], edges...)
 	}
 }
 

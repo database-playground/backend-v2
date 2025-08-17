@@ -8,54 +8,54 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
-func (d *Database) Questions(ctx context.Context) (result []*Question, err error) {
+func (_m *Database) Questions(ctx context.Context) (result []*Question, err error) {
 	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = d.NamedQuestions(graphql.GetFieldContext(ctx).Field.Alias)
+		result, err = _m.NamedQuestions(graphql.GetFieldContext(ctx).Field.Alias)
 	} else {
-		result, err = d.Edges.QuestionsOrErr()
+		result, err = _m.Edges.QuestionsOrErr()
 	}
 	if IsNotLoaded(err) {
-		result, err = d.QueryQuestions().All(ctx)
+		result, err = _m.QueryQuestions().All(ctx)
 	}
 	return result, err
 }
 
-func (gr *Group) ScopeSets(ctx context.Context) (result []*ScopeSet, err error) {
+func (_m *Group) ScopeSets(ctx context.Context) (result []*ScopeSet, err error) {
 	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = gr.NamedScopeSets(graphql.GetFieldContext(ctx).Field.Alias)
+		result, err = _m.NamedScopeSets(graphql.GetFieldContext(ctx).Field.Alias)
 	} else {
-		result, err = gr.Edges.ScopeSetsOrErr()
+		result, err = _m.Edges.ScopeSetsOrErr()
 	}
 	if IsNotLoaded(err) {
-		result, err = gr.QueryScopeSets().All(ctx)
+		result, err = _m.QueryScopeSets().All(ctx)
 	}
 	return result, err
 }
 
-func (q *Question) Database(ctx context.Context) (*Database, error) {
-	result, err := q.Edges.DatabaseOrErr()
+func (_m *Question) Database(ctx context.Context) (*Database, error) {
+	result, err := _m.Edges.DatabaseOrErr()
 	if IsNotLoaded(err) {
-		result, err = q.QueryDatabase().Only(ctx)
+		result, err = _m.QueryDatabase().Only(ctx)
 	}
 	return result, err
 }
 
-func (ss *ScopeSet) Groups(ctx context.Context) (result []*Group, err error) {
+func (_m *ScopeSet) Groups(ctx context.Context) (result []*Group, err error) {
 	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = ss.NamedGroups(graphql.GetFieldContext(ctx).Field.Alias)
+		result, err = _m.NamedGroups(graphql.GetFieldContext(ctx).Field.Alias)
 	} else {
-		result, err = ss.Edges.GroupsOrErr()
+		result, err = _m.Edges.GroupsOrErr()
 	}
 	if IsNotLoaded(err) {
-		result, err = ss.QueryGroups().All(ctx)
+		result, err = _m.QueryGroups().All(ctx)
 	}
 	return result, err
 }
 
-func (u *User) Group(ctx context.Context) (*Group, error) {
-	result, err := u.Edges.GroupOrErr()
+func (_m *User) Group(ctx context.Context) (*Group, error) {
+	result, err := _m.Edges.GroupOrErr()
 	if IsNotLoaded(err) {
-		result, err = u.QueryGroup().Only(ctx)
+		result, err = _m.QueryGroup().Only(ctx)
 	}
 	return result, err
 }
