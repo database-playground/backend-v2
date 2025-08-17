@@ -81,7 +81,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the User fields.
-func (u *User) assignValues(columns []string, values []any) error {
+func (_m *User) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -92,52 +92,52 @@ func (u *User) assignValues(columns []string, values []any) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			u.ID = int(value.Int64)
+			_m.ID = int(value.Int64)
 		case user.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				u.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case user.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				u.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		case user.FieldDeletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
-				u.DeletedAt = value.Time
+				_m.DeletedAt = value.Time
 			}
 		case user.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				u.Name = value.String
+				_m.Name = value.String
 			}
 		case user.FieldEmail:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field email", values[i])
 			} else if value.Valid {
-				u.Email = value.String
+				_m.Email = value.String
 			}
 		case user.FieldAvatar:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field avatar", values[i])
 			} else if value.Valid {
-				u.Avatar = value.String
+				_m.Avatar = value.String
 			}
 		case user.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field user_group", value)
 			} else if value.Valid {
-				u.user_group = new(int)
-				*u.user_group = int(value.Int64)
+				_m.user_group = new(int)
+				*_m.user_group = int(value.Int64)
 			}
 		default:
-			u.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -145,55 +145,55 @@ func (u *User) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the User.
 // This includes values selected through modifiers, order, etc.
-func (u *User) Value(name string) (ent.Value, error) {
-	return u.selectValues.Get(name)
+func (_m *User) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryGroup queries the "group" edge of the User entity.
-func (u *User) QueryGroup() *GroupQuery {
-	return NewUserClient(u.config).QueryGroup(u)
+func (_m *User) QueryGroup() *GroupQuery {
+	return NewUserClient(_m.config).QueryGroup(_m)
 }
 
 // Update returns a builder for updating this User.
 // Note that you need to call User.Unwrap() before calling this method if this User
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (u *User) Update() *UserUpdateOne {
-	return NewUserClient(u.config).UpdateOne(u)
+func (_m *User) Update() *UserUpdateOne {
+	return NewUserClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the User entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (u *User) Unwrap() *User {
-	_tx, ok := u.config.driver.(*txDriver)
+func (_m *User) Unwrap() *User {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: User is not a transactional entity")
 	}
-	u.config.driver = _tx.drv
-	return u
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (u *User) String() string {
+func (_m *User) String() string {
 	var builder strings.Builder
 	builder.WriteString("User(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", u.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("created_at=")
-	builder.WriteString(u.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(u.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
-	builder.WriteString(u.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(_m.DeletedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
-	builder.WriteString(u.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("email=")
-	builder.WriteString(u.Email)
+	builder.WriteString(_m.Email)
 	builder.WriteString(", ")
 	builder.WriteString("avatar=")
-	builder.WriteString(u.Avatar)
+	builder.WriteString(_m.Avatar)
 	builder.WriteByte(')')
 	return builder.String()
 }

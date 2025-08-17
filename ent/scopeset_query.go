@@ -34,44 +34,44 @@ type ScopeSetQuery struct {
 }
 
 // Where adds a new predicate for the ScopeSetQuery builder.
-func (ssq *ScopeSetQuery) Where(ps ...predicate.ScopeSet) *ScopeSetQuery {
-	ssq.predicates = append(ssq.predicates, ps...)
-	return ssq
+func (_q *ScopeSetQuery) Where(ps ...predicate.ScopeSet) *ScopeSetQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (ssq *ScopeSetQuery) Limit(limit int) *ScopeSetQuery {
-	ssq.ctx.Limit = &limit
-	return ssq
+func (_q *ScopeSetQuery) Limit(limit int) *ScopeSetQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (ssq *ScopeSetQuery) Offset(offset int) *ScopeSetQuery {
-	ssq.ctx.Offset = &offset
-	return ssq
+func (_q *ScopeSetQuery) Offset(offset int) *ScopeSetQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (ssq *ScopeSetQuery) Unique(unique bool) *ScopeSetQuery {
-	ssq.ctx.Unique = &unique
-	return ssq
+func (_q *ScopeSetQuery) Unique(unique bool) *ScopeSetQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (ssq *ScopeSetQuery) Order(o ...scopeset.OrderOption) *ScopeSetQuery {
-	ssq.order = append(ssq.order, o...)
-	return ssq
+func (_q *ScopeSetQuery) Order(o ...scopeset.OrderOption) *ScopeSetQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryGroups chains the current query on the "groups" edge.
-func (ssq *ScopeSetQuery) QueryGroups() *GroupQuery {
-	query := (&GroupClient{config: ssq.config}).Query()
+func (_q *ScopeSetQuery) QueryGroups() *GroupQuery {
+	query := (&GroupClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := ssq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := ssq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -80,7 +80,7 @@ func (ssq *ScopeSetQuery) QueryGroups() *GroupQuery {
 			sqlgraph.To(group.Table, group.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, scopeset.GroupsTable, scopeset.GroupsPrimaryKey...),
 		)
-		fromU = sqlgraph.SetNeighbors(ssq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -88,8 +88,8 @@ func (ssq *ScopeSetQuery) QueryGroups() *GroupQuery {
 
 // First returns the first ScopeSet entity from the query.
 // Returns a *NotFoundError when no ScopeSet was found.
-func (ssq *ScopeSetQuery) First(ctx context.Context) (*ScopeSet, error) {
-	nodes, err := ssq.Limit(1).All(setContextOp(ctx, ssq.ctx, ent.OpQueryFirst))
+func (_q *ScopeSetQuery) First(ctx context.Context) (*ScopeSet, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -100,8 +100,8 @@ func (ssq *ScopeSetQuery) First(ctx context.Context) (*ScopeSet, error) {
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (ssq *ScopeSetQuery) FirstX(ctx context.Context) *ScopeSet {
-	node, err := ssq.First(ctx)
+func (_q *ScopeSetQuery) FirstX(ctx context.Context) *ScopeSet {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -110,9 +110,9 @@ func (ssq *ScopeSetQuery) FirstX(ctx context.Context) *ScopeSet {
 
 // FirstID returns the first ScopeSet ID from the query.
 // Returns a *NotFoundError when no ScopeSet ID was found.
-func (ssq *ScopeSetQuery) FirstID(ctx context.Context) (id int, err error) {
+func (_q *ScopeSetQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = ssq.Limit(1).IDs(setContextOp(ctx, ssq.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -123,8 +123,8 @@ func (ssq *ScopeSetQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (ssq *ScopeSetQuery) FirstIDX(ctx context.Context) int {
-	id, err := ssq.FirstID(ctx)
+func (_q *ScopeSetQuery) FirstIDX(ctx context.Context) int {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -134,8 +134,8 @@ func (ssq *ScopeSetQuery) FirstIDX(ctx context.Context) int {
 // Only returns a single ScopeSet entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one ScopeSet entity is found.
 // Returns a *NotFoundError when no ScopeSet entities are found.
-func (ssq *ScopeSetQuery) Only(ctx context.Context) (*ScopeSet, error) {
-	nodes, err := ssq.Limit(2).All(setContextOp(ctx, ssq.ctx, ent.OpQueryOnly))
+func (_q *ScopeSetQuery) Only(ctx context.Context) (*ScopeSet, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -150,8 +150,8 @@ func (ssq *ScopeSetQuery) Only(ctx context.Context) (*ScopeSet, error) {
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (ssq *ScopeSetQuery) OnlyX(ctx context.Context) *ScopeSet {
-	node, err := ssq.Only(ctx)
+func (_q *ScopeSetQuery) OnlyX(ctx context.Context) *ScopeSet {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -161,9 +161,9 @@ func (ssq *ScopeSetQuery) OnlyX(ctx context.Context) *ScopeSet {
 // OnlyID is like Only, but returns the only ScopeSet ID in the query.
 // Returns a *NotSingularError when more than one ScopeSet ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (ssq *ScopeSetQuery) OnlyID(ctx context.Context) (id int, err error) {
+func (_q *ScopeSetQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = ssq.Limit(2).IDs(setContextOp(ctx, ssq.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -178,8 +178,8 @@ func (ssq *ScopeSetQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (ssq *ScopeSetQuery) OnlyIDX(ctx context.Context) int {
-	id, err := ssq.OnlyID(ctx)
+func (_q *ScopeSetQuery) OnlyIDX(ctx context.Context) int {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -187,18 +187,18 @@ func (ssq *ScopeSetQuery) OnlyIDX(ctx context.Context) int {
 }
 
 // All executes the query and returns a list of ScopeSets.
-func (ssq *ScopeSetQuery) All(ctx context.Context) ([]*ScopeSet, error) {
-	ctx = setContextOp(ctx, ssq.ctx, ent.OpQueryAll)
-	if err := ssq.prepareQuery(ctx); err != nil {
+func (_q *ScopeSetQuery) All(ctx context.Context) ([]*ScopeSet, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*ScopeSet, *ScopeSetQuery]()
-	return withInterceptors[[]*ScopeSet](ctx, ssq, qr, ssq.inters)
+	return withInterceptors[[]*ScopeSet](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (ssq *ScopeSetQuery) AllX(ctx context.Context) []*ScopeSet {
-	nodes, err := ssq.All(ctx)
+func (_q *ScopeSetQuery) AllX(ctx context.Context) []*ScopeSet {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -206,20 +206,20 @@ func (ssq *ScopeSetQuery) AllX(ctx context.Context) []*ScopeSet {
 }
 
 // IDs executes the query and returns a list of ScopeSet IDs.
-func (ssq *ScopeSetQuery) IDs(ctx context.Context) (ids []int, err error) {
-	if ssq.ctx.Unique == nil && ssq.path != nil {
-		ssq.Unique(true)
+func (_q *ScopeSetQuery) IDs(ctx context.Context) (ids []int, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, ssq.ctx, ent.OpQueryIDs)
-	if err = ssq.Select(scopeset.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(scopeset.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (ssq *ScopeSetQuery) IDsX(ctx context.Context) []int {
-	ids, err := ssq.IDs(ctx)
+func (_q *ScopeSetQuery) IDsX(ctx context.Context) []int {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -227,17 +227,17 @@ func (ssq *ScopeSetQuery) IDsX(ctx context.Context) []int {
 }
 
 // Count returns the count of the given query.
-func (ssq *ScopeSetQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, ssq.ctx, ent.OpQueryCount)
-	if err := ssq.prepareQuery(ctx); err != nil {
+func (_q *ScopeSetQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, ssq, querierCount[*ScopeSetQuery](), ssq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*ScopeSetQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (ssq *ScopeSetQuery) CountX(ctx context.Context) int {
-	count, err := ssq.Count(ctx)
+func (_q *ScopeSetQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -245,9 +245,9 @@ func (ssq *ScopeSetQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (ssq *ScopeSetQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, ssq.ctx, ent.OpQueryExist)
-	switch _, err := ssq.FirstID(ctx); {
+func (_q *ScopeSetQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -258,8 +258,8 @@ func (ssq *ScopeSetQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (ssq *ScopeSetQuery) ExistX(ctx context.Context) bool {
-	exist, err := ssq.Exist(ctx)
+func (_q *ScopeSetQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -268,32 +268,32 @@ func (ssq *ScopeSetQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the ScopeSetQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (ssq *ScopeSetQuery) Clone() *ScopeSetQuery {
-	if ssq == nil {
+func (_q *ScopeSetQuery) Clone() *ScopeSetQuery {
+	if _q == nil {
 		return nil
 	}
 	return &ScopeSetQuery{
-		config:     ssq.config,
-		ctx:        ssq.ctx.Clone(),
-		order:      append([]scopeset.OrderOption{}, ssq.order...),
-		inters:     append([]Interceptor{}, ssq.inters...),
-		predicates: append([]predicate.ScopeSet{}, ssq.predicates...),
-		withGroups: ssq.withGroups.Clone(),
+		config:     _q.config,
+		ctx:        _q.ctx.Clone(),
+		order:      append([]scopeset.OrderOption{}, _q.order...),
+		inters:     append([]Interceptor{}, _q.inters...),
+		predicates: append([]predicate.ScopeSet{}, _q.predicates...),
+		withGroups: _q.withGroups.Clone(),
 		// clone intermediate query.
-		sql:  ssq.sql.Clone(),
-		path: ssq.path,
+		sql:  _q.sql.Clone(),
+		path: _q.path,
 	}
 }
 
 // WithGroups tells the query-builder to eager-load the nodes that are connected to
 // the "groups" edge. The optional arguments are used to configure the query builder of the edge.
-func (ssq *ScopeSetQuery) WithGroups(opts ...func(*GroupQuery)) *ScopeSetQuery {
-	query := (&GroupClient{config: ssq.config}).Query()
+func (_q *ScopeSetQuery) WithGroups(opts ...func(*GroupQuery)) *ScopeSetQuery {
+	query := (&GroupClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	ssq.withGroups = query
-	return ssq
+	_q.withGroups = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -310,10 +310,10 @@ func (ssq *ScopeSetQuery) WithGroups(opts ...func(*GroupQuery)) *ScopeSetQuery {
 //		GroupBy(scopeset.FieldSlug).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (ssq *ScopeSetQuery) GroupBy(field string, fields ...string) *ScopeSetGroupBy {
-	ssq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &ScopeSetGroupBy{build: ssq}
-	grbuild.flds = &ssq.ctx.Fields
+func (_q *ScopeSetQuery) GroupBy(field string, fields ...string) *ScopeSetGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &ScopeSetGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = scopeset.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -331,97 +331,97 @@ func (ssq *ScopeSetQuery) GroupBy(field string, fields ...string) *ScopeSetGroup
 //	client.ScopeSet.Query().
 //		Select(scopeset.FieldSlug).
 //		Scan(ctx, &v)
-func (ssq *ScopeSetQuery) Select(fields ...string) *ScopeSetSelect {
-	ssq.ctx.Fields = append(ssq.ctx.Fields, fields...)
-	sbuild := &ScopeSetSelect{ScopeSetQuery: ssq}
+func (_q *ScopeSetQuery) Select(fields ...string) *ScopeSetSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &ScopeSetSelect{ScopeSetQuery: _q}
 	sbuild.label = scopeset.Label
-	sbuild.flds, sbuild.scan = &ssq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a ScopeSetSelect configured with the given aggregations.
-func (ssq *ScopeSetQuery) Aggregate(fns ...AggregateFunc) *ScopeSetSelect {
-	return ssq.Select().Aggregate(fns...)
+func (_q *ScopeSetQuery) Aggregate(fns ...AggregateFunc) *ScopeSetSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (ssq *ScopeSetQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range ssq.inters {
+func (_q *ScopeSetQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, ssq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range ssq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !scopeset.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if ssq.path != nil {
-		prev, err := ssq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		ssq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (ssq *ScopeSetQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ScopeSet, error) {
+func (_q *ScopeSetQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ScopeSet, error) {
 	var (
 		nodes       = []*ScopeSet{}
-		_spec       = ssq.querySpec()
+		_spec       = _q.querySpec()
 		loadedTypes = [1]bool{
-			ssq.withGroups != nil,
+			_q.withGroups != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*ScopeSet).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &ScopeSet{config: ssq.config}
+		node := &ScopeSet{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
-	if len(ssq.modifiers) > 0 {
-		_spec.Modifiers = ssq.modifiers
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, ssq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := ssq.withGroups; query != nil {
-		if err := ssq.loadGroups(ctx, query, nodes,
+	if query := _q.withGroups; query != nil {
+		if err := _q.loadGroups(ctx, query, nodes,
 			func(n *ScopeSet) { n.Edges.Groups = []*Group{} },
 			func(n *ScopeSet, e *Group) { n.Edges.Groups = append(n.Edges.Groups, e) }); err != nil {
 			return nil, err
 		}
 	}
-	for name, query := range ssq.withNamedGroups {
-		if err := ssq.loadGroups(ctx, query, nodes,
+	for name, query := range _q.withNamedGroups {
+		if err := _q.loadGroups(ctx, query, nodes,
 			func(n *ScopeSet) { n.appendNamedGroups(name) },
 			func(n *ScopeSet, e *Group) { n.appendNamedGroups(name, e) }); err != nil {
 			return nil, err
 		}
 	}
-	for i := range ssq.loadTotal {
-		if err := ssq.loadTotal[i](ctx, nodes); err != nil {
+	for i := range _q.loadTotal {
+		if err := _q.loadTotal[i](ctx, nodes); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (ssq *ScopeSetQuery) loadGroups(ctx context.Context, query *GroupQuery, nodes []*ScopeSet, init func(*ScopeSet), assign func(*ScopeSet, *Group)) error {
+func (_q *ScopeSetQuery) loadGroups(ctx context.Context, query *GroupQuery, nodes []*ScopeSet, init func(*ScopeSet), assign func(*ScopeSet, *Group)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
 	byID := make(map[int]*ScopeSet)
 	nids := make(map[int]map[*ScopeSet]struct{})
@@ -483,27 +483,27 @@ func (ssq *ScopeSetQuery) loadGroups(ctx context.Context, query *GroupQuery, nod
 	return nil
 }
 
-func (ssq *ScopeSetQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := ssq.querySpec()
-	if len(ssq.modifiers) > 0 {
-		_spec.Modifiers = ssq.modifiers
+func (_q *ScopeSetQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	if len(_q.modifiers) > 0 {
+		_spec.Modifiers = _q.modifiers
 	}
-	_spec.Node.Columns = ssq.ctx.Fields
-	if len(ssq.ctx.Fields) > 0 {
-		_spec.Unique = ssq.ctx.Unique != nil && *ssq.ctx.Unique
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, ssq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (ssq *ScopeSetQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *ScopeSetQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(scopeset.Table, scopeset.Columns, sqlgraph.NewFieldSpec(scopeset.FieldID, field.TypeInt))
-	_spec.From = ssq.sql
-	if unique := ssq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if ssq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := ssq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, scopeset.FieldID)
 		for i := range fields {
@@ -512,20 +512,20 @@ func (ssq *ScopeSetQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if ps := ssq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := ssq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := ssq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := ssq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -535,33 +535,33 @@ func (ssq *ScopeSetQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (ssq *ScopeSetQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(ssq.driver.Dialect())
+func (_q *ScopeSetQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(scopeset.Table)
-	columns := ssq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = scopeset.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if ssq.sql != nil {
-		selector = ssq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if ssq.ctx.Unique != nil && *ssq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, p := range ssq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range ssq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := ssq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := ssq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -569,16 +569,16 @@ func (ssq *ScopeSetQuery) sqlQuery(ctx context.Context) *sql.Selector {
 
 // WithNamedGroups tells the query-builder to eager-load the nodes that are connected to the "groups"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (ssq *ScopeSetQuery) WithNamedGroups(name string, opts ...func(*GroupQuery)) *ScopeSetQuery {
-	query := (&GroupClient{config: ssq.config}).Query()
+func (_q *ScopeSetQuery) WithNamedGroups(name string, opts ...func(*GroupQuery)) *ScopeSetQuery {
+	query := (&GroupClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	if ssq.withNamedGroups == nil {
-		ssq.withNamedGroups = make(map[string]*GroupQuery)
+	if _q.withNamedGroups == nil {
+		_q.withNamedGroups = make(map[string]*GroupQuery)
 	}
-	ssq.withNamedGroups[name] = query
-	return ssq
+	_q.withNamedGroups[name] = query
+	return _q
 }
 
 // ScopeSetGroupBy is the group-by builder for ScopeSet entities.
@@ -588,41 +588,41 @@ type ScopeSetGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (ssgb *ScopeSetGroupBy) Aggregate(fns ...AggregateFunc) *ScopeSetGroupBy {
-	ssgb.fns = append(ssgb.fns, fns...)
-	return ssgb
+func (_g *ScopeSetGroupBy) Aggregate(fns ...AggregateFunc) *ScopeSetGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (ssgb *ScopeSetGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ssgb.build.ctx, ent.OpQueryGroupBy)
-	if err := ssgb.build.prepareQuery(ctx); err != nil {
+func (_g *ScopeSetGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ScopeSetQuery, *ScopeSetGroupBy](ctx, ssgb.build, ssgb, ssgb.build.inters, v)
+	return scanWithInterceptors[*ScopeSetQuery, *ScopeSetGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (ssgb *ScopeSetGroupBy) sqlScan(ctx context.Context, root *ScopeSetQuery, v any) error {
+func (_g *ScopeSetGroupBy) sqlScan(ctx context.Context, root *ScopeSetQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(ssgb.fns))
-	for _, fn := range ssgb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*ssgb.flds)+len(ssgb.fns))
-		for _, f := range *ssgb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*ssgb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := ssgb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -636,27 +636,27 @@ type ScopeSetSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (sss *ScopeSetSelect) Aggregate(fns ...AggregateFunc) *ScopeSetSelect {
-	sss.fns = append(sss.fns, fns...)
-	return sss
+func (_s *ScopeSetSelect) Aggregate(fns ...AggregateFunc) *ScopeSetSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (sss *ScopeSetSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, sss.ctx, ent.OpQuerySelect)
-	if err := sss.prepareQuery(ctx); err != nil {
+func (_s *ScopeSetSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ScopeSetQuery, *ScopeSetSelect](ctx, sss.ScopeSetQuery, sss, sss.inters, v)
+	return scanWithInterceptors[*ScopeSetQuery, *ScopeSetSelect](ctx, _s.ScopeSetQuery, _s, _s.inters, v)
 }
 
-func (sss *ScopeSetSelect) sqlScan(ctx context.Context, root *ScopeSetQuery, v any) error {
+func (_s *ScopeSetSelect) sqlScan(ctx context.Context, root *ScopeSetQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(sss.fns))
-	for _, fn := range sss.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*sss.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -664,7 +664,7 @@ func (sss *ScopeSetSelect) sqlScan(ctx context.Context, root *ScopeSetQuery, v a
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := sss.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()

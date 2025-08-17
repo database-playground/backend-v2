@@ -21,60 +21,60 @@ type ScopeSetCreate struct {
 }
 
 // SetSlug sets the "slug" field.
-func (ssc *ScopeSetCreate) SetSlug(s string) *ScopeSetCreate {
-	ssc.mutation.SetSlug(s)
-	return ssc
+func (_c *ScopeSetCreate) SetSlug(v string) *ScopeSetCreate {
+	_c.mutation.SetSlug(v)
+	return _c
 }
 
 // SetDescription sets the "description" field.
-func (ssc *ScopeSetCreate) SetDescription(s string) *ScopeSetCreate {
-	ssc.mutation.SetDescription(s)
-	return ssc
+func (_c *ScopeSetCreate) SetDescription(v string) *ScopeSetCreate {
+	_c.mutation.SetDescription(v)
+	return _c
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (ssc *ScopeSetCreate) SetNillableDescription(s *string) *ScopeSetCreate {
-	if s != nil {
-		ssc.SetDescription(*s)
+func (_c *ScopeSetCreate) SetNillableDescription(v *string) *ScopeSetCreate {
+	if v != nil {
+		_c.SetDescription(*v)
 	}
-	return ssc
+	return _c
 }
 
 // SetScopes sets the "scopes" field.
-func (ssc *ScopeSetCreate) SetScopes(s []string) *ScopeSetCreate {
-	ssc.mutation.SetScopes(s)
-	return ssc
+func (_c *ScopeSetCreate) SetScopes(v []string) *ScopeSetCreate {
+	_c.mutation.SetScopes(v)
+	return _c
 }
 
 // AddGroupIDs adds the "groups" edge to the Group entity by IDs.
-func (ssc *ScopeSetCreate) AddGroupIDs(ids ...int) *ScopeSetCreate {
-	ssc.mutation.AddGroupIDs(ids...)
-	return ssc
+func (_c *ScopeSetCreate) AddGroupIDs(ids ...int) *ScopeSetCreate {
+	_c.mutation.AddGroupIDs(ids...)
+	return _c
 }
 
 // AddGroups adds the "groups" edges to the Group entity.
-func (ssc *ScopeSetCreate) AddGroups(g ...*Group) *ScopeSetCreate {
-	ids := make([]int, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
+func (_c *ScopeSetCreate) AddGroups(v ...*Group) *ScopeSetCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ssc.AddGroupIDs(ids...)
+	return _c.AddGroupIDs(ids...)
 }
 
 // Mutation returns the ScopeSetMutation object of the builder.
-func (ssc *ScopeSetCreate) Mutation() *ScopeSetMutation {
-	return ssc.mutation
+func (_c *ScopeSetCreate) Mutation() *ScopeSetMutation {
+	return _c.mutation
 }
 
 // Save creates the ScopeSet in the database.
-func (ssc *ScopeSetCreate) Save(ctx context.Context) (*ScopeSet, error) {
-	ssc.defaults()
-	return withHooks(ctx, ssc.sqlSave, ssc.mutation, ssc.hooks)
+func (_c *ScopeSetCreate) Save(ctx context.Context) (*ScopeSet, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (ssc *ScopeSetCreate) SaveX(ctx context.Context) *ScopeSet {
-	v, err := ssc.Save(ctx)
+func (_c *ScopeSetCreate) SaveX(ctx context.Context) *ScopeSet {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -82,48 +82,48 @@ func (ssc *ScopeSetCreate) SaveX(ctx context.Context) *ScopeSet {
 }
 
 // Exec executes the query.
-func (ssc *ScopeSetCreate) Exec(ctx context.Context) error {
-	_, err := ssc.Save(ctx)
+func (_c *ScopeSetCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (ssc *ScopeSetCreate) ExecX(ctx context.Context) {
-	if err := ssc.Exec(ctx); err != nil {
+func (_c *ScopeSetCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (ssc *ScopeSetCreate) defaults() {
-	if _, ok := ssc.mutation.Scopes(); !ok {
+func (_c *ScopeSetCreate) defaults() {
+	if _, ok := _c.mutation.Scopes(); !ok {
 		v := scopeset.DefaultScopes
-		ssc.mutation.SetScopes(v)
+		_c.mutation.SetScopes(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (ssc *ScopeSetCreate) check() error {
-	if _, ok := ssc.mutation.Slug(); !ok {
+func (_c *ScopeSetCreate) check() error {
+	if _, ok := _c.mutation.Slug(); !ok {
 		return &ValidationError{Name: "slug", err: errors.New(`ent: missing required field "ScopeSet.slug"`)}
 	}
-	if v, ok := ssc.mutation.Slug(); ok {
+	if v, ok := _c.mutation.Slug(); ok {
 		if err := scopeset.SlugValidator(v); err != nil {
 			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "ScopeSet.slug": %w`, err)}
 		}
 	}
-	if _, ok := ssc.mutation.Scopes(); !ok {
+	if _, ok := _c.mutation.Scopes(); !ok {
 		return &ValidationError{Name: "scopes", err: errors.New(`ent: missing required field "ScopeSet.scopes"`)}
 	}
 	return nil
 }
 
-func (ssc *ScopeSetCreate) sqlSave(ctx context.Context) (*ScopeSet, error) {
-	if err := ssc.check(); err != nil {
+func (_c *ScopeSetCreate) sqlSave(ctx context.Context) (*ScopeSet, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := ssc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, ssc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -131,29 +131,29 @@ func (ssc *ScopeSetCreate) sqlSave(ctx context.Context) (*ScopeSet, error) {
 	}
 	id := _spec.ID.Value.(int64)
 	_node.ID = int(id)
-	ssc.mutation.id = &_node.ID
-	ssc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (ssc *ScopeSetCreate) createSpec() (*ScopeSet, *sqlgraph.CreateSpec) {
+func (_c *ScopeSetCreate) createSpec() (*ScopeSet, *sqlgraph.CreateSpec) {
 	var (
-		_node = &ScopeSet{config: ssc.config}
+		_node = &ScopeSet{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(scopeset.Table, sqlgraph.NewFieldSpec(scopeset.FieldID, field.TypeInt))
 	)
-	if value, ok := ssc.mutation.Slug(); ok {
+	if value, ok := _c.mutation.Slug(); ok {
 		_spec.SetField(scopeset.FieldSlug, field.TypeString, value)
 		_node.Slug = value
 	}
-	if value, ok := ssc.mutation.Description(); ok {
+	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(scopeset.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
-	if value, ok := ssc.mutation.Scopes(); ok {
+	if value, ok := _c.mutation.Scopes(); ok {
 		_spec.SetField(scopeset.FieldScopes, field.TypeJSON, value)
 		_node.Scopes = value
 	}
-	if nodes := ssc.mutation.GroupsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.GroupsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -180,16 +180,16 @@ type ScopeSetCreateBulk struct {
 }
 
 // Save creates the ScopeSet entities in the database.
-func (sscb *ScopeSetCreateBulk) Save(ctx context.Context) ([]*ScopeSet, error) {
-	if sscb.err != nil {
-		return nil, sscb.err
+func (_c *ScopeSetCreateBulk) Save(ctx context.Context) ([]*ScopeSet, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(sscb.builders))
-	nodes := make([]*ScopeSet, len(sscb.builders))
-	mutators := make([]Mutator, len(sscb.builders))
-	for i := range sscb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*ScopeSet, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := sscb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ScopeSetMutation)
@@ -203,11 +203,11 @@ func (sscb *ScopeSetCreateBulk) Save(ctx context.Context) ([]*ScopeSet, error) {
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, sscb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, sscb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -231,7 +231,7 @@ func (sscb *ScopeSetCreateBulk) Save(ctx context.Context) ([]*ScopeSet, error) {
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, sscb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -239,8 +239,8 @@ func (sscb *ScopeSetCreateBulk) Save(ctx context.Context) ([]*ScopeSet, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (sscb *ScopeSetCreateBulk) SaveX(ctx context.Context) []*ScopeSet {
-	v, err := sscb.Save(ctx)
+func (_c *ScopeSetCreateBulk) SaveX(ctx context.Context) []*ScopeSet {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -248,14 +248,14 @@ func (sscb *ScopeSetCreateBulk) SaveX(ctx context.Context) []*ScopeSet {
 }
 
 // Exec executes the query.
-func (sscb *ScopeSetCreateBulk) Exec(ctx context.Context) error {
-	_, err := sscb.Save(ctx)
+func (_c *ScopeSetCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (sscb *ScopeSetCreateBulk) ExecX(ctx context.Context) {
-	if err := sscb.Exec(ctx); err != nil {
+func (_c *ScopeSetCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

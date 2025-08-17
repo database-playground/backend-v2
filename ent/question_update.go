@@ -23,97 +23,97 @@ type QuestionUpdate struct {
 }
 
 // Where appends a list predicates to the QuestionUpdate builder.
-func (qu *QuestionUpdate) Where(ps ...predicate.Question) *QuestionUpdate {
-	qu.mutation.Where(ps...)
-	return qu
+func (_u *QuestionUpdate) Where(ps ...predicate.Question) *QuestionUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetDifficulty sets the "difficulty" field.
-func (qu *QuestionUpdate) SetDifficulty(q question.Difficulty) *QuestionUpdate {
-	qu.mutation.SetDifficulty(q)
-	return qu
+func (_u *QuestionUpdate) SetDifficulty(v question.Difficulty) *QuestionUpdate {
+	_u.mutation.SetDifficulty(v)
+	return _u
 }
 
 // SetNillableDifficulty sets the "difficulty" field if the given value is not nil.
-func (qu *QuestionUpdate) SetNillableDifficulty(q *question.Difficulty) *QuestionUpdate {
-	if q != nil {
-		qu.SetDifficulty(*q)
+func (_u *QuestionUpdate) SetNillableDifficulty(v *question.Difficulty) *QuestionUpdate {
+	if v != nil {
+		_u.SetDifficulty(*v)
 	}
-	return qu
+	return _u
 }
 
 // SetTitle sets the "title" field.
-func (qu *QuestionUpdate) SetTitle(s string) *QuestionUpdate {
-	qu.mutation.SetTitle(s)
-	return qu
+func (_u *QuestionUpdate) SetTitle(v string) *QuestionUpdate {
+	_u.mutation.SetTitle(v)
+	return _u
 }
 
 // SetNillableTitle sets the "title" field if the given value is not nil.
-func (qu *QuestionUpdate) SetNillableTitle(s *string) *QuestionUpdate {
-	if s != nil {
-		qu.SetTitle(*s)
+func (_u *QuestionUpdate) SetNillableTitle(v *string) *QuestionUpdate {
+	if v != nil {
+		_u.SetTitle(*v)
 	}
-	return qu
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (qu *QuestionUpdate) SetDescription(s string) *QuestionUpdate {
-	qu.mutation.SetDescription(s)
-	return qu
+func (_u *QuestionUpdate) SetDescription(v string) *QuestionUpdate {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (qu *QuestionUpdate) SetNillableDescription(s *string) *QuestionUpdate {
-	if s != nil {
-		qu.SetDescription(*s)
+func (_u *QuestionUpdate) SetNillableDescription(v *string) *QuestionUpdate {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return qu
+	return _u
 }
 
 // SetReferenceAnswer sets the "reference_answer" field.
-func (qu *QuestionUpdate) SetReferenceAnswer(s string) *QuestionUpdate {
-	qu.mutation.SetReferenceAnswer(s)
-	return qu
+func (_u *QuestionUpdate) SetReferenceAnswer(v string) *QuestionUpdate {
+	_u.mutation.SetReferenceAnswer(v)
+	return _u
 }
 
 // SetNillableReferenceAnswer sets the "reference_answer" field if the given value is not nil.
-func (qu *QuestionUpdate) SetNillableReferenceAnswer(s *string) *QuestionUpdate {
-	if s != nil {
-		qu.SetReferenceAnswer(*s)
+func (_u *QuestionUpdate) SetNillableReferenceAnswer(v *string) *QuestionUpdate {
+	if v != nil {
+		_u.SetReferenceAnswer(*v)
 	}
-	return qu
+	return _u
 }
 
 // SetDatabaseID sets the "database" edge to the Database entity by ID.
-func (qu *QuestionUpdate) SetDatabaseID(id int) *QuestionUpdate {
-	qu.mutation.SetDatabaseID(id)
-	return qu
+func (_u *QuestionUpdate) SetDatabaseID(id int) *QuestionUpdate {
+	_u.mutation.SetDatabaseID(id)
+	return _u
 }
 
 // SetDatabase sets the "database" edge to the Database entity.
-func (qu *QuestionUpdate) SetDatabase(d *Database) *QuestionUpdate {
-	return qu.SetDatabaseID(d.ID)
+func (_u *QuestionUpdate) SetDatabase(v *Database) *QuestionUpdate {
+	return _u.SetDatabaseID(v.ID)
 }
 
 // Mutation returns the QuestionMutation object of the builder.
-func (qu *QuestionUpdate) Mutation() *QuestionMutation {
-	return qu.mutation
+func (_u *QuestionUpdate) Mutation() *QuestionMutation {
+	return _u.mutation
 }
 
 // ClearDatabase clears the "database" edge to the Database entity.
-func (qu *QuestionUpdate) ClearDatabase() *QuestionUpdate {
-	qu.mutation.ClearDatabase()
-	return qu
+func (_u *QuestionUpdate) ClearDatabase() *QuestionUpdate {
+	_u.mutation.ClearDatabase()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (qu *QuestionUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, qu.sqlSave, qu.mutation, qu.hooks)
+func (_u *QuestionUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (qu *QuestionUpdate) SaveX(ctx context.Context) int {
-	affected, err := qu.Save(ctx)
+func (_u *QuestionUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -121,56 +121,56 @@ func (qu *QuestionUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (qu *QuestionUpdate) Exec(ctx context.Context) error {
-	_, err := qu.Save(ctx)
+func (_u *QuestionUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (qu *QuestionUpdate) ExecX(ctx context.Context) {
-	if err := qu.Exec(ctx); err != nil {
+func (_u *QuestionUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (qu *QuestionUpdate) check() error {
-	if v, ok := qu.mutation.Difficulty(); ok {
+func (_u *QuestionUpdate) check() error {
+	if v, ok := _u.mutation.Difficulty(); ok {
 		if err := question.DifficultyValidator(v); err != nil {
 			return &ValidationError{Name: "difficulty", err: fmt.Errorf(`ent: validator failed for field "Question.difficulty": %w`, err)}
 		}
 	}
-	if qu.mutation.DatabaseCleared() && len(qu.mutation.DatabaseIDs()) > 0 {
+	if _u.mutation.DatabaseCleared() && len(_u.mutation.DatabaseIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Question.database"`)
 	}
 	return nil
 }
 
-func (qu *QuestionUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := qu.check(); err != nil {
-		return n, err
+func (_u *QuestionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(question.Table, question.Columns, sqlgraph.NewFieldSpec(question.FieldID, field.TypeInt))
-	if ps := qu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := qu.mutation.Difficulty(); ok {
+	if value, ok := _u.mutation.Difficulty(); ok {
 		_spec.SetField(question.FieldDifficulty, field.TypeEnum, value)
 	}
-	if value, ok := qu.mutation.Title(); ok {
+	if value, ok := _u.mutation.Title(); ok {
 		_spec.SetField(question.FieldTitle, field.TypeString, value)
 	}
-	if value, ok := qu.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(question.FieldDescription, field.TypeString, value)
 	}
-	if value, ok := qu.mutation.ReferenceAnswer(); ok {
+	if value, ok := _u.mutation.ReferenceAnswer(); ok {
 		_spec.SetField(question.FieldReferenceAnswer, field.TypeString, value)
 	}
-	if qu.mutation.DatabaseCleared() {
+	if _u.mutation.DatabaseCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -183,7 +183,7 @@ func (qu *QuestionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := qu.mutation.DatabaseIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.DatabaseIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -199,7 +199,7 @@ func (qu *QuestionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if n, err = sqlgraph.UpdateNodes(ctx, qu.driver, _spec); err != nil {
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{question.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -207,8 +207,8 @@ func (qu *QuestionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	qu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // QuestionUpdateOne is the builder for updating a single Question entity.
@@ -220,104 +220,104 @@ type QuestionUpdateOne struct {
 }
 
 // SetDifficulty sets the "difficulty" field.
-func (quo *QuestionUpdateOne) SetDifficulty(q question.Difficulty) *QuestionUpdateOne {
-	quo.mutation.SetDifficulty(q)
-	return quo
+func (_u *QuestionUpdateOne) SetDifficulty(v question.Difficulty) *QuestionUpdateOne {
+	_u.mutation.SetDifficulty(v)
+	return _u
 }
 
 // SetNillableDifficulty sets the "difficulty" field if the given value is not nil.
-func (quo *QuestionUpdateOne) SetNillableDifficulty(q *question.Difficulty) *QuestionUpdateOne {
-	if q != nil {
-		quo.SetDifficulty(*q)
+func (_u *QuestionUpdateOne) SetNillableDifficulty(v *question.Difficulty) *QuestionUpdateOne {
+	if v != nil {
+		_u.SetDifficulty(*v)
 	}
-	return quo
+	return _u
 }
 
 // SetTitle sets the "title" field.
-func (quo *QuestionUpdateOne) SetTitle(s string) *QuestionUpdateOne {
-	quo.mutation.SetTitle(s)
-	return quo
+func (_u *QuestionUpdateOne) SetTitle(v string) *QuestionUpdateOne {
+	_u.mutation.SetTitle(v)
+	return _u
 }
 
 // SetNillableTitle sets the "title" field if the given value is not nil.
-func (quo *QuestionUpdateOne) SetNillableTitle(s *string) *QuestionUpdateOne {
-	if s != nil {
-		quo.SetTitle(*s)
+func (_u *QuestionUpdateOne) SetNillableTitle(v *string) *QuestionUpdateOne {
+	if v != nil {
+		_u.SetTitle(*v)
 	}
-	return quo
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (quo *QuestionUpdateOne) SetDescription(s string) *QuestionUpdateOne {
-	quo.mutation.SetDescription(s)
-	return quo
+func (_u *QuestionUpdateOne) SetDescription(v string) *QuestionUpdateOne {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (quo *QuestionUpdateOne) SetNillableDescription(s *string) *QuestionUpdateOne {
-	if s != nil {
-		quo.SetDescription(*s)
+func (_u *QuestionUpdateOne) SetNillableDescription(v *string) *QuestionUpdateOne {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return quo
+	return _u
 }
 
 // SetReferenceAnswer sets the "reference_answer" field.
-func (quo *QuestionUpdateOne) SetReferenceAnswer(s string) *QuestionUpdateOne {
-	quo.mutation.SetReferenceAnswer(s)
-	return quo
+func (_u *QuestionUpdateOne) SetReferenceAnswer(v string) *QuestionUpdateOne {
+	_u.mutation.SetReferenceAnswer(v)
+	return _u
 }
 
 // SetNillableReferenceAnswer sets the "reference_answer" field if the given value is not nil.
-func (quo *QuestionUpdateOne) SetNillableReferenceAnswer(s *string) *QuestionUpdateOne {
-	if s != nil {
-		quo.SetReferenceAnswer(*s)
+func (_u *QuestionUpdateOne) SetNillableReferenceAnswer(v *string) *QuestionUpdateOne {
+	if v != nil {
+		_u.SetReferenceAnswer(*v)
 	}
-	return quo
+	return _u
 }
 
 // SetDatabaseID sets the "database" edge to the Database entity by ID.
-func (quo *QuestionUpdateOne) SetDatabaseID(id int) *QuestionUpdateOne {
-	quo.mutation.SetDatabaseID(id)
-	return quo
+func (_u *QuestionUpdateOne) SetDatabaseID(id int) *QuestionUpdateOne {
+	_u.mutation.SetDatabaseID(id)
+	return _u
 }
 
 // SetDatabase sets the "database" edge to the Database entity.
-func (quo *QuestionUpdateOne) SetDatabase(d *Database) *QuestionUpdateOne {
-	return quo.SetDatabaseID(d.ID)
+func (_u *QuestionUpdateOne) SetDatabase(v *Database) *QuestionUpdateOne {
+	return _u.SetDatabaseID(v.ID)
 }
 
 // Mutation returns the QuestionMutation object of the builder.
-func (quo *QuestionUpdateOne) Mutation() *QuestionMutation {
-	return quo.mutation
+func (_u *QuestionUpdateOne) Mutation() *QuestionMutation {
+	return _u.mutation
 }
 
 // ClearDatabase clears the "database" edge to the Database entity.
-func (quo *QuestionUpdateOne) ClearDatabase() *QuestionUpdateOne {
-	quo.mutation.ClearDatabase()
-	return quo
+func (_u *QuestionUpdateOne) ClearDatabase() *QuestionUpdateOne {
+	_u.mutation.ClearDatabase()
+	return _u
 }
 
 // Where appends a list predicates to the QuestionUpdate builder.
-func (quo *QuestionUpdateOne) Where(ps ...predicate.Question) *QuestionUpdateOne {
-	quo.mutation.Where(ps...)
-	return quo
+func (_u *QuestionUpdateOne) Where(ps ...predicate.Question) *QuestionUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (quo *QuestionUpdateOne) Select(field string, fields ...string) *QuestionUpdateOne {
-	quo.fields = append([]string{field}, fields...)
-	return quo
+func (_u *QuestionUpdateOne) Select(field string, fields ...string) *QuestionUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated Question entity.
-func (quo *QuestionUpdateOne) Save(ctx context.Context) (*Question, error) {
-	return withHooks(ctx, quo.sqlSave, quo.mutation, quo.hooks)
+func (_u *QuestionUpdateOne) Save(ctx context.Context) (*Question, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (quo *QuestionUpdateOne) SaveX(ctx context.Context) *Question {
-	node, err := quo.Save(ctx)
+func (_u *QuestionUpdateOne) SaveX(ctx context.Context) *Question {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -325,42 +325,42 @@ func (quo *QuestionUpdateOne) SaveX(ctx context.Context) *Question {
 }
 
 // Exec executes the query on the entity.
-func (quo *QuestionUpdateOne) Exec(ctx context.Context) error {
-	_, err := quo.Save(ctx)
+func (_u *QuestionUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (quo *QuestionUpdateOne) ExecX(ctx context.Context) {
-	if err := quo.Exec(ctx); err != nil {
+func (_u *QuestionUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (quo *QuestionUpdateOne) check() error {
-	if v, ok := quo.mutation.Difficulty(); ok {
+func (_u *QuestionUpdateOne) check() error {
+	if v, ok := _u.mutation.Difficulty(); ok {
 		if err := question.DifficultyValidator(v); err != nil {
 			return &ValidationError{Name: "difficulty", err: fmt.Errorf(`ent: validator failed for field "Question.difficulty": %w`, err)}
 		}
 	}
-	if quo.mutation.DatabaseCleared() && len(quo.mutation.DatabaseIDs()) > 0 {
+	if _u.mutation.DatabaseCleared() && len(_u.mutation.DatabaseIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Question.database"`)
 	}
 	return nil
 }
 
-func (quo *QuestionUpdateOne) sqlSave(ctx context.Context) (_node *Question, err error) {
-	if err := quo.check(); err != nil {
+func (_u *QuestionUpdateOne) sqlSave(ctx context.Context) (_node *Question, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(question.Table, question.Columns, sqlgraph.NewFieldSpec(question.FieldID, field.TypeInt))
-	id, ok := quo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Question.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := quo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, question.FieldID)
 		for _, f := range fields {
@@ -372,26 +372,26 @@ func (quo *QuestionUpdateOne) sqlSave(ctx context.Context) (_node *Question, err
 			}
 		}
 	}
-	if ps := quo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := quo.mutation.Difficulty(); ok {
+	if value, ok := _u.mutation.Difficulty(); ok {
 		_spec.SetField(question.FieldDifficulty, field.TypeEnum, value)
 	}
-	if value, ok := quo.mutation.Title(); ok {
+	if value, ok := _u.mutation.Title(); ok {
 		_spec.SetField(question.FieldTitle, field.TypeString, value)
 	}
-	if value, ok := quo.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(question.FieldDescription, field.TypeString, value)
 	}
-	if value, ok := quo.mutation.ReferenceAnswer(); ok {
+	if value, ok := _u.mutation.ReferenceAnswer(); ok {
 		_spec.SetField(question.FieldReferenceAnswer, field.TypeString, value)
 	}
-	if quo.mutation.DatabaseCleared() {
+	if _u.mutation.DatabaseCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -404,7 +404,7 @@ func (quo *QuestionUpdateOne) sqlSave(ctx context.Context) (_node *Question, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := quo.mutation.DatabaseIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.DatabaseIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -420,10 +420,10 @@ func (quo *QuestionUpdateOne) sqlSave(ctx context.Context) (_node *Question, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &Question{config: quo.config}
+	_node = &Question{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, quo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{question.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -431,6 +431,6 @@ func (quo *QuestionUpdateOne) sqlSave(ctx context.Context) (_node *Question, err
 		}
 		return nil, err
 	}
-	quo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

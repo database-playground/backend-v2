@@ -23,108 +23,108 @@ type DatabaseUpdate struct {
 }
 
 // Where appends a list predicates to the DatabaseUpdate builder.
-func (du *DatabaseUpdate) Where(ps ...predicate.Database) *DatabaseUpdate {
-	du.mutation.Where(ps...)
-	return du
+func (_u *DatabaseUpdate) Where(ps ...predicate.Database) *DatabaseUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (du *DatabaseUpdate) SetDescription(s string) *DatabaseUpdate {
-	du.mutation.SetDescription(s)
-	return du
+func (_u *DatabaseUpdate) SetDescription(v string) *DatabaseUpdate {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (du *DatabaseUpdate) SetNillableDescription(s *string) *DatabaseUpdate {
-	if s != nil {
-		du.SetDescription(*s)
+func (_u *DatabaseUpdate) SetNillableDescription(v *string) *DatabaseUpdate {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return du
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (du *DatabaseUpdate) ClearDescription() *DatabaseUpdate {
-	du.mutation.ClearDescription()
-	return du
+func (_u *DatabaseUpdate) ClearDescription() *DatabaseUpdate {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetSchema sets the "schema" field.
-func (du *DatabaseUpdate) SetSchema(s string) *DatabaseUpdate {
-	du.mutation.SetSchema(s)
-	return du
+func (_u *DatabaseUpdate) SetSchema(v string) *DatabaseUpdate {
+	_u.mutation.SetSchema(v)
+	return _u
 }
 
 // SetNillableSchema sets the "schema" field if the given value is not nil.
-func (du *DatabaseUpdate) SetNillableSchema(s *string) *DatabaseUpdate {
-	if s != nil {
-		du.SetSchema(*s)
+func (_u *DatabaseUpdate) SetNillableSchema(v *string) *DatabaseUpdate {
+	if v != nil {
+		_u.SetSchema(*v)
 	}
-	return du
+	return _u
 }
 
 // SetRelationFigure sets the "relation_figure" field.
-func (du *DatabaseUpdate) SetRelationFigure(s string) *DatabaseUpdate {
-	du.mutation.SetRelationFigure(s)
-	return du
+func (_u *DatabaseUpdate) SetRelationFigure(v string) *DatabaseUpdate {
+	_u.mutation.SetRelationFigure(v)
+	return _u
 }
 
 // SetNillableRelationFigure sets the "relation_figure" field if the given value is not nil.
-func (du *DatabaseUpdate) SetNillableRelationFigure(s *string) *DatabaseUpdate {
-	if s != nil {
-		du.SetRelationFigure(*s)
+func (_u *DatabaseUpdate) SetNillableRelationFigure(v *string) *DatabaseUpdate {
+	if v != nil {
+		_u.SetRelationFigure(*v)
 	}
-	return du
+	return _u
 }
 
 // AddQuestionIDs adds the "questions" edge to the Question entity by IDs.
-func (du *DatabaseUpdate) AddQuestionIDs(ids ...int) *DatabaseUpdate {
-	du.mutation.AddQuestionIDs(ids...)
-	return du
+func (_u *DatabaseUpdate) AddQuestionIDs(ids ...int) *DatabaseUpdate {
+	_u.mutation.AddQuestionIDs(ids...)
+	return _u
 }
 
 // AddQuestions adds the "questions" edges to the Question entity.
-func (du *DatabaseUpdate) AddQuestions(q ...*Question) *DatabaseUpdate {
-	ids := make([]int, len(q))
-	for i := range q {
-		ids[i] = q[i].ID
+func (_u *DatabaseUpdate) AddQuestions(v ...*Question) *DatabaseUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return du.AddQuestionIDs(ids...)
+	return _u.AddQuestionIDs(ids...)
 }
 
 // Mutation returns the DatabaseMutation object of the builder.
-func (du *DatabaseUpdate) Mutation() *DatabaseMutation {
-	return du.mutation
+func (_u *DatabaseUpdate) Mutation() *DatabaseMutation {
+	return _u.mutation
 }
 
 // ClearQuestions clears all "questions" edges to the Question entity.
-func (du *DatabaseUpdate) ClearQuestions() *DatabaseUpdate {
-	du.mutation.ClearQuestions()
-	return du
+func (_u *DatabaseUpdate) ClearQuestions() *DatabaseUpdate {
+	_u.mutation.ClearQuestions()
+	return _u
 }
 
 // RemoveQuestionIDs removes the "questions" edge to Question entities by IDs.
-func (du *DatabaseUpdate) RemoveQuestionIDs(ids ...int) *DatabaseUpdate {
-	du.mutation.RemoveQuestionIDs(ids...)
-	return du
+func (_u *DatabaseUpdate) RemoveQuestionIDs(ids ...int) *DatabaseUpdate {
+	_u.mutation.RemoveQuestionIDs(ids...)
+	return _u
 }
 
 // RemoveQuestions removes "questions" edges to Question entities.
-func (du *DatabaseUpdate) RemoveQuestions(q ...*Question) *DatabaseUpdate {
-	ids := make([]int, len(q))
-	for i := range q {
-		ids[i] = q[i].ID
+func (_u *DatabaseUpdate) RemoveQuestions(v ...*Question) *DatabaseUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return du.RemoveQuestionIDs(ids...)
+	return _u.RemoveQuestionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (du *DatabaseUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, du.sqlSave, du.mutation, du.hooks)
+func (_u *DatabaseUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (du *DatabaseUpdate) SaveX(ctx context.Context) int {
-	affected, err := du.Save(ctx)
+func (_u *DatabaseUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -132,26 +132,26 @@ func (du *DatabaseUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (du *DatabaseUpdate) Exec(ctx context.Context) error {
-	_, err := du.Save(ctx)
+func (_u *DatabaseUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (du *DatabaseUpdate) ExecX(ctx context.Context) {
-	if err := du.Exec(ctx); err != nil {
+func (_u *DatabaseUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (du *DatabaseUpdate) check() error {
-	if v, ok := du.mutation.Schema(); ok {
+func (_u *DatabaseUpdate) check() error {
+	if v, ok := _u.mutation.Schema(); ok {
 		if err := database.SchemaValidator(v); err != nil {
 			return &ValidationError{Name: "schema", err: fmt.Errorf(`ent: validator failed for field "Database.schema": %w`, err)}
 		}
 	}
-	if v, ok := du.mutation.RelationFigure(); ok {
+	if v, ok := _u.mutation.RelationFigure(); ok {
 		if err := database.RelationFigureValidator(v); err != nil {
 			return &ValidationError{Name: "relation_figure", err: fmt.Errorf(`ent: validator failed for field "Database.relation_figure": %w`, err)}
 		}
@@ -159,31 +159,31 @@ func (du *DatabaseUpdate) check() error {
 	return nil
 }
 
-func (du *DatabaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := du.check(); err != nil {
-		return n, err
+func (_u *DatabaseUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(database.Table, database.Columns, sqlgraph.NewFieldSpec(database.FieldID, field.TypeInt))
-	if ps := du.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := du.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(database.FieldDescription, field.TypeString, value)
 	}
-	if du.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(database.FieldDescription, field.TypeString)
 	}
-	if value, ok := du.mutation.Schema(); ok {
+	if value, ok := _u.mutation.Schema(); ok {
 		_spec.SetField(database.FieldSchema, field.TypeString, value)
 	}
-	if value, ok := du.mutation.RelationFigure(); ok {
+	if value, ok := _u.mutation.RelationFigure(); ok {
 		_spec.SetField(database.FieldRelationFigure, field.TypeString, value)
 	}
-	if du.mutation.QuestionsCleared() {
+	if _u.mutation.QuestionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -196,7 +196,7 @@ func (du *DatabaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := du.mutation.RemovedQuestionsIDs(); len(nodes) > 0 && !du.mutation.QuestionsCleared() {
+	if nodes := _u.mutation.RemovedQuestionsIDs(); len(nodes) > 0 && !_u.mutation.QuestionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -212,7 +212,7 @@ func (du *DatabaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := du.mutation.QuestionsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.QuestionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -228,7 +228,7 @@ func (du *DatabaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if n, err = sqlgraph.UpdateNodes(ctx, du.driver, _spec); err != nil {
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{database.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -236,8 +236,8 @@ func (du *DatabaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	du.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // DatabaseUpdateOne is the builder for updating a single Database entity.
@@ -249,115 +249,115 @@ type DatabaseUpdateOne struct {
 }
 
 // SetDescription sets the "description" field.
-func (duo *DatabaseUpdateOne) SetDescription(s string) *DatabaseUpdateOne {
-	duo.mutation.SetDescription(s)
-	return duo
+func (_u *DatabaseUpdateOne) SetDescription(v string) *DatabaseUpdateOne {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (duo *DatabaseUpdateOne) SetNillableDescription(s *string) *DatabaseUpdateOne {
-	if s != nil {
-		duo.SetDescription(*s)
+func (_u *DatabaseUpdateOne) SetNillableDescription(v *string) *DatabaseUpdateOne {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return duo
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (duo *DatabaseUpdateOne) ClearDescription() *DatabaseUpdateOne {
-	duo.mutation.ClearDescription()
-	return duo
+func (_u *DatabaseUpdateOne) ClearDescription() *DatabaseUpdateOne {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetSchema sets the "schema" field.
-func (duo *DatabaseUpdateOne) SetSchema(s string) *DatabaseUpdateOne {
-	duo.mutation.SetSchema(s)
-	return duo
+func (_u *DatabaseUpdateOne) SetSchema(v string) *DatabaseUpdateOne {
+	_u.mutation.SetSchema(v)
+	return _u
 }
 
 // SetNillableSchema sets the "schema" field if the given value is not nil.
-func (duo *DatabaseUpdateOne) SetNillableSchema(s *string) *DatabaseUpdateOne {
-	if s != nil {
-		duo.SetSchema(*s)
+func (_u *DatabaseUpdateOne) SetNillableSchema(v *string) *DatabaseUpdateOne {
+	if v != nil {
+		_u.SetSchema(*v)
 	}
-	return duo
+	return _u
 }
 
 // SetRelationFigure sets the "relation_figure" field.
-func (duo *DatabaseUpdateOne) SetRelationFigure(s string) *DatabaseUpdateOne {
-	duo.mutation.SetRelationFigure(s)
-	return duo
+func (_u *DatabaseUpdateOne) SetRelationFigure(v string) *DatabaseUpdateOne {
+	_u.mutation.SetRelationFigure(v)
+	return _u
 }
 
 // SetNillableRelationFigure sets the "relation_figure" field if the given value is not nil.
-func (duo *DatabaseUpdateOne) SetNillableRelationFigure(s *string) *DatabaseUpdateOne {
-	if s != nil {
-		duo.SetRelationFigure(*s)
+func (_u *DatabaseUpdateOne) SetNillableRelationFigure(v *string) *DatabaseUpdateOne {
+	if v != nil {
+		_u.SetRelationFigure(*v)
 	}
-	return duo
+	return _u
 }
 
 // AddQuestionIDs adds the "questions" edge to the Question entity by IDs.
-func (duo *DatabaseUpdateOne) AddQuestionIDs(ids ...int) *DatabaseUpdateOne {
-	duo.mutation.AddQuestionIDs(ids...)
-	return duo
+func (_u *DatabaseUpdateOne) AddQuestionIDs(ids ...int) *DatabaseUpdateOne {
+	_u.mutation.AddQuestionIDs(ids...)
+	return _u
 }
 
 // AddQuestions adds the "questions" edges to the Question entity.
-func (duo *DatabaseUpdateOne) AddQuestions(q ...*Question) *DatabaseUpdateOne {
-	ids := make([]int, len(q))
-	for i := range q {
-		ids[i] = q[i].ID
+func (_u *DatabaseUpdateOne) AddQuestions(v ...*Question) *DatabaseUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return duo.AddQuestionIDs(ids...)
+	return _u.AddQuestionIDs(ids...)
 }
 
 // Mutation returns the DatabaseMutation object of the builder.
-func (duo *DatabaseUpdateOne) Mutation() *DatabaseMutation {
-	return duo.mutation
+func (_u *DatabaseUpdateOne) Mutation() *DatabaseMutation {
+	return _u.mutation
 }
 
 // ClearQuestions clears all "questions" edges to the Question entity.
-func (duo *DatabaseUpdateOne) ClearQuestions() *DatabaseUpdateOne {
-	duo.mutation.ClearQuestions()
-	return duo
+func (_u *DatabaseUpdateOne) ClearQuestions() *DatabaseUpdateOne {
+	_u.mutation.ClearQuestions()
+	return _u
 }
 
 // RemoveQuestionIDs removes the "questions" edge to Question entities by IDs.
-func (duo *DatabaseUpdateOne) RemoveQuestionIDs(ids ...int) *DatabaseUpdateOne {
-	duo.mutation.RemoveQuestionIDs(ids...)
-	return duo
+func (_u *DatabaseUpdateOne) RemoveQuestionIDs(ids ...int) *DatabaseUpdateOne {
+	_u.mutation.RemoveQuestionIDs(ids...)
+	return _u
 }
 
 // RemoveQuestions removes "questions" edges to Question entities.
-func (duo *DatabaseUpdateOne) RemoveQuestions(q ...*Question) *DatabaseUpdateOne {
-	ids := make([]int, len(q))
-	for i := range q {
-		ids[i] = q[i].ID
+func (_u *DatabaseUpdateOne) RemoveQuestions(v ...*Question) *DatabaseUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return duo.RemoveQuestionIDs(ids...)
+	return _u.RemoveQuestionIDs(ids...)
 }
 
 // Where appends a list predicates to the DatabaseUpdate builder.
-func (duo *DatabaseUpdateOne) Where(ps ...predicate.Database) *DatabaseUpdateOne {
-	duo.mutation.Where(ps...)
-	return duo
+func (_u *DatabaseUpdateOne) Where(ps ...predicate.Database) *DatabaseUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (duo *DatabaseUpdateOne) Select(field string, fields ...string) *DatabaseUpdateOne {
-	duo.fields = append([]string{field}, fields...)
-	return duo
+func (_u *DatabaseUpdateOne) Select(field string, fields ...string) *DatabaseUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated Database entity.
-func (duo *DatabaseUpdateOne) Save(ctx context.Context) (*Database, error) {
-	return withHooks(ctx, duo.sqlSave, duo.mutation, duo.hooks)
+func (_u *DatabaseUpdateOne) Save(ctx context.Context) (*Database, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (duo *DatabaseUpdateOne) SaveX(ctx context.Context) *Database {
-	node, err := duo.Save(ctx)
+func (_u *DatabaseUpdateOne) SaveX(ctx context.Context) *Database {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -365,26 +365,26 @@ func (duo *DatabaseUpdateOne) SaveX(ctx context.Context) *Database {
 }
 
 // Exec executes the query on the entity.
-func (duo *DatabaseUpdateOne) Exec(ctx context.Context) error {
-	_, err := duo.Save(ctx)
+func (_u *DatabaseUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (duo *DatabaseUpdateOne) ExecX(ctx context.Context) {
-	if err := duo.Exec(ctx); err != nil {
+func (_u *DatabaseUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (duo *DatabaseUpdateOne) check() error {
-	if v, ok := duo.mutation.Schema(); ok {
+func (_u *DatabaseUpdateOne) check() error {
+	if v, ok := _u.mutation.Schema(); ok {
 		if err := database.SchemaValidator(v); err != nil {
 			return &ValidationError{Name: "schema", err: fmt.Errorf(`ent: validator failed for field "Database.schema": %w`, err)}
 		}
 	}
-	if v, ok := duo.mutation.RelationFigure(); ok {
+	if v, ok := _u.mutation.RelationFigure(); ok {
 		if err := database.RelationFigureValidator(v); err != nil {
 			return &ValidationError{Name: "relation_figure", err: fmt.Errorf(`ent: validator failed for field "Database.relation_figure": %w`, err)}
 		}
@@ -392,17 +392,17 @@ func (duo *DatabaseUpdateOne) check() error {
 	return nil
 }
 
-func (duo *DatabaseUpdateOne) sqlSave(ctx context.Context) (_node *Database, err error) {
-	if err := duo.check(); err != nil {
+func (_u *DatabaseUpdateOne) sqlSave(ctx context.Context) (_node *Database, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(database.Table, database.Columns, sqlgraph.NewFieldSpec(database.FieldID, field.TypeInt))
-	id, ok := duo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Database.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := duo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, database.FieldID)
 		for _, f := range fields {
@@ -414,26 +414,26 @@ func (duo *DatabaseUpdateOne) sqlSave(ctx context.Context) (_node *Database, err
 			}
 		}
 	}
-	if ps := duo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := duo.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(database.FieldDescription, field.TypeString, value)
 	}
-	if duo.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(database.FieldDescription, field.TypeString)
 	}
-	if value, ok := duo.mutation.Schema(); ok {
+	if value, ok := _u.mutation.Schema(); ok {
 		_spec.SetField(database.FieldSchema, field.TypeString, value)
 	}
-	if value, ok := duo.mutation.RelationFigure(); ok {
+	if value, ok := _u.mutation.RelationFigure(); ok {
 		_spec.SetField(database.FieldRelationFigure, field.TypeString, value)
 	}
-	if duo.mutation.QuestionsCleared() {
+	if _u.mutation.QuestionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -446,7 +446,7 @@ func (duo *DatabaseUpdateOne) sqlSave(ctx context.Context) (_node *Database, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := duo.mutation.RemovedQuestionsIDs(); len(nodes) > 0 && !duo.mutation.QuestionsCleared() {
+	if nodes := _u.mutation.RemovedQuestionsIDs(); len(nodes) > 0 && !_u.mutation.QuestionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -462,7 +462,7 @@ func (duo *DatabaseUpdateOne) sqlSave(ctx context.Context) (_node *Database, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := duo.mutation.QuestionsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.QuestionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -478,10 +478,10 @@ func (duo *DatabaseUpdateOne) sqlSave(ctx context.Context) (_node *Database, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &Database{config: duo.config}
+	_node = &Database{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, duo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{database.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -489,6 +489,6 @@ func (duo *DatabaseUpdateOne) sqlSave(ctx context.Context) (_node *Database, err
 		}
 		return nil, err
 	}
-	duo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }
