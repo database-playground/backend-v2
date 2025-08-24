@@ -34,7 +34,7 @@ func (s *AuthService) Register(router gin.IRouter) {
 
 		useraccount := useraccount.NewContext(s.entClient, s.storage)
 
-		gauthHandler := NewGauthHandler(oauthConfig, useraccount, s.config.GAuth.RedirectURL)
+		gauthHandler := NewGauthHandler(oauthConfig, useraccount, s.config.GAuth.RedirectURIs)
 
 		gauth.GET("/login", gauthHandler.Login)
 		gauth.GET("/callback", gauthHandler.Callback)

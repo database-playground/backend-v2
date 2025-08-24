@@ -1,8 +1,11 @@
 package authservice
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/authutil"
@@ -16,7 +19,10 @@ import (
 	"google.golang.org/api/option"
 )
 
-const verifierCookieName = "Gauth-Verifier"
+const (
+	verifierCookieName = "Gauth-Verifier"
+	redirectCookieName = "Gauth-Redirect"
+)
 
 // BuildOAuthConfig builds an oauth2.Config from a gauthConfig.
 func BuildOAuthConfig(gauthConfig config.GAuthConfig) *oauth2.Config {
@@ -32,13 +38,13 @@ func BuildOAuthConfig(gauthConfig config.GAuthConfig) *oauth2.Config {
 }
 
 type GauthHandler struct {
-	oauthConfig *oauth2.Config
-	useraccount *useraccount.Context
-	redirectURL string
+	oauthConfig  *oauth2.Config
+	useraccount  *useraccount.Context
+	redirectURIs []string
 }
 
-func NewGauthHandler(oauthConfig *oauth2.Config, useraccount *useraccount.Context, redirectURL string) *GauthHandler {
-	return &GauthHandler{oauthConfig: oauthConfig, useraccount: useraccount, redirectURL: redirectURL}
+func NewGauthHandler(oauthConfig *oauth2.Config, useraccount *useraccount.Context, redirectURIs []string) *GauthHandler {
+	return &GauthHandler{oauthConfig: oauthConfig, useraccount: useraccount, redirectURIs: redirectURIs}
 }
 
 func (h *GauthHandler) Login(c *gin.Context) {
@@ -69,6 +75,16 @@ func (h *GauthHandler) Login(c *gin.Context) {
 		/* value */ verifier,
 		/* maxAge */ 5*60, // 5 min
 		/* path */ callbackURL.Path,
+		/* domain */ "",
+		/* secure */ true,
+		/* httpOnly */ true,
+	)
+
+	c.SetCookie(
+		/* name */ redirectCookieName,
+		/* value */ c.Request.URL.String(),
+		/* maxAge */ 5*60, // 5 min
+		/* path */ "/",
 		/* domain */ "",
 		/* secure */ true,
 		/* httpOnly */ true,
@@ -149,6 +165,39 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 		return
 	}
 
+	// get redirect URL from cookie
+	redirectURL, err := c.Cookie(redirectCookieName)
+	if err != nil {
+		if errors.Is(err, http.ErrNoCookie) {
+			c.JSON(http.StatusOK, gin.H{
+				"success": true,
+			})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":  "failed to get redirect URL",
+			"detail": err.Error(),
+		})
+		return
+	}
+
+	// check if the redirect URL is in the allowed redirect URIs
+	for _, allowedRedirectURI := range h.redirectURIs {
+		if strings.HasPrefix(redirectURL, allowedRedirectURI) {
+			redirectURL = allowedRedirectURI
+			break
+		}
+	}
+
+	if redirectURL == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":  "redirect URL is not allowed",
+			"detail": fmt.Sprintf("redirect URL is not allowed: %s", redirectURL),
+		})
+		return
+	}
+
 	// write to cookie
 	c.SetCookie(
 		/* name */ auth.CookieAuthToken,
@@ -160,5 +209,5 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 		/* httpOnly */ true,
 	)
 
-	c.Redirect(http.StatusTemporaryRedirect, h.redirectURL)
+	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
