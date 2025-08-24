@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/authutil"
@@ -170,7 +169,18 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 		return
 	}
 
-	// get redirect URL from cookie
+	// write to cookie
+	c.SetCookie(
+		/* name */ auth.CookieAuthToken,
+		/* value */ token,
+		/* maxAge */ auth.DefaultTokenExpire,
+		/* path */ "/",
+		/* domain */ "",
+		/* secure */ true,
+		/* httpOnly */ true,
+	)
+
+	// redirect to the original redirect URL
 	redirectURL, err := c.Cookie(redirectCookieName)
 	if err != nil {
 		if errors.Is(err, http.ErrNoCookie) {
@@ -188,31 +198,37 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 	}
 
 	// check if the redirect URL is in the allowed redirect URIs
-	for _, allowedRedirectURI := range h.redirectURIs {
-		if strings.HasPrefix(redirectURL, allowedRedirectURI) {
-			redirectURL = allowedRedirectURI
-			break
-		}
-	}
-
-	if redirectURL == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":  "redirect URL is not allowed",
-			"detail": fmt.Sprintf("redirect URL is not allowed: %s", redirectURL),
+	userRedirectURL, err := url.Parse(redirectURL)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":  "failed to parse redirect URL",
+			"detail": err.Error(),
 		})
 		return
 	}
 
-	// write to cookie
-	c.SetCookie(
-		/* name */ auth.CookieAuthToken,
-		/* value */ token,
-		/* maxAge */ auth.DefaultTokenExpire,
-		/* path */ "/",
-		/* domain */ "",
-		/* secure */ true,
-		/* httpOnly */ true,
-	)
+	for _, allowedRedirectURI := range h.redirectURIs {
+		parsedAllowedRedirectURI, err := url.Parse(allowedRedirectURI)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":  "failed to parse allowed redirect URI",
+				"detail": err.Error(),
+			})
+			return
+		}
 
-	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
+		matched := userRedirectURL.Scheme == parsedAllowedRedirectURI.Scheme &&
+			userRedirectURL.Host == parsedAllowedRedirectURI.Host &&
+			userRedirectURL.Path == parsedAllowedRedirectURI.Path
+
+		if matched {
+			c.Redirect(http.StatusTemporaryRedirect, parsedAllowedRedirectURI.String())
+			return
+		}
+	}
+
+	c.JSON(http.StatusBadRequest, gin.H{
+		"error":  "redirect URL is not allowed",
+		"detail": fmt.Sprintf("redirect URL is not allowed: %s", redirectURL),
+	})
 }
