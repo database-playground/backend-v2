@@ -71,9 +71,9 @@ func (c RedisConfig) Validate() error {
 }
 
 type GAuthConfig struct {
-	ClientID     string `env:"CLIENT_ID"`
-	ClientSecret string `env:"CLIENT_SECRET"`
-	RedirectURL  string `env:"REDIRECT_URL"`
+	ClientID     string   `env:"CLIENT_ID"`
+	ClientSecret string   `env:"CLIENT_SECRET"`
+	RedirectURIs []string `env:"REDIRECT_URIS"`
 }
 
 func (c GAuthConfig) Validate() error {
@@ -83,8 +83,8 @@ func (c GAuthConfig) Validate() error {
 	if c.ClientSecret == "" {
 		return errors.New("GAUTH_CLIENT_SECRET is required")
 	}
-	if c.RedirectURL == "" {
-		return errors.New("GAUTH_REDIRECT_URL is required")
+	if len(c.RedirectURIs) == 0 {
+		return errors.New("GAUTH_REDIRECT_URIS is required")
 	}
 
 	return nil

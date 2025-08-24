@@ -27,6 +27,6 @@ Auth 端點提供適合供網頁應用程式使用的認證 API。
 
 ## Google 登入
 
-如果您要觸發 Google 登入的流程，請前往 `GET /api/auth/google/login`。
+如果您要觸發 Google 登入的流程，請前往 `GET /api/auth/google/login`。可以帶入 `redirect_uri` 參數來在登入完成後轉導到指定畫面。
 
 這個頁面會重新導向到 Google 的登入頁面，登入後會回到 `POST /api/auth/google/callback` 並進行帳號登入和註冊手續。
