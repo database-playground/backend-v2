@@ -61,6 +61,11 @@ func (h *GauthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	redirectURI := c.Query("redirect_uri")
+	if redirectURI == "" {
+		redirectURI = h.oauthConfig.RedirectURL
+	}
+
 	callbackURL, err := url.Parse(h.oauthConfig.RedirectURL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -82,7 +87,7 @@ func (h *GauthHandler) Login(c *gin.Context) {
 
 	c.SetCookie(
 		/* name */ redirectCookieName,
-		/* value */ c.Request.URL.String(),
+		/* value */ redirectURI,
 		/* maxAge */ 5*60, // 5 min
 		/* path */ "/",
 		/* domain */ "",
