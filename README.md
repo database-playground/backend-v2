@@ -9,7 +9,7 @@
 ```shell
 docker run -it --rm --name dp-redis -d redis
 docker run -it --rm --name dp-postgres -e POSTGRES_PASSWORD=databaseplayground -d postgres
-docker run -it --rm -name dp-sqlrunner -d -p 8080 ghcr.io/database-playground/sqlrunner-v2:main
+docker run -it --rm --name dp-sqlrunner -d -p 8080 ghcr.io/database-playground/sqlrunner-v2:main
 ```
 
 ```env
