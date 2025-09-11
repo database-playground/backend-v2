@@ -92,14 +92,14 @@ extend type Mutation {
   impersonateUser(userID: ID!): String! @scope(scope: "user:impersonate")
 
   """
+  Logout a user from all his devices.
+  """
+  logoutUser(userID: ID!): Boolean! @scope(scope: "user:write")
+
+  """
   Logout from all the devices of the current user.
   """
   logoutAll: Boolean! @scope(scope: "me:write")
-
-  """
-  Delete the current user.
-  """
-  deleteMe: Boolean! @scope(scope: "me:delete")
 
   """
   Verify the registration of this user.

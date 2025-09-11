@@ -189,6 +189,18 @@ func (r *mutationResolver) ImpersonateUser(ctx context.Context, userID int) (str
 	return token, nil
 }
 
+// LogoutUser is the resolver for the logoutUser field.
+func (r *mutationResolver) LogoutUser(ctx context.Context, userID int) (bool, error) {
+	userAccountSrv := r.UserAccount(ctx)
+
+	err := userAccountSrv.RevokeAllTokens(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 // LogoutAll is the resolver for the logoutAll field.
 func (r *mutationResolver) LogoutAll(ctx context.Context) (bool, error) {
 	user, ok := auth.GetUser(ctx)
@@ -197,32 +209,7 @@ func (r *mutationResolver) LogoutAll(ctx context.Context) (bool, error) {
 		return false, defs.ErrUnauthorized
 	}
 
-	userAccountSrv := r.UserAccount(ctx)
-
-	err := userAccountSrv.RevokeAllTokens(ctx, user.UserID)
-	if err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
-
-// DeleteMe is the resolver for the deleteMe field.
-func (r *mutationResolver) DeleteMe(ctx context.Context) (bool, error) {
-	user, ok := auth.GetUser(ctx)
-	if !ok {
-		// this should never happen since we have set proper scope
-		return false, defs.ErrUnauthorized
-	}
-
-	userAccountSrv := r.UserAccount(ctx)
-
-	err := userAccountSrv.DeleteUser(ctx, user.UserID)
-	if err != nil {
-		return false, err
-	}
-
-	return true, nil
+	return r.LogoutUser(ctx, user.UserID)
 }
 
 // VerifyRegistration is the resolver for the verifyRegistration field.
