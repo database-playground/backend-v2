@@ -6,14 +6,6 @@ Auth 端點提供適合供網頁應用程式使用的認證 API。
 
 您可以使用 `POST /api/logout` 登出帳號。
 
-如果沒有 Auth Token 或者是 token 無效，會回傳如這種結構的 HTTP 401 錯誤：
-
-```json
-{
-    "error": "You should be logged in to logout.",
-}
-```
-
 如果 Token 撤回失敗，則會回傳 HTTP 500 錯誤並帶上錯誤資訊：
 
 ```json
@@ -24,6 +16,8 @@ Auth 端點提供適合供網頁應用程式使用的認證 API。
 ```
 
 如果 Token 撤回成功，則回傳 HTTP 205 (Reset Content)，此時您可以重新整理登入狀態。
+
+如果沒有 Auth Token 或者是 token 無效，則依然回傳 HTTP 205。請引導使用者重新登入。
 
 ## Google 登入
 
