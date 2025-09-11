@@ -251,6 +251,64 @@ func TestExtractToken(t *testing.T) {
 			t.Fatalf("expected user email %s, got %s", tokenInfo.UserEmail, user.UserEmail)
 		}
 	})
+
+	t.Run("revoked token should be treated like no token", func(t *testing.T) {
+		storage := &memoryTokenStorage{
+			storage: map[string]auth.TokenInfo{},
+		}
+
+		// Create a valid token first
+		tokenInfo := auth.TokenInfo{
+			UserID:    1,
+			UserEmail: "user@example.com",
+			Machine:   "test",
+			Scopes:    []string{"*"},
+		}
+
+		token, err := storage.Create(context.Background(), tokenInfo)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		// Verify token exists and works
+		r := http.Request{
+			Header: http.Header{"Authorization": {"Bearer " + token}},
+		}
+		ctx, err := auth.ExtractToken(&r, storage)
+		if err != nil {
+			t.Fatalf("expected no error for valid token, got %v", err)
+		}
+
+		user, ok := auth.GetUser(ctx)
+		if !ok {
+			t.Fatalf("expected user for valid token, got none")
+		}
+		if user.UserID != tokenInfo.UserID {
+			t.Fatalf("expected user %d, got %d", tokenInfo.UserID, user.UserID)
+		}
+
+		// Now revoke/delete the token
+		err = storage.Delete(context.Background(), token)
+		if err != nil {
+			t.Fatalf("expected no error deleting token, got %v", err)
+		}
+
+		// Test that the revoked token is treated like no token
+		ctx, err = auth.ExtractToken(&r, storage)
+		if err != nil {
+			t.Fatalf("expected no error for revoked token, got %v", err)
+		}
+
+		// Should not have user context (same as no token)
+		if ctx != r.Context() {
+			t.Fatalf("expected context to be the same as original, got different context")
+		}
+
+		_, ok = auth.GetUser(ctx)
+		if ok {
+			t.Fatalf("expected no user for revoked token, got one")
+		}
+	})
 }
 
 func TestMiddleware(t *testing.T) {

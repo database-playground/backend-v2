@@ -111,6 +111,10 @@ func ExtractToken(r *http.Request, storage Storage) (context.Context, error) {
 
 		tokenInfo, err := storage.Get(r.Context(), token)
 		if err != nil {
+			if errors.Is(err, ErrNotFound) {
+				return r.Context(), nil
+			}
+
 			return nil, err
 		}
 
