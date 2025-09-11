@@ -16,14 +16,11 @@ func main() {
 		fx.Provide(
 			AuthStorage,
 			SqlRunner,
-			AnnotateMiddleware(AuthMiddleware),
-			AnnotateMiddleware(MachineMiddleware),
-			AnnotateMiddleware(CorsMiddleware),
 			AnnotateService(AuthService),
 			GqlgenHandler,
 			fx.Annotate(
 				GinEngine,
-				fx.ParamTags(`group:"services"`, `group:"middlewares"`),
+				fx.ParamTags(`group:"services"`),
 			),
 		),
 		fx.Invoke(GinLifecycle),
