@@ -134,7 +134,7 @@ func TestAuthService_Logout(t *testing.T) {
 		assert.True(t, authCookie.HttpOnly)
 	})
 
-	t.Run("logout without token returns unauthorized", func(t *testing.T) {
+	t.Run("logout without token should do nothing", func(t *testing.T) {
 		authService, _ := setupTestAuthService(t)
 
 		// Setup router
@@ -149,16 +149,10 @@ func TestAuthService_Logout(t *testing.T) {
 		router.ServeHTTP(rr, req)
 
 		// Verify response
-		assert.Equal(t, http.StatusUnauthorized, rr.Code)
-
-		// Verify error message
-		var response map[string]interface{}
-		err := json.NewDecoder(rr.Body).Decode(&response)
-		require.NoError(t, err)
-		assert.Equal(t, "You should be logged in to logout.", response["error"])
+		assert.Equal(t, http.StatusResetContent, rr.Code)
 	})
 
-	t.Run("logout with invalid token returns internal server error", func(t *testing.T) {
+	t.Run("logout with invalid token should just revoke", func(t *testing.T) {
 		authService, _ := setupTestAuthService(t)
 
 		// Setup router
@@ -177,14 +171,23 @@ func TestAuthService_Logout(t *testing.T) {
 		router.ServeHTTP(rr, req)
 
 		// Verify response
-		assert.Equal(t, http.StatusInternalServerError, rr.Code)
+		assert.Equal(t, http.StatusResetContent, rr.Code)
 
-		// Verify error message
-		var response map[string]interface{}
-		err := json.NewDecoder(rr.Body).Decode(&response)
-		require.NoError(t, err)
-		assert.Equal(t, "Failed to revoke the token. Please try again later.", response["error"])
-		assert.Equal(t, "no such token", response["detail"])
+		// Verify token was deleted from response
+		cookies := rr.Result().Cookies()
+		var authCookie *http.Cookie
+		for _, cookie := range cookies {
+			if cookie.Name == auth.CookieAuthToken {
+				authCookie = cookie
+				break
+			}
+		}
+		require.NotNil(t, authCookie)
+		assert.Equal(t, "", authCookie.Value)
+		assert.Equal(t, -1, authCookie.MaxAge)
+		assert.Equal(t, "/", authCookie.Path)
+		assert.True(t, authCookie.Secure)
+		assert.True(t, authCookie.HttpOnly)
 	})
 
 	t.Run("logout with storage error returns internal server error", func(t *testing.T) {
@@ -230,7 +233,7 @@ func TestAuthService_Logout(t *testing.T) {
 		assert.Equal(t, storageErr.Error(), response["detail"])
 	})
 
-	t.Run("logout with malformed cookie returns unauthorized", func(t *testing.T) {
+	t.Run("logout with malformed cookie should do nothing", func(t *testing.T) {
 		authService, _ := setupTestAuthService(t)
 
 		// Setup router
@@ -246,13 +249,7 @@ func TestAuthService_Logout(t *testing.T) {
 		router.ServeHTTP(rr, req)
 
 		// Verify response
-		assert.Equal(t, http.StatusUnauthorized, rr.Code)
-
-		// Verify error message
-		var response map[string]interface{}
-		err := json.NewDecoder(rr.Body).Decode(&response)
-		require.NoError(t, err)
-		assert.Equal(t, "You should be logged in to logout.", response["error"])
+		assert.Equal(t, http.StatusResetContent, rr.Code)
 	})
 
 	t.Run("logout sets SameSite cookie attribute", func(t *testing.T) {
@@ -299,7 +296,7 @@ func TestAuthService_Logout(t *testing.T) {
 		assert.Equal(t, http.SameSiteStrictMode, authCookie.SameSite)
 	})
 
-	t.Run("logout with empty token value returns internal server error", func(t *testing.T) {
+	t.Run("logout with empty token value should just revoke", func(t *testing.T) {
 		authService, _ := setupTestAuthService(t)
 
 		// Setup router
@@ -318,14 +315,7 @@ func TestAuthService_Logout(t *testing.T) {
 		router.ServeHTTP(rr, req)
 
 		// Verify response
-		assert.Equal(t, http.StatusInternalServerError, rr.Code)
-
-		// Verify error message
-		var response map[string]interface{}
-		err := json.NewDecoder(rr.Body).Decode(&response)
-		require.NoError(t, err)
-		assert.Equal(t, "Failed to revoke the token. Please try again later.", response["error"])
-		assert.Equal(t, "no such token", response["detail"])
+		assert.Equal(t, http.StatusResetContent, rr.Code)
 	})
 
 	t.Run("logout with multiple cookies handles correctly", func(t *testing.T) {

@@ -35,32 +35,6 @@ func AuthStorage(redisClient rueidis.Client) auth.Storage {
 	return auth.NewRedisStorage(redisClient)
 }
 
-// AuthMiddleware creates an auth.Middleware that can be injected into gin.
-func AuthMiddleware(storage auth.Storage) Middleware {
-	return Middleware{
-		Handler: auth.Middleware(storage),
-	}
-}
-
-// MachineMiddleware creates a machine middleware that can be injected into gin.
-func MachineMiddleware() Middleware {
-	return Middleware{
-		Handler: httputils.MachineMiddleware(),
-	}
-}
-
-// CorsMiddleware creates a cors middleware that can be injected into gin.
-func CorsMiddleware(cfg config.Config) Middleware {
-	return Middleware{
-		Handler: cors.New(cors.Config{
-			AllowOrigins:     cfg.AllowedOrigins,
-			AllowMethods:     []string{"GET", "POST", "OPTIONS"},
-			AllowHeaders:     []string{"Content-Type", "User-Agent", "Referer"},
-			AllowCredentials: true,
-		}),
-	}
-}
-
 func SqlRunner(cfg config.Config) *sqlrunner.SqlRunner {
 	return sqlrunner.NewSqlRunner(cfg.SqlRunner)
 }
@@ -92,24 +66,29 @@ func AuthService(entClient *ent.Client, storage auth.Storage, config config.Conf
 }
 
 // GinEngine creates a gin engine.
-func GinEngine(services []httpapi.Service, middlewares []Middleware, gqlgenHandler *handler.Server, cfg config.Config) *gin.Engine {
+func GinEngine(services []httpapi.Service, authStorage auth.Storage, gqlgenHandler *handler.Server, cfg config.Config) *gin.Engine {
 	engine := gin.New()
 
 	if err := engine.SetTrustedProxies(cfg.TrustProxies); err != nil {
 		slog.Error("error setting trusted proxies", "error", err)
 	}
 
-	for _, middleware := range middlewares {
-		engine.Use(middleware.Handler)
-	}
-
 	engine.Use(gin.Recovery())
+	engine.Use(httputils.MachineMiddleware())
+	engine.Use(cors.New(cors.Config{
+		AllowOrigins:     cfg.AllowedOrigins,
+		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
+		AllowHeaders:     []string{"Content-Type", "User-Agent", "Referer"},
+		AllowCredentials: true,
+	}))
 
-	engine.GET("/", func(ctx *gin.Context) {
+	router := engine.Group("/")
+	router.Use(auth.Middleware(authStorage))
+	router.GET("/", func(ctx *gin.Context) {
 		handler := playground.Handler("GraphQL playground", "/query")
 		handler.ServeHTTP(ctx.Writer, ctx.Request)
 	})
-	engine.POST("/query", func(ctx *gin.Context) {
+	router.POST("/query", func(ctx *gin.Context) {
 		gqlgenHandler.ServeHTTP(ctx.Writer, ctx.Request)
 	})
 
@@ -172,19 +151,6 @@ func GinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Config)
 			return nil
 		},
 	})
-}
-
-// Middleware is a middleware that can be injected into gin.
-type Middleware struct {
-	Handler gin.HandlerFunc
-}
-
-// AnnotateMiddleware annotates a middleware function to be injected into gin.
-func AnnotateMiddleware(f any) any {
-	return fx.Annotate(
-		f,
-		fx.ResultTags(`group:"middlewares"`),
-	)
 }
 
 // AnnotateService annotates a service function to be injected into gin.
