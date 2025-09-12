@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -80,6 +81,7 @@ func GinEngine(services []httpapi.Service, authStorage auth.Storage, gqlgenHandl
 		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
 		AllowHeaders:     []string{"Content-Type", "User-Agent", "Referer"},
 		AllowCredentials: true,
+		MaxAge:           24 * time.Hour,
 	}))
 
 	router := engine.Group("/")
