@@ -4,7 +4,7 @@ Auth 端點提供適合供網頁應用程式使用的認證 API。
 
 ## 登入帳號
 
-使用 `POST /api/auth/v2/authorize/google` 登入帳號。
+使用 `GET /api/auth/v2/authorize/google` 登入帳號。
 
 GET 時，您需要帶入這些查詢參數 (query string)：
 
