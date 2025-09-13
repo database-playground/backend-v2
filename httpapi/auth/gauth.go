@@ -27,10 +27,10 @@ import (
 )
 
 const (
-	verifierCookieName = "Gauth-Verifier"
-	redirectCookieName = "Gauth-Redirect"
-	stateCookieName    = "Gauth-State"
-	codeCookieName     = "Gauth-Code"
+	verifierCookieName = "__Host-gauth_verifier"
+	redirectCookieName = "__Host-gauth_redirect"
+	stateCookieName    = "__Host-gauth_state"
+	codeCookieName     = "__Host-gauth_code"
 )
 
 // BuildOAuthConfig builds an oauth2.Config from a gauthConfig.
@@ -209,16 +209,6 @@ func (h *GauthHandler) Authorize(c *gin.Context) {
 		/* httpOnly */ true,
 	)
 
-	c.SetCookie(
-		/* name */ stateCookieName,
-		/* value */ c.Query("state"),
-		/* maxAge */ 5*60, // 5 min
-		/* path */ "/",
-		/* domain */ "",
-		/* secure */ true,
-		/* httpOnly */ true,
-	)
-
 	// Store client's code challenge for later verification
 	c.SetCookie(
 		/* name */ codeCookieName,
@@ -230,16 +220,9 @@ func (h *GauthHandler) Authorize(c *gin.Context) {
 		/* httpOnly */ true,
 	)
 
-	// Generate state for Google OAuth (internal state)
-	internalState, err := authutil.GenerateToken()
-	if err != nil {
-		redirectWithError(c, redirectURL, "server_error", "Failed to generate state", state)
-		return
-	}
-
 	// Redirect to Google OAuth with PKCE
 	googleAuthURL := h.oauthConfig.AuthCodeURL(
-		internalState,
+		state,
 		oauth2.AccessTypeOnline,
 		oauth2.S256ChallengeOption(verifier),
 	)
@@ -350,7 +333,7 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 
 	// Get stored parameters early for error handling
 	redirectURI, _ := c.Cookie(redirectCookieName)
-	state, _ := c.Cookie(stateCookieName)
+	state := c.Query("state")
 
 	redirectURL, err := url.Parse(redirectURI)
 	if err != nil {

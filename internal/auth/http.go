@@ -11,8 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const CookieAuthToken = "__Host-Auth-Token"
-
 // Middleware decodes the Authorization header and packs the user information into context.
 //
 // It will return 401 if the token is invalid.
@@ -83,20 +81,6 @@ func ExtractToken(r *http.Request, storage Storage) (context.Context, error) {
 			}
 
 			return token, nil
-		},
-
-		// Cookies: __Host-Auth-Token=<token>
-		func(r *http.Request) (string, error) {
-			cookie, err := r.Cookie(CookieAuthToken)
-			if err != nil {
-				if errors.Is(err, http.ErrNoCookie) {
-					return "", ErrNoTokenFound
-				}
-
-				return "", err
-			}
-
-			return cookie.Value, nil
 		},
 	}
 
