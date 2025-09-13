@@ -71,12 +71,19 @@ func (c RedisConfig) Validate() error {
 }
 
 type GAuthConfig struct {
+	Secret       string   `env:"SECRET"`
 	ClientID     string   `env:"CLIENT_ID"`
 	ClientSecret string   `env:"CLIENT_SECRET"`
 	RedirectURIs []string `env:"REDIRECT_URIS"`
 }
 
 func (c GAuthConfig) Validate() error {
+	if c.Secret == "" {
+		return errors.New("GAUTH_SECRET is required")
+	}
+	if len(c.Secret) != 32 {
+		return errors.New("GAUTH_SECRET must be 32 characters long")
+	}
 	if c.ClientID == "" {
 		return errors.New("GAUTH_CLIENT_ID is required")
 	}
