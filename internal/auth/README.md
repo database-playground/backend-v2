@@ -11,12 +11,7 @@
 
 ## HTTP Middleware
 
-auth 中的 `Middleware` 會嘗試擷取所有經此 Middleware 的 HTTP request 中的 Bearer token。
-
-Token 會從兩個來源取得：
-
-- Cookies `__Host-auth-token` (`CookieAuthToken`)：如果你是使用 Google OAuth 登入的，這個後端的 `callback` 會設定合乎 [draft-ietf-oauth-browser-based-apps-25](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-browser-based-apps#name-backend-for-frontend-bff) BFF 安全實踐的 cookie，為最主要的認證方式。
-- `Authorization` 標頭中的 Bearer token：如果你需要在瀏覽器情境之外呼叫 API 進行測試，可以在取得 token 後傳入 `Authorization: Bearer [token]` 標頭。行為與 `__Host-auth-token` 一致。
+auth 中的 `Middleware` 會嘗試擷取所有經此 Middleware 的 HTTP request 中的 Bearer token。Token 會從 `Authorization` 標頭中的 Bearer token 取得。
 
 如果驗證失敗（無論錯誤的 token 格式，還是無效 token），均會回傳 GraphQL 風格的 `UNAUTHORIZED` 錯誤。如果驗證成功，則將此 token 對應的使用者資訊 (`UserInfo`) 寫入請求情境鏈 (Context) 中。如果沒有帶入 Token，則不帶任何資訊進情境鏈中。
 

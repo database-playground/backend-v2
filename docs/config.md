@@ -44,13 +44,15 @@ Database Playground 使用 PostgreSQL 作為資料庫。
 
 這個 backend 以 Google OAuth 登入為主。
 
+- `GAUTH_SECRET`：用來加密認證相關請求的 secret
 - `GAUTH_CLIENT_ID`：Google OAuth 的 Client ID
 - `GAUTH_CLIENT_SECRET`：Google OAuth 的 Client Secret
 - `GAUTH_REDIRECT_URIS`：在完成 Google OAuth 流程後，允許重新導向到的 URIs。
   - 舉例：`https://admin.dbplay.app`
 
-Google OAuth 的登入起始連結為 `https://backend.yourdomain.tld/api/auth/google/login`，可選擇性帶入 `state` 參數。
-Google OAuth 的回呼連結為 `https://backend.yourdomain.tld/api/auth/google/callback`。
+OAuth 的使用方式請參考 [Auth 端點](../httpapi/auth/README.md) 內容。
+
+Google OAuth 的「已授權的重新導向 URI」應包含 `https://HOST/api/auth/v2/callback/google` 端點。
 
 ## SQL Runner
 

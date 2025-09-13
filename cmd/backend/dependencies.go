@@ -77,11 +77,10 @@ func GinEngine(services []httpapi.Service, authStorage auth.Storage, gqlgenHandl
 	engine.Use(gin.Recovery())
 	engine.Use(httputils.MachineMiddleware())
 	engine.Use(cors.New(cors.Config{
-		AllowOrigins:     cfg.AllowedOrigins,
-		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
-		AllowHeaders:     []string{"Content-Type", "User-Agent", "Referer"},
-		AllowCredentials: true,
-		MaxAge:           24 * time.Hour,
+		AllowOrigins: cfg.AllowedOrigins,
+		AllowMethods: []string{"GET", "POST", "OPTIONS"},
+		AllowHeaders: []string{"Content-Type", "User-Agent", "Referer", "Authorization"},
+		MaxAge:       24 * time.Hour,
 	}))
 
 	router := engine.Group("/")

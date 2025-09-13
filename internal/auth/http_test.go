@@ -218,40 +218,6 @@ func TestExtractToken(t *testing.T) {
 		}
 	})
 
-	t.Run("good token from cookie", func(t *testing.T) {
-		tokenInfo := auth.TokenInfo{
-			UserID:    1,
-			UserEmail: "user@example.com",
-			Machine:   "test",
-			Scopes:    []string{"*"},
-		}
-		storage := &mockTokenStorage{
-			tokenInfo: tokenInfo,
-		}
-
-		r := http.Request{
-			Header: http.Header{
-				"Cookie": []string{fmt.Sprintf("%s=1234", auth.CookieAuthToken)},
-			},
-		}
-		ctx, err := auth.ExtractToken(&r, storage)
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-
-		user, ok := auth.GetUser(ctx)
-		if !ok {
-			t.Fatalf("expected user, got none")
-		}
-
-		if user.UserID != tokenInfo.UserID {
-			t.Fatalf("expected user %d, got %d", tokenInfo.UserID, user.UserID)
-		}
-		if user.UserEmail != tokenInfo.UserEmail {
-			t.Fatalf("expected user email %s, got %s", tokenInfo.UserEmail, user.UserEmail)
-		}
-	})
-
 	t.Run("revoked token should be treated like no token", func(t *testing.T) {
 		storage := &memoryTokenStorage{
 			storage: map[string]auth.TokenInfo{},
