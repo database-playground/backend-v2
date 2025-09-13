@@ -27,10 +27,9 @@ import (
 )
 
 const (
-	verifierCookieName = "__Host-gauth_verifier"
-	redirectCookieName = "__Host-gauth_redirect"
-	stateCookieName    = "__Host-gauth_state"
-	codeCookieName     = "__Host-gauth_code"
+	verifierCookieName = "gauth_verifier"
+	redirectCookieName = "gauth_redirect"
+	codeCookieName     = "gauth_code"
 )
 
 // BuildOAuthConfig builds an oauth2.Config from a gauthConfig.
@@ -203,7 +202,7 @@ func (h *GauthHandler) Authorize(c *gin.Context) {
 		/* name */ redirectCookieName,
 		/* value */ redirectURI,
 		/* maxAge */ 5*60, // 5 min
-		/* path */ "/",
+		/* path */ callbackURL.Path,
 		/* domain */ "",
 		/* secure */ true,
 		/* httpOnly */ true,
@@ -214,7 +213,7 @@ func (h *GauthHandler) Authorize(c *gin.Context) {
 		/* name */ codeCookieName,
 		/* value */ codeChallenge,
 		/* maxAge */ 5*60, // 5 min
-		/* path */ "/",
+		/* path */ callbackURL.Path,
 		/* domain */ "",
 		/* secure */ true,
 		/* httpOnly */ true,
@@ -421,7 +420,6 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 	// Clear cookies
 	c.SetCookie(verifierCookieName, "", -1, "/", "", true, true)
 	c.SetCookie(redirectCookieName, "", -1, "/", "", true, true)
-	c.SetCookie(stateCookieName, "", -1, "/", "", true, true)
 	c.SetCookie(codeCookieName, "", -1, "/", "", true, true)
 
 	// Add query parameters
