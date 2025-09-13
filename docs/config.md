@@ -52,6 +52,8 @@ Database Playground 使用 PostgreSQL 作為資料庫。
 
 OAuth 的使用方式請參考 [Auth 端點](../httpapi/auth/README.md) 內容。
 
+Google OAuth 的「已授權的重新導向 URI」應包含 `https://HOST/api/auth/v2/callback/google` 端點。
+
 ## SQL Runner
 
 - `SQL_RUNNER_URI`：[SQL Runner API](https://github.com/database-playground/sqlrunner-v2) 的連線 URL，如 `https://sqlrunner.dbplay.app`。部署說明可參見 [Usage > Starting the service](https://github.com/database-playground/sqlrunner-v2/tree/main?tab=readme-ov-file#starting-the-service)。
