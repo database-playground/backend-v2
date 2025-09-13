@@ -11,12 +11,73 @@ import (
 	"testing"
 
 	"github.com/database-playground/backend-v2/internal/auth"
+	"github.com/database-playground/backend-v2/internal/config"
+	"github.com/database-playground/backend-v2/internal/testhelper"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+// mockAuthStorage implements auth.Storage for testing
+type mockAuthStorage struct {
+	tokens    map[string]auth.TokenInfo
+	deleteErr error
+}
+
+func newMockAuthStorage() *mockAuthStorage {
+	return &mockAuthStorage{
+		tokens: make(map[string]auth.TokenInfo),
+	}
+}
+
+func (m *mockAuthStorage) Create(ctx context.Context, info auth.TokenInfo) (string, error) {
+	token := "test-token-" + info.UserEmail + "-" + info.Machine
+	m.tokens[token] = info
+	return token, nil
+}
+
+func (m *mockAuthStorage) Get(ctx context.Context, token string) (auth.TokenInfo, error) {
+	info, exists := m.tokens[token]
+	if !exists {
+		return auth.TokenInfo{}, auth.ErrNotFound
+	}
+	return info, nil
+}
+
+func (m *mockAuthStorage) Peek(ctx context.Context, token string) (auth.TokenInfo, error) {
+	return m.Get(ctx, token)
+}
+
+func (m *mockAuthStorage) Delete(ctx context.Context, token string) error {
+	if m.deleteErr != nil {
+		return m.deleteErr
+	}
+	if _, exists := m.tokens[token]; !exists {
+		return auth.ErrNotFound
+	}
+	delete(m.tokens, token)
+	return nil
+}
+
+func (m *mockAuthStorage) DeleteByUser(ctx context.Context, userID int) error {
+	for token, info := range m.tokens {
+		if info.UserID == userID {
+			delete(m.tokens, token)
+		}
+	}
+	return nil
+}
+
+func setupTestAuthService(t *testing.T) (*AuthService, *mockAuthStorage) {
+	entClient := testhelper.NewEntSqliteClient(t)
+	storage := newMockAuthStorage()
+	cfg := config.Config{}
+
+	authService := NewAuthService(entClient, storage, cfg)
+	return authService, storage
+}
 
 func TestAuthService_RevokeToken(t *testing.T) {
 	gin.SetMode(gin.TestMode)
