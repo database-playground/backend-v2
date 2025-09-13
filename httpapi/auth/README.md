@@ -22,16 +22,6 @@ code_challenge = BASE64URL-ENCODE(SHA256(ASCII(code_verifier)))
 
 登入完成後，會自動跳轉到 `redirect_uri` 上，接著您可以在 redirect URI（下稱 callback）中取回 token。
 
-如果失敗，則會回傳符合 [RFC 6749 的錯誤回傳值](https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.2.1)，如：
-
-```json
-{
-    "error": "invalid_request",
-    "error_description": "Bad redirect URI.",
-    "state": ""
-}
-```
-
 ### Callback 會收到的參數
 
 在驗證完成後，瀏覽器會跳轉到 `redirect_uri`，並帶入以下的查詢字串：
@@ -42,6 +32,11 @@ code_challenge = BASE64URL-ENCODE(SHA256(ASCII(code_verifier)))
 - `code_challenge_method`：你在〈登入帳號〉中傳入的雜湊授權碼
 
 接著您可以使用〈取回 token〉API 來取得 token。
+
+如果登入失敗，則是會帶入以下的查詢字串：
+
+- `error`：錯誤代碼
+- `error_description`：錯誤描述
 
 ## 取回 token
 

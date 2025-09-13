@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"time"
 
 	"github.com/database-playground/backend-v2/internal/auth"
@@ -100,6 +101,43 @@ func generateCodeChallenge(verifier string) string {
 	return base64.RawURLEncoding.EncodeToString(h[:])
 }
 
+// redirectWithError redirects to the redirect URI with error parameters
+func redirectWithError(c *gin.Context, redirectURI, errorCode, errorDescription, state string) {
+	if redirectURI == "" {
+		// If no redirect URI is available, fall back to JSON response
+		c.JSON(http.StatusBadRequest, OAuth2Error{
+			Error:            errorCode,
+			ErrorDescription: errorDescription,
+			State:            state,
+		})
+		return
+	}
+
+	redirectURL, err := url.Parse(redirectURI)
+	if err != nil {
+		// If redirect URI is invalid, fall back to JSON response
+		c.JSON(http.StatusBadRequest, OAuth2Error{
+			Error:            "invalid_request",
+			ErrorDescription: "Invalid redirect URI",
+			State:            state,
+		})
+		return
+	}
+
+	// Add error parameters to query string
+	q := redirectURL.Query()
+	q.Set("error", errorCode)
+	if errorDescription != "" {
+		q.Set("error_description", errorDescription)
+	}
+	if state != "" {
+		q.Set("state", state)
+	}
+	redirectURL.RawQuery = q.Encode()
+
+	c.Redirect(http.StatusFound, redirectURL.String())
+}
+
 // Authorize handles the OAuth 2.0 authorization request (RFC 6749 Section 4.1.1)
 func (h *GauthHandler) Authorize(c *gin.Context) {
 	// Lax since we are using a cookie to store the verifier
@@ -108,21 +146,30 @@ func (h *GauthHandler) Authorize(c *gin.Context) {
 
 	// Validate required OAuth 2.0 parameters
 	responseType := c.Query("response_type")
+	redirectURI := c.Query("redirect_uri")
+	state := c.Query("state")
+
 	if responseType != "code" {
-		c.JSON(http.StatusBadRequest, OAuth2Error{
-			Error:            "invalid_request",
-			ErrorDescription: "response_type must be 'code'",
-			State:            c.Query("state"),
-		})
+		redirectWithError(c, redirectURI, "invalid_request", "response_type must be 'code'", state)
 		return
 	}
 
-	redirectURI := c.Query("redirect_uri")
 	if redirectURI == "" {
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "invalid_request",
 			ErrorDescription: "redirect_uri is required",
-			State:            c.Query("state"),
+			State:            state,
+		})
+		return
+	}
+
+	// Check if redirect URI is allowed first, before other validations
+	allowed := slices.Contains(h.redirectURIs, redirectURI)
+	if !allowed {
+		c.JSON(http.StatusBadRequest, OAuth2Error{
+			Error:            "invalid_request",
+			ErrorDescription: "Bad redirect URI.",
+			State:            state,
 		})
 		return
 	}
@@ -131,49 +178,20 @@ func (h *GauthHandler) Authorize(c *gin.Context) {
 	codeChallenge := c.Query("code_challenge")
 	codeChallengeMethod := c.Query("code_challenge_method")
 	if err := validatePKCE(codeChallenge, codeChallengeMethod); err != nil {
-		c.JSON(http.StatusBadRequest, OAuth2Error{
-			Error:            "invalid_request",
-			ErrorDescription: err.Error(),
-			State:            c.Query("state"),
-		})
-		return
-	}
-
-	// Check if redirect URI is allowed
-	allowed := false
-	for _, allowedURI := range h.redirectURIs {
-		if redirectURI == allowedURI {
-			allowed = true
-			break
-		}
-	}
-	if !allowed {
-		c.JSON(http.StatusBadRequest, OAuth2Error{
-			Error:            "invalid_request",
-			ErrorDescription: "Bad redirect URI.",
-			State:            c.Query("state"),
-		})
+		redirectWithError(c, redirectURI, "invalid_request", err.Error(), state)
 		return
 	}
 
 	// Generate internal code verifier for Google OAuth
 	verifier, err := generateCodeVerifier()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, OAuth2Error{
-			Error:            "server_error",
-			ErrorDescription: "Failed to generate verifier",
-			State:            c.Query("state"),
-		})
+		redirectWithError(c, redirectURI, "server_error", "Failed to generate verifier", state)
 		return
 	}
 
 	callbackURL, err := url.Parse(h.oauthConfig.RedirectURL)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, OAuth2Error{
-			Error:            "server_error",
-			ErrorDescription: "Failed to parse redirect URL",
-			State:            c.Query("state"),
-		})
+		redirectWithError(c, redirectURI, "server_error", "Failed to parse redirect URL", state)
 		return
 	}
 
@@ -222,11 +240,7 @@ func (h *GauthHandler) Authorize(c *gin.Context) {
 	// Generate state for Google OAuth (internal state)
 	internalState, err := authutil.GenerateToken()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, OAuth2Error{
-			Error:            "server_error",
-			ErrorDescription: "Failed to generate state",
-			State:            c.Query("state"),
-		})
+		redirectWithError(c, redirectURI, "server_error", "Failed to generate state", state)
 		return
 	}
 
@@ -341,27 +355,21 @@ func (h *GauthHandler) decryptAuthCode(encryptedCode string) (*AuthorizationCode
 func (h *GauthHandler) Callback(c *gin.Context) {
 	c.SetSameSite(http.SameSiteStrictMode)
 
+	// Get stored parameters early for error handling
+	redirectURI, _ := c.Cookie(redirectCookieName)
+	state, _ := c.Cookie(stateCookieName)
+
 	// Get stored verifier for Google OAuth
 	verifier, err := c.Cookie(verifierCookieName)
 	if err != nil {
-		state, _ := c.Cookie(stateCookieName)
-		c.JSON(http.StatusUnauthorized, OAuth2Error{
-			Error:            "invalid_request",
-			ErrorDescription: "Missing verifier cookie",
-			State:            state,
-		})
+		redirectWithError(c, redirectURI, "invalid_request", "Missing verifier cookie", state)
 		return
 	}
 
 	// Exchange Google authorization code for token
 	oauthToken, err := h.oauthConfig.Exchange(c.Request.Context(), c.Query("code"), oauth2.VerifierOption(verifier))
 	if err != nil {
-		state, _ := c.Cookie(stateCookieName)
-		c.JSON(http.StatusInternalServerError, OAuth2Error{
-			Error:            "server_error",
-			ErrorDescription: "Failed to exchange code with Google",
-			State:            state,
-		})
+		redirectWithError(c, redirectURI, "server_error", "Failed to exchange code with Google", state)
 		return
 	}
 
@@ -371,23 +379,13 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 		option.WithTokenSource(h.oauthConfig.TokenSource(c.Request.Context(), oauthToken)),
 	)
 	if err != nil {
-		state, _ := c.Cookie(stateCookieName)
-		c.JSON(http.StatusInternalServerError, OAuth2Error{
-			Error:            "server_error",
-			ErrorDescription: "Failed to create Google client",
-			State:            state,
-		})
+		redirectWithError(c, redirectURI, "server_error", "Failed to create Google client", state)
 		return
 	}
 
 	user, err := client.Userinfo.Get().Do()
 	if err != nil {
-		state, _ := c.Cookie(stateCookieName)
-		c.JSON(http.StatusInternalServerError, OAuth2Error{
-			Error:            "server_error",
-			ErrorDescription: "Failed to get user info from Google",
-			State:            state,
-		})
+		redirectWithError(c, redirectURI, "server_error", "Failed to get user info from Google", state)
 		return
 	}
 
@@ -398,19 +396,12 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 		Avatar: user.Picture,
 	})
 	if err != nil {
-		state, _ := c.Cookie(stateCookieName)
-		c.JSON(http.StatusInternalServerError, OAuth2Error{
-			Error:            "server_error",
-			ErrorDescription: "Failed to register user",
-			State:            state,
-		})
+		redirectWithError(c, redirectURI, "server_error", "Failed to register user", state)
 		return
 	}
 
-	// Get stored parameters
-	redirectURI, err := c.Cookie(redirectCookieName)
-	if err != nil {
-		state, _ := c.Cookie(stateCookieName)
+	// Validate that we have the redirect URI (already retrieved at the beginning)
+	if redirectURI == "" {
 		c.JSON(http.StatusInternalServerError, OAuth2Error{
 			Error:            "server_error",
 			ErrorDescription: "Missing redirect URI",
@@ -421,34 +412,23 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 
 	codeChallenge, err := c.Cookie(codeCookieName)
 	if err != nil {
-		state, _ := c.Cookie(stateCookieName)
-		c.JSON(http.StatusInternalServerError, OAuth2Error{
-			Error:            "server_error",
-			ErrorDescription: "Missing code challenge",
-			State:            state,
-		})
+		redirectWithError(c, redirectURI, "server_error", "Missing code challenge", state)
 		return
 	}
-
-	clientState, _ := c.Cookie(stateCookieName)
 
 	// Create authorization code data
 	authCodeData := &AuthorizationCodeData{
 		UserID:        entUser.ID,
 		RedirectURI:   redirectURI,
 		CodeChallenge: codeChallenge,
-		State:         clientState,
+		State:         state,
 		ExpiresAt:     time.Now().Add(10 * time.Minute),
 	}
 
 	// Encrypt authorization code
 	authCode, err := h.encryptAuthCode(authCodeData)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, OAuth2Error{
-			Error:            "server_error",
-			ErrorDescription: "Failed to generate authorization code",
-			State:            clientState,
-		})
+		redirectWithError(c, redirectURI, "server_error", "Failed to generate authorization code", state)
 		return
 	}
 
@@ -461,19 +441,15 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 	// Redirect to client with authorization code
 	redirectURL, err := url.Parse(redirectURI)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, OAuth2Error{
-			Error:            "server_error",
-			ErrorDescription: "Invalid redirect URI",
-			State:            clientState,
-		})
+		redirectWithError(c, redirectURI, "server_error", "Invalid redirect URI", state)
 		return
 	}
 
 	// Add query parameters
 	q := redirectURL.Query()
 	q.Set("code", authCode)
-	if clientState != "" {
-		q.Set("state", clientState)
+	if state != "" {
+		q.Set("state", state)
 	}
 	redirectURL.RawQuery = q.Encode()
 
