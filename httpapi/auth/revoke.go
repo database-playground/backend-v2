@@ -39,7 +39,7 @@ func (s *AuthService) RevokeToken(c *gin.Context) {
 		// Internal server error - failed to revoke token
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":             "server_error",
-			"error_description": "Failed to revoke the token. Please try again later.",
+			"error_description": err.Error(),
 		})
 		return
 	}
