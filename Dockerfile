@@ -1,8 +1,6 @@
 # syntax=docker/dockerfile:1
 FROM golang:1.25-alpine AS builder
 
-ENV GOEXPERIMENT=greenteagc
-
 WORKDIR /src
 
 # Copy dependency files first for better layer caching
@@ -19,11 +17,13 @@ COPY . .
 RUN --mount=type=cache,target=/go/pkg/mod \
     go generate .
 
+ENV GOEXPERIMENT=greenteagc CGO_ENABLED=0 GOOS=linux
+
 # Build the applications with cache mount for build cache
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o backend ./cmd/backend && \
-    CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o admin-cli ./cmd/admin-cli
+    go build -ldflags="-w -s" -trimpath -o backend ./cmd/backend && \
+    go build -ldflags="-w -s" -trimpath -o admin-cli ./cmd/admin-cli
 
 # Final stage with minimal runtime image
 FROM alpine:latest AS runtime
