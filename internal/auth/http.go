@@ -53,9 +53,6 @@ func Middleware(storage Storage) gin.HandlerFunc {
 }
 
 var (
-	// ErrNoTokenFound is returned when no token is found.
-	ErrNoTokenFound = errors.New("no token found")
-
 	// ErrBadTokenFormat is returned when the Authorization header is not in the correct Bearer format.
 	ErrBadTokenFormat = errors.New("bad token format")
 )
@@ -65,54 +62,33 @@ var (
 // It will return an error if the token is invalid.
 // It adds nothing to the context if the token is not present.
 func ExtractToken(r *http.Request, storage Storage) (context.Context, error) {
-	type TokenSource func(r *http.Request) (string, error)
-
-	tokenSources := []TokenSource{
-		// Header: Authorization: Bearer <token>
-		func(r *http.Request) (string, error) {
-			authHeaderContent := r.Header.Get("Authorization")
-			if authHeaderContent == "" {
-				return "", ErrNoTokenFound
-			}
-
-			token, ok := strings.CutPrefix(authHeaderContent, "Bearer ")
-			if !ok {
-				return "", ErrBadTokenFormat
-			}
-
-			return token, nil
-		},
+	authHeaderContent := r.Header.Get("Authorization")
+	if authHeaderContent == "" {
+		return r.Context(), nil
 	}
 
-	for _, tokenSource := range tokenSources {
-		token, err := tokenSource(r)
-		if errors.Is(err, ErrNoTokenFound) {
-			continue // try next token source
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		tokenInfo, err := storage.Get(r.Context(), token)
-		if err != nil {
-			if errors.Is(err, ErrNotFound) {
-				return r.Context(), nil
-			}
-
-			return nil, err
-		}
-
-		if err := tokenInfo.Validate(); err != nil {
-			return nil, BadTokenInfoError{
-				Token: token,
-				Err:   err,
-			}
-		}
-
-		return WithUser(r.Context(), tokenInfo), nil
+	token, ok := strings.CutPrefix(authHeaderContent, "Bearer ")
+	if !ok {
+		return nil, ErrBadTokenFormat
 	}
 
-	return r.Context(), nil
+	tokenInfo, err := storage.Get(r.Context(), token)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return r.Context(), nil
+		}
+
+		return nil, err
+	}
+
+	if err := tokenInfo.Validate(); err != nil {
+		return nil, BadTokenInfoError{
+			Token: token,
+			Err:   err,
+		}
+	}
+
+	return WithUser(r.Context(), tokenInfo), nil
 }
 
 // BadTokenInfoError is returned when the token info is invalid.
