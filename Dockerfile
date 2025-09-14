@@ -17,7 +17,7 @@ COPY . .
 RUN --mount=type=cache,target=/go/pkg/mod \
     go generate .
 
-ENV GOEXPERIMENT=greenteagc CGO_ENABLED=0 GOOS=linux
+ENV GOEXPERIMENT="greenteagc,jsonv2" CGO_ENABLED=0
 
 # Build the applications with cache mount for build cache
 RUN --mount=type=cache,target=/root/.cache/go-build \

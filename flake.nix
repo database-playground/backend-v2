@@ -22,6 +22,8 @@
 
       devShells = forEachSupportedSystem ({ pkgs }: {
         default = pkgs.mkShell {
+          GOEXPERIMENT = "greenteagc,jsonv2";
+
           packages = with pkgs; [
             # go (version is specified by overlay)
             go
