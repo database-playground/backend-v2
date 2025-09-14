@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1
 FROM golang:1.25-alpine AS builder
 
+ENV GOEXPERIMENT=greenteagc
+
 WORKDIR /src
 
 # Copy dependency files first for better layer caching
