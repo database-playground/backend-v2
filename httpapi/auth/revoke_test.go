@@ -314,7 +314,7 @@ func TestAuthService_RevokeToken(t *testing.T) {
 		err = json.NewDecoder(rr.Body).Decode(&response)
 		require.NoError(t, err)
 		assert.Equal(t, "server_error", response["error"])
-		assert.Equal(t, "Failed to revoke the token. Please try again later.", response["error_description"])
+		assert.Equal(t, storageErr.Error(), response["error_description"])
 	})
 
 	t.Run("revoke with GET method should not work", func(t *testing.T) {

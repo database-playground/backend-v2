@@ -92,10 +92,54 @@ Authorization: Bearer <access_token>
 
 如果沒有 Auth Token 或者是 token 無效，則依然回傳 HTTP 200。請引導使用者重新登入。
 
+## 取得 Token 資訊
+
+您可以使用 `POST /api/auth/v2/introspect` 取得 token 的資訊。
+
+需要帶入以 `application/x-www-form-urlencoded` 編碼的請求體：
+
+- `token`：要 revoke 的 token
+- `token_type_hint`：必須是 `access_token`
+
+如果有 token，回傳 HTTP 200，且 `active` 為 `true` 的回應：
+
+```json
+{
+    "active": true,
+    "username": "pan93412@gmail.com",
+    "scope": "*", // scope, separated by space
+    "sub": "1", // subject of token, a.k.a. user id
+    "exp": 1757873526, // expired at
+    "iat": 1757844711, // issued at
+    "azp": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" // the machine that is authorized to use this token
+}
+```
+
+判斷管理員的依據，是判斷 `scope` 是否包含 `*`（所有權限）。
+
+如果沒有此 token，回傳 HTTP 200，且 `active` 為 `false` 的回應：
+
+```json
+{
+    "active": false
+}
+```
+
+如果發生系統錯誤，則回傳 HTTP 500 錯誤並帶上錯誤資訊：
+
+```json
+{
+    "error": "server_error",
+    "error_description": "Failed to introspect the token. Please try again later."
+}
+```
+
 ## 參考來源
 
-為了保證登入時的資訊安全，這裡參考了兩份 RFC 進行 API 的設計：
+為了保證登入時的資訊安全和規範性，這裡參考了這些資料進行 API 的設計：
 
-- [RFC 6749 – The OAuth 2.0 Authorization Framework](https://datatracker.ietf.org/doc/html/rfc6749#autoid-35)
-- [RFC 7636 – Proof Key for Code Exchange by OAuth Public Clients](https://datatracker.ietf.org/doc/html/rfc7636#section-4.1)
+- [RFC 6749 – The OAuth 2.0 Authorization Framework](https://datatracker.ietf.org/doc/html/rfc6749)
+- [RFC 7636 – Proof Key for Code Exchange by OAuth Public Clients](https://datatracker.ietf.org/doc/html/rfc7636)
 - [RFC 7009 – OAuth 2.0 Token Revocation](https://datatracker.ietf.org/doc/html/rfc7009)
+- [RFC 7662 – OAuth 2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662)
+- [IANA – JSON Web Token Claims](https://www.iana.org/assignments/jwt/jwt.xhtml)

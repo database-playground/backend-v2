@@ -34,6 +34,7 @@ func (s *AuthService) Register(router gin.IRouter) {
 	auth.GET("/callback/google", gauthHandler.Callback)
 	auth.POST("/token", gauthHandler.Token)
 	auth.POST("/revoke", s.RevokeToken)
+	auth.POST("/introspect", s.IntrospectToken)
 }
 
 var _ httpapi.Service = (*AuthService)(nil)
