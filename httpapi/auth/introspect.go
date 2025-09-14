@@ -21,6 +21,14 @@ type IntrospectionResponse struct {
 	Exp      int64  `json:"exp,omitempty"`      // expiration time (Unix timestamp)
 	Iat      int64  `json:"iat,omitempty"`      // issued at (Unix timestamp)
 	Azp      string `json:"azp,omitempty"`      // authorized party (machine name)
+
+	// the acting party to whom authority has been delegated
+	Act *IntrospectionAct `json:"act,omitempty"`
+}
+
+// IntrospectionAct represents the acting party to whom authority has been delegated
+type IntrospectionAct struct {
+	Sub string `json:"sub"` // subject (user ID)
 }
 
 // IntrospectToken implements OAuth 2.0 Token Introspection (RFC 7662)
@@ -103,6 +111,12 @@ func (s *AuthService) IntrospectToken(c *gin.Context) {
 		Exp:      exp,
 		Iat:      iat,
 		Azp:      tokenInfo.Machine,
+	}
+
+	if impersonator, ok := tokenInfo.Meta[useraccount.MetaImpersonation]; ok {
+		response.Act = &IntrospectionAct{
+			Sub: impersonator,
+		}
 	}
 
 	c.JSON(http.StatusOK, response)
