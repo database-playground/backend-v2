@@ -420,4 +420,141 @@ func TestAuthService_IntrospectToken(t *testing.T) {
 		assert.Equal(t, "server_error", response["error"])
 		assert.Equal(t, "Failed to introspect the token. Please try again later.", response["error_description"])
 	})
+
+	t.Run("successful token introspection with impersonation (act field)", func(t *testing.T) {
+		authService, storage, entClient := setupTestAuthServiceWithDatabase(t)
+		ctx := context.Background()
+
+		// Create a group for the user
+		unverifiedGroup, err := entClient.Group.Query().Where(group.NameEQ("unverified")).Only(ctx)
+		require.NoError(t, err)
+
+		// Create a test user (the impersonated user)
+		user, err := entClient.User.Create().
+			SetName("Impersonated User").
+			SetEmail("impersonated@example.com").
+			SetGroup(unverifiedGroup).
+			Save(ctx)
+		require.NoError(t, err)
+
+		// Create an impersonator user
+		impersonator, err := entClient.User.Create().
+			SetName("Admin User").
+			SetEmail("admin@example.com").
+			SetGroup(unverifiedGroup).
+			Save(ctx)
+		require.NoError(t, err)
+
+		// Create a test token with impersonation metadata
+		tokenInfo := auth.TokenInfo{
+			UserID:    user.ID,
+			UserEmail: "impersonated@example.com",
+			Machine:   "test-machine",
+			Scopes:    []string{"read", "write"},
+			Meta: map[string]string{
+				"impersonation": strconv.Itoa(impersonator.ID),
+			},
+		}
+		token, err := storage.Create(ctx, tokenInfo)
+		require.NoError(t, err)
+		require.NotEmpty(t, token)
+
+		// Setup router
+		router := gin.New()
+		router.POST("/auth/v2/introspect", authService.IntrospectToken)
+
+		// Create introspect request
+		form := url.Values{}
+		form.Add("token", token)
+		form.Add("token_type_hint", "access_token")
+
+		req := httptest.NewRequest("POST", "/auth/v2/introspect", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		rr := httptest.NewRecorder()
+
+		// Execute request
+		router.ServeHTTP(rr, req)
+
+		// Verify response
+		assert.Equal(t, http.StatusOK, rr.Code)
+
+		var response IntrospectionResponse
+		err = json.NewDecoder(rr.Body).Decode(&response)
+		require.NoError(t, err)
+
+		// Verify basic token information
+		assert.True(t, response.Active)
+		assert.Equal(t, "impersonated@example.com", response.Username)
+		assert.Equal(t, "read write", response.Scope)
+		assert.Equal(t, strconv.Itoa(user.ID), response.Sub)
+		assert.Equal(t, "test-machine", response.Azp)
+		assert.Greater(t, response.Exp, int64(0))
+		assert.Greater(t, response.Iat, int64(0))
+
+		// Verify the act field is populated with impersonator information
+		require.NotNil(t, response.Act, "Act field should be populated when impersonation is present")
+		assert.Equal(t, strconv.Itoa(impersonator.ID), response.Act.Sub, "Act.Sub should contain the impersonator's user ID")
+	})
+
+	t.Run("successful token introspection without impersonation (no act field)", func(t *testing.T) {
+		authService, storage, entClient := setupTestAuthServiceWithDatabase(t)
+		ctx := context.Background()
+
+		// Create a group for the user
+		unverifiedGroup, err := entClient.Group.Query().Where(group.NameEQ("unverified")).Only(ctx)
+		require.NoError(t, err)
+
+		// Create a test user
+		user, err := entClient.User.Create().
+			SetName("Regular User").
+			SetEmail("regular@example.com").
+			SetGroup(unverifiedGroup).
+			Save(ctx)
+		require.NoError(t, err)
+
+		// Create a test token without impersonation metadata
+		tokenInfo := auth.TokenInfo{
+			UserID:    user.ID,
+			UserEmail: "regular@example.com",
+			Machine:   "test-machine",
+			Scopes:    []string{"read", "write"},
+			Meta:      map[string]string{}, // No impersonation metadata
+		}
+		token, err := storage.Create(ctx, tokenInfo)
+		require.NoError(t, err)
+		require.NotEmpty(t, token)
+
+		// Setup router
+		router := gin.New()
+		router.POST("/auth/v2/introspect", authService.IntrospectToken)
+
+		// Create introspect request
+		form := url.Values{}
+		form.Add("token", token)
+		form.Add("token_type_hint", "access_token")
+
+		req := httptest.NewRequest("POST", "/auth/v2/introspect", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		rr := httptest.NewRecorder()
+
+		// Execute request
+		router.ServeHTTP(rr, req)
+
+		// Verify response
+		assert.Equal(t, http.StatusOK, rr.Code)
+
+		var response IntrospectionResponse
+		err = json.NewDecoder(rr.Body).Decode(&response)
+		require.NoError(t, err)
+
+		// Verify basic token information
+		assert.True(t, response.Active)
+		assert.Equal(t, "regular@example.com", response.Username)
+		assert.Equal(t, "read write", response.Scope)
+		assert.Equal(t, strconv.Itoa(user.ID), response.Sub)
+		assert.Equal(t, "test-machine", response.Azp)
+
+		// Verify the act field is NOT populated when there's no impersonation
+		assert.Nil(t, response.Act, "Act field should be nil when no impersonation is present")
+	})
 }

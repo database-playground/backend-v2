@@ -115,6 +115,16 @@ Authorization: Bearer <access_token>
 }
 ```
 
+如果這是一個代理操作憑證 (impersonation)，則會多出一個 `act` 欄位：
+
+```json
+{
+    "act": {
+        "sub": "2"
+    }
+}
+```
+
 判斷管理員的依據，是判斷 `scope` 是否包含 `*`（所有權限）。
 
 如果沒有此 token，回傳 HTTP 200，且 `active` 為 `false` 的回應：
