@@ -23,6 +23,40 @@ var (
 		Columns:    DatabasesColumns,
 		PrimaryKey: []*schema.Column{DatabasesColumns[0]},
 	}
+	// EventsColumns holds the columns for the "events" table.
+	EventsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "type", Type: field.TypeString},
+		{Name: "triggered_at", Type: field.TypeTime},
+		{Name: "payload", Type: field.TypeJSON, Nullable: true},
+		{Name: "user_id", Type: field.TypeInt},
+	}
+	// EventsTable holds the schema information for the "events" table.
+	EventsTable = &schema.Table{
+		Name:       "events",
+		Columns:    EventsColumns,
+		PrimaryKey: []*schema.Column{EventsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "events_users_events",
+				Columns:    []*schema.Column{EventsColumns[4]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "events_type",
+				Unique:  false,
+				Columns: []*schema.Column{EventsColumns[1]},
+			},
+			{
+				Name:    "events_type_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{EventsColumns[1], EventsColumns[4]},
+			},
+		},
+	}
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -37,6 +71,30 @@ var (
 		Name:       "groups",
 		Columns:    GroupsColumns,
 		PrimaryKey: []*schema.Column{GroupsColumns[0]},
+	}
+	// PointsColumns holds the columns for the "points" table.
+	PointsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "points", Type: field.TypeInt, Default: 0},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "user_points", Type: field.TypeInt},
+	}
+	// PointsTable holds the schema information for the "points" table.
+	PointsTable = &schema.Table{
+		Name:       "points",
+		Columns:    PointsColumns,
+		PrimaryKey: []*schema.Column{PointsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "points_users_points",
+				Columns:    []*schema.Column{PointsColumns[6]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
 	}
 	// QuestionsColumns holds the columns for the "questions" table.
 	QuestionsColumns = []*schema.Column{
@@ -128,7 +186,9 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		DatabasesTable,
+		EventsTable,
 		GroupsTable,
+		PointsTable,
 		QuestionsTable,
 		ScopeSetsTable,
 		UsersTable,
@@ -140,8 +200,16 @@ func init() {
 	DatabasesTable.Annotation = &entsql.Annotation{
 		IncrementStart: func(i int) *int { return &i }(12884901888),
 	}
+	EventsTable.ForeignKeys[0].RefTable = UsersTable
+	EventsTable.Annotation = &entsql.Annotation{
+		IncrementStart: func(i int) *int { return &i }(21474836480),
+	}
 	GroupsTable.Annotation = &entsql.Annotation{
 		IncrementStart: func(i int) *int { return &i }(4294967296),
+	}
+	PointsTable.ForeignKeys[0].RefTable = UsersTable
+	PointsTable.Annotation = &entsql.Annotation{
+		IncrementStart: func(i int) *int { return &i }(25769803776),
 	}
 	QuestionsTable.ForeignKeys[0].RefTable = DatabasesTable
 	QuestionsTable.Annotation = &entsql.Annotation{

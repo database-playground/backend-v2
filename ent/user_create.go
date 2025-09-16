@@ -10,7 +10,9 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/database-playground/backend-v2/ent/events"
 	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/ent/points"
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
@@ -98,6 +100,36 @@ func (_c *UserCreate) SetGroupID(id int) *UserCreate {
 // SetGroup sets the "group" edge to the Group entity.
 func (_c *UserCreate) SetGroup(v *Group) *UserCreate {
 	return _c.SetGroupID(v.ID)
+}
+
+// AddPointIDs adds the "points" edge to the Points entity by IDs.
+func (_c *UserCreate) AddPointIDs(ids ...int) *UserCreate {
+	_c.mutation.AddPointIDs(ids...)
+	return _c
+}
+
+// AddPoints adds the "points" edges to the Points entity.
+func (_c *UserCreate) AddPoints(v ...*Points) *UserCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddPointIDs(ids...)
+}
+
+// AddEventIDs adds the "events" edge to the Events entity by IDs.
+func (_c *UserCreate) AddEventIDs(ids ...int) *UserCreate {
+	_c.mutation.AddEventIDs(ids...)
+	return _c
+}
+
+// AddEvents adds the "events" edges to the Events entity.
+func (_c *UserCreate) AddEvents(v ...*Events) *UserCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddEventIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -246,6 +278,38 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.user_group = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.PointsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PointsTable,
+			Columns: []string{user.PointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.EventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EventsTable,
+			Columns: []string{user.EventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(events.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

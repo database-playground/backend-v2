@@ -20,6 +20,14 @@ func (_m *Database) Questions(ctx context.Context) (result []*Question, err erro
 	return result, err
 }
 
+func (_m *Events) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
 func (_m *Group) ScopeSets(ctx context.Context) (result []*ScopeSet, err error) {
 	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
 		result, err = _m.NamedScopeSets(graphql.GetFieldContext(ctx).Field.Alias)
@@ -28,6 +36,14 @@ func (_m *Group) ScopeSets(ctx context.Context) (result []*ScopeSet, err error) 
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryScopeSets().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *Points) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
 	}
 	return result, err
 }
@@ -56,6 +72,30 @@ func (_m *User) Group(ctx context.Context) (*Group, error) {
 	result, err := _m.Edges.GroupOrErr()
 	if IsNotLoaded(err) {
 		result, err = _m.QueryGroup().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) Points(ctx context.Context) (result []*Points, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedPoints(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.PointsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPoints().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) Events(ctx context.Context) (result []*Events, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedEvents(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.EventsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryEvents().All(ctx)
 	}
 	return result, err
 }

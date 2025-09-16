@@ -11,7 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/database-playground/backend-v2/ent/events"
 	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/ent/points"
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/user"
 )
@@ -114,6 +116,36 @@ func (_u *UserUpdate) SetGroup(v *Group) *UserUpdate {
 	return _u.SetGroupID(v.ID)
 }
 
+// AddPointIDs adds the "points" edge to the Points entity by IDs.
+func (_u *UserUpdate) AddPointIDs(ids ...int) *UserUpdate {
+	_u.mutation.AddPointIDs(ids...)
+	return _u
+}
+
+// AddPoints adds the "points" edges to the Points entity.
+func (_u *UserUpdate) AddPoints(v ...*Points) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPointIDs(ids...)
+}
+
+// AddEventIDs adds the "events" edge to the Events entity by IDs.
+func (_u *UserUpdate) AddEventIDs(ids ...int) *UserUpdate {
+	_u.mutation.AddEventIDs(ids...)
+	return _u
+}
+
+// AddEvents adds the "events" edges to the Events entity.
+func (_u *UserUpdate) AddEvents(v ...*Events) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEventIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdate) Mutation() *UserMutation {
 	return _u.mutation
@@ -123,6 +155,48 @@ func (_u *UserUpdate) Mutation() *UserMutation {
 func (_u *UserUpdate) ClearGroup() *UserUpdate {
 	_u.mutation.ClearGroup()
 	return _u
+}
+
+// ClearPoints clears all "points" edges to the Points entity.
+func (_u *UserUpdate) ClearPoints() *UserUpdate {
+	_u.mutation.ClearPoints()
+	return _u
+}
+
+// RemovePointIDs removes the "points" edge to Points entities by IDs.
+func (_u *UserUpdate) RemovePointIDs(ids ...int) *UserUpdate {
+	_u.mutation.RemovePointIDs(ids...)
+	return _u
+}
+
+// RemovePoints removes "points" edges to Points entities.
+func (_u *UserUpdate) RemovePoints(v ...*Points) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePointIDs(ids...)
+}
+
+// ClearEvents clears all "events" edges to the Events entity.
+func (_u *UserUpdate) ClearEvents() *UserUpdate {
+	_u.mutation.ClearEvents()
+	return _u
+}
+
+// RemoveEventIDs removes the "events" edge to Events entities by IDs.
+func (_u *UserUpdate) RemoveEventIDs(ids ...int) *UserUpdate {
+	_u.mutation.RemoveEventIDs(ids...)
+	return _u
+}
+
+// RemoveEvents removes "events" edges to Events entities.
+func (_u *UserUpdate) RemoveEvents(v ...*Events) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEventIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -242,6 +316,96 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.PointsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PointsTable,
+			Columns: []string{user.PointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPointsIDs(); len(nodes) > 0 && !_u.mutation.PointsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PointsTable,
+			Columns: []string{user.PointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PointsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PointsTable,
+			Columns: []string{user.PointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EventsTable,
+			Columns: []string{user.EventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(events.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEventsIDs(); len(nodes) > 0 && !_u.mutation.EventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EventsTable,
+			Columns: []string{user.EventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(events.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EventsTable,
+			Columns: []string{user.EventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(events.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -347,6 +511,36 @@ func (_u *UserUpdateOne) SetGroup(v *Group) *UserUpdateOne {
 	return _u.SetGroupID(v.ID)
 }
 
+// AddPointIDs adds the "points" edge to the Points entity by IDs.
+func (_u *UserUpdateOne) AddPointIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.AddPointIDs(ids...)
+	return _u
+}
+
+// AddPoints adds the "points" edges to the Points entity.
+func (_u *UserUpdateOne) AddPoints(v ...*Points) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPointIDs(ids...)
+}
+
+// AddEventIDs adds the "events" edge to the Events entity by IDs.
+func (_u *UserUpdateOne) AddEventIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.AddEventIDs(ids...)
+	return _u
+}
+
+// AddEvents adds the "events" edges to the Events entity.
+func (_u *UserUpdateOne) AddEvents(v ...*Events) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEventIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdateOne) Mutation() *UserMutation {
 	return _u.mutation
@@ -356,6 +550,48 @@ func (_u *UserUpdateOne) Mutation() *UserMutation {
 func (_u *UserUpdateOne) ClearGroup() *UserUpdateOne {
 	_u.mutation.ClearGroup()
 	return _u
+}
+
+// ClearPoints clears all "points" edges to the Points entity.
+func (_u *UserUpdateOne) ClearPoints() *UserUpdateOne {
+	_u.mutation.ClearPoints()
+	return _u
+}
+
+// RemovePointIDs removes the "points" edge to Points entities by IDs.
+func (_u *UserUpdateOne) RemovePointIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.RemovePointIDs(ids...)
+	return _u
+}
+
+// RemovePoints removes "points" edges to Points entities.
+func (_u *UserUpdateOne) RemovePoints(v ...*Points) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePointIDs(ids...)
+}
+
+// ClearEvents clears all "events" edges to the Events entity.
+func (_u *UserUpdateOne) ClearEvents() *UserUpdateOne {
+	_u.mutation.ClearEvents()
+	return _u
+}
+
+// RemoveEventIDs removes the "events" edge to Events entities by IDs.
+func (_u *UserUpdateOne) RemoveEventIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.RemoveEventIDs(ids...)
+	return _u
+}
+
+// RemoveEvents removes "events" edges to Events entities.
+func (_u *UserUpdateOne) RemoveEvents(v ...*Events) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEventIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -498,6 +734,96 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PointsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PointsTable,
+			Columns: []string{user.PointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPointsIDs(); len(nodes) > 0 && !_u.mutation.PointsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PointsTable,
+			Columns: []string{user.PointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PointsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PointsTable,
+			Columns: []string{user.PointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EventsTable,
+			Columns: []string{user.EventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(events.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEventsIDs(); len(nodes) > 0 && !_u.mutation.EventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EventsTable,
+			Columns: []string{user.EventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(events.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EventsTable,
+			Columns: []string{user.EventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(events.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

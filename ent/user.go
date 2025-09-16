@@ -41,11 +41,18 @@ type User struct {
 type UserEdges struct {
 	// Group holds the value of the group edge.
 	Group *Group `json:"group,omitempty"`
+	// Points holds the value of the points edge.
+	Points []*Points `json:"points,omitempty"`
+	// Events holds the value of the events edge.
+	Events []*Events `json:"events,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [3]bool
 	// totalCount holds the count of the edges above.
-	totalCount [1]map[string]int
+	totalCount [3]map[string]int
+
+	namedPoints map[string][]*Points
+	namedEvents map[string][]*Events
 }
 
 // GroupOrErr returns the Group value or an error if the edge
@@ -57,6 +64,24 @@ func (e UserEdges) GroupOrErr() (*Group, error) {
 		return nil, &NotFoundError{label: group.Label}
 	}
 	return nil, &NotLoadedError{edge: "group"}
+}
+
+// PointsOrErr returns the Points value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) PointsOrErr() ([]*Points, error) {
+	if e.loadedTypes[1] {
+		return e.Points, nil
+	}
+	return nil, &NotLoadedError{edge: "points"}
+}
+
+// EventsOrErr returns the Events value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) EventsOrErr() ([]*Events, error) {
+	if e.loadedTypes[2] {
+		return e.Events, nil
+	}
+	return nil, &NotLoadedError{edge: "events"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -154,6 +179,16 @@ func (_m *User) QueryGroup() *GroupQuery {
 	return NewUserClient(_m.config).QueryGroup(_m)
 }
 
+// QueryPoints queries the "points" edge of the User entity.
+func (_m *User) QueryPoints() *PointsQuery {
+	return NewUserClient(_m.config).QueryPoints(_m)
+}
+
+// QueryEvents queries the "events" edge of the User entity.
+func (_m *User) QueryEvents() *EventsQuery {
+	return NewUserClient(_m.config).QueryEvents(_m)
+}
+
 // Update returns a builder for updating this User.
 // Note that you need to call User.Unwrap() before calling this method if this User
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -196,6 +231,54 @@ func (_m *User) String() string {
 	builder.WriteString(_m.Avatar)
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedPoints returns the Points named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedPoints(name string) ([]*Points, error) {
+	if _m.Edges.namedPoints == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedPoints[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedPoints(name string, edges ...*Points) {
+	if _m.Edges.namedPoints == nil {
+		_m.Edges.namedPoints = make(map[string][]*Points)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedPoints[name] = []*Points{}
+	} else {
+		_m.Edges.namedPoints[name] = append(_m.Edges.namedPoints[name], edges...)
+	}
+}
+
+// NamedEvents returns the Events named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedEvents(name string) ([]*Events, error) {
+	if _m.Edges.namedEvents == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedEvents[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedEvents(name string, edges ...*Events) {
+	if _m.Edges.namedEvents == nil {
+		_m.Edges.namedEvents = make(map[string][]*Events)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedEvents[name] = []*Events{}
+	} else {
+		_m.Edges.namedEvents[name] = append(_m.Edges.namedEvents[name], edges...)
+	}
 }
 
 // Users is a parsable slice of User.

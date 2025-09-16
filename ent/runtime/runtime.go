@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/database-playground/backend-v2/ent/database"
+	"github.com/database-playground/backend-v2/ent/events"
 	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/ent/points"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/schema"
 	"github.com/database-playground/backend-v2/ent/scopeset"
@@ -31,6 +33,16 @@ func init() {
 	databaseDescRelationFigure := databaseFields[3].Descriptor()
 	// database.RelationFigureValidator is a validator for the "relation_figure" field. It is called by the builders before save.
 	database.RelationFigureValidator = databaseDescRelationFigure.Validators[0].(func(string) error)
+	eventsFields := schema.Events{}.Fields()
+	_ = eventsFields
+	// eventsDescType is the schema descriptor for type field.
+	eventsDescType := eventsFields[1].Descriptor()
+	// events.TypeValidator is a validator for the "type" field. It is called by the builders before save.
+	events.TypeValidator = eventsDescType.Validators[0].(func(string) error)
+	// eventsDescTriggeredAt is the schema descriptor for triggered_at field.
+	eventsDescTriggeredAt := eventsFields[2].Descriptor()
+	// events.DefaultTriggeredAt holds the default value on creation for the triggered_at field.
+	events.DefaultTriggeredAt = eventsDescTriggeredAt.Default.(func() time.Time)
 	groupMixin := schema.Group{}.Mixin()
 	groupMixinHooks0 := groupMixin[0].Hooks()
 	group.Hooks[0] = groupMixinHooks0[0]
@@ -54,6 +66,29 @@ func init() {
 	groupDescName := groupFields[0].Descriptor()
 	// group.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	group.NameValidator = groupDescName.Validators[0].(func(string) error)
+	pointsMixin := schema.Points{}.Mixin()
+	pointsMixinHooks0 := pointsMixin[0].Hooks()
+	points.Hooks[0] = pointsMixinHooks0[0]
+	pointsMixinInters0 := pointsMixin[0].Interceptors()
+	points.Interceptors[0] = pointsMixinInters0[0]
+	pointsMixinFields0 := pointsMixin[0].Fields()
+	_ = pointsMixinFields0
+	pointsFields := schema.Points{}.Fields()
+	_ = pointsFields
+	// pointsDescCreatedAt is the schema descriptor for created_at field.
+	pointsDescCreatedAt := pointsMixinFields0[0].Descriptor()
+	// points.DefaultCreatedAt holds the default value on creation for the created_at field.
+	points.DefaultCreatedAt = pointsDescCreatedAt.Default.(func() time.Time)
+	// pointsDescUpdatedAt is the schema descriptor for updated_at field.
+	pointsDescUpdatedAt := pointsMixinFields0[1].Descriptor()
+	// points.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	points.DefaultUpdatedAt = pointsDescUpdatedAt.Default.(func() time.Time)
+	// points.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	points.UpdateDefaultUpdatedAt = pointsDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// pointsDescPoints is the schema descriptor for points field.
+	pointsDescPoints := pointsFields[0].Descriptor()
+	// points.DefaultPoints holds the default value on creation for the points field.
+	points.DefaultPoints = pointsDescPoints.Default.(int)
 	questionFields := schema.Question{}.Fields()
 	_ = questionFields
 	// questionDescCategory is the schema descriptor for category field.

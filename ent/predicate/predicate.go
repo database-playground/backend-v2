@@ -9,8 +9,14 @@ import (
 // Database is the predicate function for database builders.
 type Database func(*sql.Selector)
 
+// Events is the predicate function for events builders.
+type Events func(*sql.Selector)
+
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
+
+// Points is the predicate function for points builders.
+type Points func(*sql.Selector)
 
 // Question is the predicate function for question builders.
 type Question func(*sql.Selector)

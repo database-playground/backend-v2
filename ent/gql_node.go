@@ -10,8 +10,10 @@ import (
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/database-playground/backend-v2/ent/database"
+	"github.com/database-playground/backend-v2/ent/events"
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/internal"
+	"github.com/database-playground/backend-v2/ent/points"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/scopeset"
 	"github.com/database-playground/backend-v2/ent/user"
@@ -28,10 +30,20 @@ var databaseImplementors = []string{"Database", "Node"}
 // IsNode implements the Node interface check for GQLGen.
 func (*Database) IsNode() {}
 
+var eventsImplementors = []string{"Events", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*Events) IsNode() {}
+
 var groupImplementors = []string{"Group", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*Group) IsNode() {}
+
+var pointsImplementors = []string{"Points", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*Points) IsNode() {}
 
 var questionImplementors = []string{"Question", "Node"}
 
@@ -134,11 +146,29 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			}
 		}
 		return query.Only(ctx)
+	case events.Table:
+		query := c.Events.Query().
+			Where(events.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, eventsImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case group.Table:
 		query := c.Group.Query().
 			Where(group.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, groupImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case points.Table:
+		query := c.Points.Query().
+			Where(points.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, pointsImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -259,10 +289,42 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 				*noder = node
 			}
 		}
+	case events.Table:
+		query := c.Events.Query().
+			Where(events.IDIn(ids...))
+		query, err := query.CollectFields(ctx, eventsImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case group.Table:
 		query := c.Group.Query().
 			Where(group.IDIn(ids...))
 		query, err := query.CollectFields(ctx, groupImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case points.Table:
+		query := c.Points.Query().
+			Where(points.IDIn(ids...))
+		query, err := query.CollectFields(ctx, pointsImplementors...)
 		if err != nil {
 			return nil, err
 		}

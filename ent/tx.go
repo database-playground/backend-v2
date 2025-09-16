@@ -14,8 +14,12 @@ type Tx struct {
 	config
 	// Database is the client for interacting with the Database builders.
 	Database *DatabaseClient
+	// Events is the client for interacting with the Events builders.
+	Events *EventsClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
+	// Points is the client for interacting with the Points builders.
+	Points *PointsClient
 	// Question is the client for interacting with the Question builders.
 	Question *QuestionClient
 	// ScopeSet is the client for interacting with the ScopeSet builders.
@@ -154,7 +158,9 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Database = NewDatabaseClient(tx.config)
+	tx.Events = NewEventsClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
+	tx.Points = NewPointsClient(tx.config)
 	tx.Question = NewQuestionClient(tx.config)
 	tx.ScopeSet = NewScopeSetClient(tx.config)
 	tx.User = NewUserClient(tx.config)

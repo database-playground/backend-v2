@@ -443,6 +443,52 @@ func HasGroupWith(preds ...predicate.Group) predicate.User {
 	})
 }
 
+// HasPoints applies the HasEdge predicate on the "points" edge.
+func HasPoints() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PointsTable, PointsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPointsWith applies the HasEdge predicate on the "points" edge with a given conditions (other predicates).
+func HasPointsWith(preds ...predicate.Points) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newPointsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasEvents applies the HasEdge predicate on the "events" edge.
+func HasEvents() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EventsTable, EventsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEventsWith applies the HasEdge predicate on the "events" edge with a given conditions (other predicates).
+func HasEventsWith(preds ...predicate.Events) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newEventsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.User) predicate.User {
 	return predicate.User(sql.AndPredicates(predicates...))

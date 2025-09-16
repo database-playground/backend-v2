@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -11,7 +12,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/database-playground/backend-v2/ent/events"
 	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/ent/points"
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/user"
 )
@@ -19,14 +22,18 @@ import (
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	ctx        *QueryContext
-	order      []user.OrderOption
-	inters     []Interceptor
-	predicates []predicate.User
-	withGroup  *GroupQuery
-	withFKs    bool
-	modifiers  []func(*sql.Selector)
-	loadTotal  []func(context.Context, []*User) error
+	ctx             *QueryContext
+	order           []user.OrderOption
+	inters          []Interceptor
+	predicates      []predicate.User
+	withGroup       *GroupQuery
+	withPoints      *PointsQuery
+	withEvents      *EventsQuery
+	withFKs         bool
+	modifiers       []func(*sql.Selector)
+	loadTotal       []func(context.Context, []*User) error
+	withNamedPoints map[string]*PointsQuery
+	withNamedEvents map[string]*EventsQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -78,6 +85,50 @@ func (_q *UserQuery) QueryGroup() *GroupQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(group.Table, group.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, user.GroupTable, user.GroupColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPoints chains the current query on the "points" edge.
+func (_q *UserQuery) QueryPoints() *PointsQuery {
+	query := (&PointsClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(points.Table, points.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.PointsTable, user.PointsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEvents chains the current query on the "events" edge.
+func (_q *UserQuery) QueryEvents() *EventsQuery {
+	query := (&EventsClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(events.Table, events.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.EventsTable, user.EventsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -278,6 +329,8 @@ func (_q *UserQuery) Clone() *UserQuery {
 		inters:     append([]Interceptor{}, _q.inters...),
 		predicates: append([]predicate.User{}, _q.predicates...),
 		withGroup:  _q.withGroup.Clone(),
+		withPoints: _q.withPoints.Clone(),
+		withEvents: _q.withEvents.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -292,6 +345,28 @@ func (_q *UserQuery) WithGroup(opts ...func(*GroupQuery)) *UserQuery {
 		opt(query)
 	}
 	_q.withGroup = query
+	return _q
+}
+
+// WithPoints tells the query-builder to eager-load the nodes that are connected to
+// the "points" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithPoints(opts ...func(*PointsQuery)) *UserQuery {
+	query := (&PointsClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withPoints = query
+	return _q
+}
+
+// WithEvents tells the query-builder to eager-load the nodes that are connected to
+// the "events" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithEvents(opts ...func(*EventsQuery)) *UserQuery {
+	query := (&EventsClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withEvents = query
 	return _q
 }
 
@@ -374,8 +449,10 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		nodes       = []*User{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [3]bool{
 			_q.withGroup != nil,
+			_q.withPoints != nil,
+			_q.withEvents != nil,
 		}
 	)
 	if _q.withGroup != nil {
@@ -408,6 +485,34 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	if query := _q.withGroup; query != nil {
 		if err := _q.loadGroup(ctx, query, nodes, nil,
 			func(n *User, e *Group) { n.Edges.Group = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withPoints; query != nil {
+		if err := _q.loadPoints(ctx, query, nodes,
+			func(n *User) { n.Edges.Points = []*Points{} },
+			func(n *User, e *Points) { n.Edges.Points = append(n.Edges.Points, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withEvents; query != nil {
+		if err := _q.loadEvents(ctx, query, nodes,
+			func(n *User) { n.Edges.Events = []*Events{} },
+			func(n *User, e *Events) { n.Edges.Events = append(n.Edges.Events, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedPoints {
+		if err := _q.loadPoints(ctx, query, nodes,
+			func(n *User) { n.appendNamedPoints(name) },
+			func(n *User, e *Points) { n.appendNamedPoints(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedEvents {
+		if err := _q.loadEvents(ctx, query, nodes,
+			func(n *User) { n.appendNamedEvents(name) },
+			func(n *User, e *Events) { n.appendNamedEvents(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -448,6 +553,67 @@ func (_q *UserQuery) loadGroup(ctx context.Context, query *GroupQuery, nodes []*
 		for i := range nodes {
 			assign(nodes[i], n)
 		}
+	}
+	return nil
+}
+func (_q *UserQuery) loadPoints(ctx context.Context, query *PointsQuery, nodes []*User, init func(*User), assign func(*User, *Points)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Points(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.PointsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_points
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_points" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_points" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadEvents(ctx context.Context, query *EventsQuery, nodes []*User, init func(*User), assign func(*User, *Events)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(events.FieldUserID)
+	}
+	query.Where(predicate.Events(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.EventsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }
@@ -534,6 +700,34 @@ func (_q *UserQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// WithNamedPoints tells the query-builder to eager-load the nodes that are connected to the "points"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedPoints(name string, opts ...func(*PointsQuery)) *UserQuery {
+	query := (&PointsClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedPoints == nil {
+		_q.withNamedPoints = make(map[string]*PointsQuery)
+	}
+	_q.withNamedPoints[name] = query
+	return _q
+}
+
+// WithNamedEvents tells the query-builder to eager-load the nodes that are connected to the "events"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedEvents(name string, opts ...func(*EventsQuery)) *UserQuery {
+	query := (&EventsClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedEvents == nil {
+		_q.withNamedEvents = make(map[string]*EventsQuery)
+	}
+	_q.withNamedEvents[name] = query
+	return _q
 }
 
 // UserGroupBy is the group-by builder for User entities.
