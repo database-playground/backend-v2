@@ -57,5 +57,7 @@ type SqlResponse {
 
 type SubmissionResult {
   version: String!
-  response: SqlResponse!
+
+  result: SqlResponse
+  error: String
 }

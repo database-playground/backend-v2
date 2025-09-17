@@ -6,10 +6,8 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/database-playground/backend-v2/ent"
-	"github.com/database-playground/backend-v2/graph/model"
 	"github.com/database-playground/backend-v2/models"
 )
 
@@ -110,7 +108,7 @@ func (r *queryResolver) Database(ctx context.Context, id int) (*ent.Database, er
 }
 
 // ReferenceAnswerResult is the resolver for the referenceAnswerResult field.
-func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Question) (*model.SQLResponse, error) {
+func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Question) (*models.SqlResponse, error) {
 	database, err := obj.QueryDatabase().Only(ctx)
 	if err != nil {
 		return nil, err
@@ -121,22 +119,13 @@ func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Q
 		return nil, err
 	}
 
-	return &model.SQLResponse{
+	return &models.SqlResponse{
 		Columns: response.Columns,
 		Rows:    response.Rows,
 	}, nil
 }
 
-// Response is the resolver for the response field.
-func (r *submissionResultResolver) Response(ctx context.Context, obj *models.SubmissionResult) (*model.SQLResponse, error) {
-	panic(fmt.Errorf("not implemented: Response - response"))
-}
-
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
-// SubmissionResult returns SubmissionResultResolver implementation.
-func (r *Resolver) SubmissionResult() SubmissionResultResolver { return &submissionResultResolver{r} }
-
 type mutationResolver struct{ *Resolver }
-type submissionResultResolver struct{ *Resolver }
