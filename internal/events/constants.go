@@ -3,5 +3,6 @@ package events
 type EventType string
 
 const (
-	EventTypeLogin EventType = "login"
+	EventTypeLogin        EventType = "login"
+	EventTypeImpersonated EventType = "impersonated"
 )
