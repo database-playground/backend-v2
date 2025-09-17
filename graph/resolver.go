@@ -11,6 +11,7 @@ import (
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/events"
 	"github.com/database-playground/backend-v2/internal/sqlrunner"
+	"github.com/database-playground/backend-v2/internal/submission"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
@@ -44,6 +45,10 @@ func NewSchema(ent *ent.Client, auth auth.Storage, sqlrunner *sqlrunner.SqlRunne
 
 func (r *Resolver) UserAccount(ctx context.Context) *useraccount.Context {
 	return useraccount.NewContext(r.EntClient(ctx), r.auth, r.eventService)
+}
+
+func (r *Resolver) SubmissionService(ctx context.Context) *submission.SubmissionService {
+	return submission.NewSubmissionService(r.EntClient(ctx), r.eventService)
 }
 
 func (r *Resolver) EntClient(ctx context.Context) *ent.Client {

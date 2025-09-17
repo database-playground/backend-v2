@@ -44,6 +44,12 @@ extend type Mutation {
   Delete a database.
   """
   deleteDatabase(id: ID!): Boolean! @scope(scope: "database:write")
+
+  """
+  Submit your answer to a question.
+  """
+  submitAnswer(id: ID!, input: SubmitAnswerInput!): SubmissionResult!
+    @scope(scope: "submission:write")
 }
 
 extend type Question {
@@ -60,4 +66,9 @@ type SubmissionResult {
 
   result: SqlResponse
   error: String
+}
+
+input SubmitAnswerInput {
+  questionID: ID!
+  answer: String!
 }

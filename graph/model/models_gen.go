@@ -11,3 +11,8 @@ type ScopeSetFilter struct {
 	// The slug of the scope set.
 	Slug *string `json:"slug,omitempty"`
 }
+
+type SubmitAnswerInput struct {
+	QuestionID int    `json:"questionID"`
+	Answer     string `json:"answer"`
+}

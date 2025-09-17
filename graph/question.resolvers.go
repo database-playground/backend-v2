@@ -6,8 +6,13 @@ package graph
 
 import (
 	"context"
+	"errors"
 
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/graph/defs"
+	"github.com/database-playground/backend-v2/graph/model"
+	"github.com/database-playground/backend-v2/internal/auth"
+	"github.com/database-playground/backend-v2/internal/submission"
 	"github.com/database-playground/backend-v2/models"
 )
 
@@ -81,6 +86,31 @@ func (r *mutationResolver) DeleteDatabase(ctx context.Context, id int) (bool, er
 	}
 
 	return true, nil
+}
+
+// SubmitAnswer is the resolver for the submitAnswer field.
+func (r *mutationResolver) SubmitAnswer(ctx context.Context, id int, input model.SubmitAnswerInput) (*models.SubmissionResult, error) {
+	user, ok := auth.GetUser(ctx)
+	if !ok {
+		return nil, defs.ErrUnauthorized
+	}
+
+	submissionService := r.SubmissionService(ctx)
+
+	submissionResult, err := submissionService.SubmitAnswer(ctx, submission.SubmitAnswerInput{
+		SubmitterID: user.UserID,
+		QuestionID:  id,
+		Answer:      input.Answer,
+	})
+	if err != nil {
+		if errors.Is(err, submission.ErrQuestionNotFound) {
+			return nil, defs.ErrNotFound
+		}
+
+		return nil, err
+	}
+
+	return &submissionResult, nil
 }
 
 // Question is the resolver for the question field.
