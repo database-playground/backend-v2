@@ -69,7 +69,7 @@ func (ss *SubmissionService) SubmitAnswer(ctx context.Context, input SubmitAnswe
 	// Write event to database
 	ss.eventService.TriggerEvent(ctx, events.Event{
 		Type: events.EventTypeSubmitAnswer,
-		Payload: map[string]interface{}{
+		Payload: map[string]any{
 			"submission_id": submission.ID,
 			"question_id":   input.QuestionID,
 		},
