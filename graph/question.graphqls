@@ -54,3 +54,8 @@ type SqlResponse {
   columns: [String!]!
   rows: [[String!]!]!
 }
+
+type SubmissionResult {
+  version: String!
+  response: SqlResponse!
+}

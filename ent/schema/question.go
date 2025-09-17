@@ -40,6 +40,7 @@ func (Question) Edges() []ent.Edge {
 			Ref("questions").
 			Unique().
 			Required(),
+		edge.To("submissions", Submission.Type),
 	}
 }
 
