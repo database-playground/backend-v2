@@ -5,7 +5,6 @@ package points
 import (
 	"time"
 
-	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 )
@@ -15,14 +14,10 @@ const (
 	Label = "points"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldCreatedAt holds the string denoting the created_at field in the database.
-	FieldCreatedAt = "created_at"
-	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
-	FieldUpdatedAt = "updated_at"
-	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
-	FieldDeletedAt = "deleted_at"
 	// FieldPoints holds the string denoting the points field in the database.
 	FieldPoints = "points"
+	// FieldGrantedAt holds the string denoting the granted_at field in the database.
+	FieldGrantedAt = "granted_at"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
 	// EdgeUser holds the string denoting the user edge name in mutations.
@@ -41,10 +36,8 @@ const (
 // Columns holds all SQL columns for points fields.
 var Columns = []string{
 	FieldID,
-	FieldCreatedAt,
-	FieldUpdatedAt,
-	FieldDeletedAt,
 	FieldPoints,
+	FieldGrantedAt,
 	FieldDescription,
 }
 
@@ -69,22 +62,11 @@ func ValidColumn(column string) bool {
 	return false
 }
 
-// Note that the variables below are initialized by the runtime
-// package on the initialization of the application. Therefore,
-// it should be imported in the main as follows:
-//
-//	import _ "github.com/database-playground/backend-v2/ent/runtime"
 var (
-	Hooks        [1]ent.Hook
-	Interceptors [1]ent.Interceptor
-	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
-	DefaultCreatedAt func() time.Time
-	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
-	DefaultUpdatedAt func() time.Time
-	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
-	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultPoints holds the default value on creation for the "points" field.
 	DefaultPoints int
+	// DefaultGrantedAt holds the default value on creation for the "granted_at" field.
+	DefaultGrantedAt func() time.Time
 )
 
 // OrderOption defines the ordering options for the Points queries.
@@ -95,24 +77,14 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByCreatedAt orders the results by the created_at field.
-func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
-}
-
-// ByUpdatedAt orders the results by the updated_at field.
-func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
-}
-
-// ByDeletedAt orders the results by the deleted_at field.
-func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
-}
-
 // ByPoints orders the results by the points field.
 func ByPoints(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPoints, opts...).ToFunc()
+}
+
+// ByGrantedAt orders the results by the granted_at field.
+func ByGrantedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldGrantedAt, opts...).ToFunc()
 }
 
 // ByDescription orders the results by the description field.

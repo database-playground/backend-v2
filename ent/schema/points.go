@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"time"
+
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
 	"entgo.io/ent/schema"
@@ -17,6 +19,8 @@ func (Points) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int("points").
 			Default(0),
+		field.Time("granted_at").
+			Default(time.Now),
 		field.String("description").
 			Optional(),
 	}
@@ -25,12 +29,6 @@ func (Points) Fields() []ent.Field {
 func (Points) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("user", User.Type).Ref("points").Unique().Required(),
-	}
-}
-
-func (Points) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		TimestampMixin{},
 	}
 }
 

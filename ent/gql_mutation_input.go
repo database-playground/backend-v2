@@ -221,6 +221,7 @@ func (c *GroupUpdateOne) SetInput(i UpdateGroupInput) *GroupUpdateOne {
 // CreatePointsInput represents a mutation input for creating pointsslice.
 type CreatePointsInput struct {
 	Points      *int
+	GrantedAt   *time.Time
 	Description *string
 	UserID      int
 }
@@ -229,6 +230,9 @@ type CreatePointsInput struct {
 func (i *CreatePointsInput) Mutate(m *PointsMutation) {
 	if v := i.Points; v != nil {
 		m.SetPoints(*v)
+	}
+	if v := i.GrantedAt; v != nil {
+		m.SetGrantedAt(*v)
 	}
 	if v := i.Description; v != nil {
 		m.SetDescription(*v)
@@ -245,6 +249,7 @@ func (c *PointsCreate) SetInput(i CreatePointsInput) *PointsCreate {
 // UpdatePointsInput represents a mutation input for updating pointsslice.
 type UpdatePointsInput struct {
 	Points           *int
+	GrantedAt        *time.Time
 	ClearDescription bool
 	Description      *string
 	UserID           *int
@@ -254,6 +259,9 @@ type UpdatePointsInput struct {
 func (i *UpdatePointsInput) Mutate(m *PointsMutation) {
 	if v := i.Points; v != nil {
 		m.SetPoints(*v)
+	}
+	if v := i.GrantedAt; v != nil {
+		m.SetGrantedAt(*v)
 	}
 	if i.ClearDescription {
 		m.ClearDescription()

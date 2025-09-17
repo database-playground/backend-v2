@@ -18,14 +18,10 @@ type Points struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// CreatedAt holds the value of the "created_at" field.
-	CreatedAt time.Time `json:"created_at,omitempty"`
-	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
-	// DeletedAt holds the value of the "deleted_at" field.
-	DeletedAt time.Time `json:"deleted_at,omitempty"`
 	// Points holds the value of the "points" field.
 	Points int `json:"points,omitempty"`
+	// GrantedAt holds the value of the "granted_at" field.
+	GrantedAt time.Time `json:"granted_at,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -66,7 +62,7 @@ func (*Points) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case points.FieldDescription:
 			values[i] = new(sql.NullString)
-		case points.FieldCreatedAt, points.FieldUpdatedAt, points.FieldDeletedAt:
+		case points.FieldGrantedAt:
 			values[i] = new(sql.NullTime)
 		case points.ForeignKeys[0]: // user_points
 			values[i] = new(sql.NullInt64)
@@ -91,29 +87,17 @@ func (_m *Points) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			_m.ID = int(value.Int64)
-		case points.FieldCreatedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field created_at", values[i])
-			} else if value.Valid {
-				_m.CreatedAt = value.Time
-			}
-		case points.FieldUpdatedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
-			} else if value.Valid {
-				_m.UpdatedAt = value.Time
-			}
-		case points.FieldDeletedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
-			} else if value.Valid {
-				_m.DeletedAt = value.Time
-			}
 		case points.FieldPoints:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field points", values[i])
 			} else if value.Valid {
 				_m.Points = int(value.Int64)
+			}
+		case points.FieldGrantedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field granted_at", values[i])
+			} else if value.Valid {
+				_m.GrantedAt = value.Time
 			}
 		case points.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -169,17 +153,11 @@ func (_m *Points) String() string {
 	var builder strings.Builder
 	builder.WriteString("Points(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
-	builder.WriteString("created_at=")
-	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("updated_at=")
-	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("deleted_at=")
-	builder.WriteString(_m.DeletedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
 	builder.WriteString("points=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Points))
+	builder.WriteString(", ")
+	builder.WriteString("granted_at=")
+	builder.WriteString(_m.GrantedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(_m.Description)

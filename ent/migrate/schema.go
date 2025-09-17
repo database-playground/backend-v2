@@ -75,10 +75,8 @@ var (
 	// PointsColumns holds the columns for the "points" table.
 	PointsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "points", Type: field.TypeInt, Default: 0},
+		{Name: "granted_at", Type: field.TypeTime},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "user_points", Type: field.TypeInt},
 	}
@@ -90,7 +88,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "points_users_points",
-				Columns:    []*schema.Column{PointsColumns[6]},
+				Columns:    []*schema.Column{PointsColumns[4]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},

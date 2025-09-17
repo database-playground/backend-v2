@@ -52,7 +52,7 @@ func (d *PointsGranter) GrantDailyLoginPoints(ctx context.Context, userID int) (
 	hasPointsRecord, err := d.entClient.Points.Query().
 		Where(points.HasUserWith(user.ID(userID))).
 		Where(points.DescriptionEQ(PointDescriptionDailyLogin)).
-		Where(points.CreatedAtGTE(time.Now().AddDate(0, 0, -1))).Exist(ctx)
+		Where(points.GrantedAtGTE(time.Now().AddDate(0, 0, -1))).Exist(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -92,7 +92,7 @@ func (d *PointsGranter) GrantWeeklyLoginPoints(ctx context.Context, userID int) 
 	hasPointsRecord, err := d.entClient.Points.Query().
 		Where(points.HasUserWith(user.ID(userID))).
 		Where(points.DescriptionEQ(PointDescriptionWeeklyLogin)).
-		Where(points.CreatedAtGTE(time.Now().AddDate(0, 0, -7))).Exist(ctx)
+		Where(points.GrantedAtGTE(time.Now().AddDate(0, 0, -7))).Exist(ctx)
 	if err != nil {
 		return false, err
 	}

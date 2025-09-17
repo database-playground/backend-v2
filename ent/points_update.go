@@ -29,46 +29,6 @@ func (_u *PointsUpdate) Where(ps ...predicate.Points) *PointsUpdate {
 	return _u
 }
 
-// SetCreatedAt sets the "created_at" field.
-func (_u *PointsUpdate) SetCreatedAt(v time.Time) *PointsUpdate {
-	_u.mutation.SetCreatedAt(v)
-	return _u
-}
-
-// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (_u *PointsUpdate) SetNillableCreatedAt(v *time.Time) *PointsUpdate {
-	if v != nil {
-		_u.SetCreatedAt(*v)
-	}
-	return _u
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (_u *PointsUpdate) SetUpdatedAt(v time.Time) *PointsUpdate {
-	_u.mutation.SetUpdatedAt(v)
-	return _u
-}
-
-// SetDeletedAt sets the "deleted_at" field.
-func (_u *PointsUpdate) SetDeletedAt(v time.Time) *PointsUpdate {
-	_u.mutation.SetDeletedAt(v)
-	return _u
-}
-
-// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (_u *PointsUpdate) SetNillableDeletedAt(v *time.Time) *PointsUpdate {
-	if v != nil {
-		_u.SetDeletedAt(*v)
-	}
-	return _u
-}
-
-// ClearDeletedAt clears the value of the "deleted_at" field.
-func (_u *PointsUpdate) ClearDeletedAt() *PointsUpdate {
-	_u.mutation.ClearDeletedAt()
-	return _u
-}
-
 // SetPoints sets the "points" field.
 func (_u *PointsUpdate) SetPoints(v int) *PointsUpdate {
 	_u.mutation.ResetPoints()
@@ -87,6 +47,20 @@ func (_u *PointsUpdate) SetNillablePoints(v *int) *PointsUpdate {
 // AddPoints adds value to the "points" field.
 func (_u *PointsUpdate) AddPoints(v int) *PointsUpdate {
 	_u.mutation.AddPoints(v)
+	return _u
+}
+
+// SetGrantedAt sets the "granted_at" field.
+func (_u *PointsUpdate) SetGrantedAt(v time.Time) *PointsUpdate {
+	_u.mutation.SetGrantedAt(v)
+	return _u
+}
+
+// SetNillableGrantedAt sets the "granted_at" field if the given value is not nil.
+func (_u *PointsUpdate) SetNillableGrantedAt(v *time.Time) *PointsUpdate {
+	if v != nil {
+		_u.SetGrantedAt(*v)
+	}
 	return _u
 }
 
@@ -134,9 +108,6 @@ func (_u *PointsUpdate) ClearUser() *PointsUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *PointsUpdate) Save(ctx context.Context) (int, error) {
-	if err := _u.defaults(); err != nil {
-		return 0, err
-	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -162,18 +133,6 @@ func (_u *PointsUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// defaults sets the default values of the builder before save.
-func (_u *PointsUpdate) defaults() error {
-	if _, ok := _u.mutation.UpdatedAt(); !ok {
-		if points.UpdateDefaultUpdatedAt == nil {
-			return fmt.Errorf("ent: uninitialized points.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
-		}
-		v := points.UpdateDefaultUpdatedAt()
-		_u.mutation.SetUpdatedAt(v)
-	}
-	return nil
-}
-
 // check runs all checks and user-defined validators on the builder.
 func (_u *PointsUpdate) check() error {
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
@@ -194,23 +153,14 @@ func (_u *PointsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
-	if value, ok := _u.mutation.CreatedAt(); ok {
-		_spec.SetField(points.FieldCreatedAt, field.TypeTime, value)
-	}
-	if value, ok := _u.mutation.UpdatedAt(); ok {
-		_spec.SetField(points.FieldUpdatedAt, field.TypeTime, value)
-	}
-	if value, ok := _u.mutation.DeletedAt(); ok {
-		_spec.SetField(points.FieldDeletedAt, field.TypeTime, value)
-	}
-	if _u.mutation.DeletedAtCleared() {
-		_spec.ClearField(points.FieldDeletedAt, field.TypeTime)
-	}
 	if value, ok := _u.mutation.Points(); ok {
 		_spec.SetField(points.FieldPoints, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.AddedPoints(); ok {
 		_spec.AddField(points.FieldPoints, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.GrantedAt(); ok {
+		_spec.SetField(points.FieldGrantedAt, field.TypeTime, value)
 	}
 	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(points.FieldDescription, field.TypeString, value)
@@ -267,46 +217,6 @@ type PointsUpdateOne struct {
 	mutation *PointsMutation
 }
 
-// SetCreatedAt sets the "created_at" field.
-func (_u *PointsUpdateOne) SetCreatedAt(v time.Time) *PointsUpdateOne {
-	_u.mutation.SetCreatedAt(v)
-	return _u
-}
-
-// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (_u *PointsUpdateOne) SetNillableCreatedAt(v *time.Time) *PointsUpdateOne {
-	if v != nil {
-		_u.SetCreatedAt(*v)
-	}
-	return _u
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (_u *PointsUpdateOne) SetUpdatedAt(v time.Time) *PointsUpdateOne {
-	_u.mutation.SetUpdatedAt(v)
-	return _u
-}
-
-// SetDeletedAt sets the "deleted_at" field.
-func (_u *PointsUpdateOne) SetDeletedAt(v time.Time) *PointsUpdateOne {
-	_u.mutation.SetDeletedAt(v)
-	return _u
-}
-
-// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (_u *PointsUpdateOne) SetNillableDeletedAt(v *time.Time) *PointsUpdateOne {
-	if v != nil {
-		_u.SetDeletedAt(*v)
-	}
-	return _u
-}
-
-// ClearDeletedAt clears the value of the "deleted_at" field.
-func (_u *PointsUpdateOne) ClearDeletedAt() *PointsUpdateOne {
-	_u.mutation.ClearDeletedAt()
-	return _u
-}
-
 // SetPoints sets the "points" field.
 func (_u *PointsUpdateOne) SetPoints(v int) *PointsUpdateOne {
 	_u.mutation.ResetPoints()
@@ -325,6 +235,20 @@ func (_u *PointsUpdateOne) SetNillablePoints(v *int) *PointsUpdateOne {
 // AddPoints adds value to the "points" field.
 func (_u *PointsUpdateOne) AddPoints(v int) *PointsUpdateOne {
 	_u.mutation.AddPoints(v)
+	return _u
+}
+
+// SetGrantedAt sets the "granted_at" field.
+func (_u *PointsUpdateOne) SetGrantedAt(v time.Time) *PointsUpdateOne {
+	_u.mutation.SetGrantedAt(v)
+	return _u
+}
+
+// SetNillableGrantedAt sets the "granted_at" field if the given value is not nil.
+func (_u *PointsUpdateOne) SetNillableGrantedAt(v *time.Time) *PointsUpdateOne {
+	if v != nil {
+		_u.SetGrantedAt(*v)
+	}
 	return _u
 }
 
@@ -385,9 +309,6 @@ func (_u *PointsUpdateOne) Select(field string, fields ...string) *PointsUpdateO
 
 // Save executes the query and returns the updated Points entity.
 func (_u *PointsUpdateOne) Save(ctx context.Context) (*Points, error) {
-	if err := _u.defaults(); err != nil {
-		return nil, err
-	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -411,18 +332,6 @@ func (_u *PointsUpdateOne) ExecX(ctx context.Context) {
 	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
-}
-
-// defaults sets the default values of the builder before save.
-func (_u *PointsUpdateOne) defaults() error {
-	if _, ok := _u.mutation.UpdatedAt(); !ok {
-		if points.UpdateDefaultUpdatedAt == nil {
-			return fmt.Errorf("ent: uninitialized points.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
-		}
-		v := points.UpdateDefaultUpdatedAt()
-		_u.mutation.SetUpdatedAt(v)
-	}
-	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -462,23 +371,14 @@ func (_u *PointsUpdateOne) sqlSave(ctx context.Context) (_node *Points, err erro
 			}
 		}
 	}
-	if value, ok := _u.mutation.CreatedAt(); ok {
-		_spec.SetField(points.FieldCreatedAt, field.TypeTime, value)
-	}
-	if value, ok := _u.mutation.UpdatedAt(); ok {
-		_spec.SetField(points.FieldUpdatedAt, field.TypeTime, value)
-	}
-	if value, ok := _u.mutation.DeletedAt(); ok {
-		_spec.SetField(points.FieldDeletedAt, field.TypeTime, value)
-	}
-	if _u.mutation.DeletedAtCleared() {
-		_spec.ClearField(points.FieldDeletedAt, field.TypeTime)
-	}
 	if value, ok := _u.mutation.Points(); ok {
 		_spec.SetField(points.FieldPoints, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.AddedPoints(); ok {
 		_spec.AddField(points.FieldPoints, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.GrantedAt(); ok {
+		_spec.SetField(points.FieldGrantedAt, field.TypeTime, value)
 	}
 	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(points.FieldDescription, field.TypeString, value)

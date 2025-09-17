@@ -1891,11 +1891,9 @@ type PointsMutation struct {
 	op            Op
 	typ           string
 	id            *int
-	created_at    *time.Time
-	updated_at    *time.Time
-	deleted_at    *time.Time
 	points        *int
 	addpoints     *int
+	granted_at    *time.Time
 	description   *string
 	clearedFields map[string]struct{}
 	user          *int
@@ -2003,127 +2001,6 @@ func (m *PointsMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
-// SetCreatedAt sets the "created_at" field.
-func (m *PointsMutation) SetCreatedAt(t time.Time) {
-	m.created_at = &t
-}
-
-// CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *PointsMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m.created_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCreatedAt returns the old "created_at" field's value of the Points entity.
-// If the Points object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PointsMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
-	}
-	return oldValue.CreatedAt, nil
-}
-
-// ResetCreatedAt resets all changes to the "created_at" field.
-func (m *PointsMutation) ResetCreatedAt() {
-	m.created_at = nil
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (m *PointsMutation) SetUpdatedAt(t time.Time) {
-	m.updated_at = &t
-}
-
-// UpdatedAt returns the value of the "updated_at" field in the mutation.
-func (m *PointsMutation) UpdatedAt() (r time.Time, exists bool) {
-	v := m.updated_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldUpdatedAt returns the old "updated_at" field's value of the Points entity.
-// If the Points object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PointsMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
-	}
-	return oldValue.UpdatedAt, nil
-}
-
-// ResetUpdatedAt resets all changes to the "updated_at" field.
-func (m *PointsMutation) ResetUpdatedAt() {
-	m.updated_at = nil
-}
-
-// SetDeletedAt sets the "deleted_at" field.
-func (m *PointsMutation) SetDeletedAt(t time.Time) {
-	m.deleted_at = &t
-}
-
-// DeletedAt returns the value of the "deleted_at" field in the mutation.
-func (m *PointsMutation) DeletedAt() (r time.Time, exists bool) {
-	v := m.deleted_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDeletedAt returns the old "deleted_at" field's value of the Points entity.
-// If the Points object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PointsMutation) OldDeletedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
-	}
-	return oldValue.DeletedAt, nil
-}
-
-// ClearDeletedAt clears the value of the "deleted_at" field.
-func (m *PointsMutation) ClearDeletedAt() {
-	m.deleted_at = nil
-	m.clearedFields[points.FieldDeletedAt] = struct{}{}
-}
-
-// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
-func (m *PointsMutation) DeletedAtCleared() bool {
-	_, ok := m.clearedFields[points.FieldDeletedAt]
-	return ok
-}
-
-// ResetDeletedAt resets all changes to the "deleted_at" field.
-func (m *PointsMutation) ResetDeletedAt() {
-	m.deleted_at = nil
-	delete(m.clearedFields, points.FieldDeletedAt)
-}
-
 // SetPoints sets the "points" field.
 func (m *PointsMutation) SetPoints(i int) {
 	m.points = &i
@@ -2178,6 +2055,42 @@ func (m *PointsMutation) AddedPoints() (r int, exists bool) {
 func (m *PointsMutation) ResetPoints() {
 	m.points = nil
 	m.addpoints = nil
+}
+
+// SetGrantedAt sets the "granted_at" field.
+func (m *PointsMutation) SetGrantedAt(t time.Time) {
+	m.granted_at = &t
+}
+
+// GrantedAt returns the value of the "granted_at" field in the mutation.
+func (m *PointsMutation) GrantedAt() (r time.Time, exists bool) {
+	v := m.granted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGrantedAt returns the old "granted_at" field's value of the Points entity.
+// If the Points object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PointsMutation) OldGrantedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGrantedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGrantedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGrantedAt: %w", err)
+	}
+	return oldValue.GrantedAt, nil
+}
+
+// ResetGrantedAt resets all changes to the "granted_at" field.
+func (m *PointsMutation) ResetGrantedAt() {
+	m.granted_at = nil
 }
 
 // SetDescription sets the "description" field.
@@ -2302,18 +2215,12 @@ func (m *PointsMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PointsMutation) Fields() []string {
-	fields := make([]string, 0, 5)
-	if m.created_at != nil {
-		fields = append(fields, points.FieldCreatedAt)
-	}
-	if m.updated_at != nil {
-		fields = append(fields, points.FieldUpdatedAt)
-	}
-	if m.deleted_at != nil {
-		fields = append(fields, points.FieldDeletedAt)
-	}
+	fields := make([]string, 0, 3)
 	if m.points != nil {
 		fields = append(fields, points.FieldPoints)
+	}
+	if m.granted_at != nil {
+		fields = append(fields, points.FieldGrantedAt)
 	}
 	if m.description != nil {
 		fields = append(fields, points.FieldDescription)
@@ -2326,14 +2233,10 @@ func (m *PointsMutation) Fields() []string {
 // schema.
 func (m *PointsMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case points.FieldCreatedAt:
-		return m.CreatedAt()
-	case points.FieldUpdatedAt:
-		return m.UpdatedAt()
-	case points.FieldDeletedAt:
-		return m.DeletedAt()
 	case points.FieldPoints:
 		return m.Points()
+	case points.FieldGrantedAt:
+		return m.GrantedAt()
 	case points.FieldDescription:
 		return m.Description()
 	}
@@ -2345,14 +2248,10 @@ func (m *PointsMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *PointsMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case points.FieldCreatedAt:
-		return m.OldCreatedAt(ctx)
-	case points.FieldUpdatedAt:
-		return m.OldUpdatedAt(ctx)
-	case points.FieldDeletedAt:
-		return m.OldDeletedAt(ctx)
 	case points.FieldPoints:
 		return m.OldPoints(ctx)
+	case points.FieldGrantedAt:
+		return m.OldGrantedAt(ctx)
 	case points.FieldDescription:
 		return m.OldDescription(ctx)
 	}
@@ -2364,33 +2263,19 @@ func (m *PointsMutation) OldField(ctx context.Context, name string) (ent.Value, 
 // type.
 func (m *PointsMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case points.FieldCreatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCreatedAt(v)
-		return nil
-	case points.FieldUpdatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUpdatedAt(v)
-		return nil
-	case points.FieldDeletedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDeletedAt(v)
-		return nil
 	case points.FieldPoints:
 		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPoints(v)
+		return nil
+	case points.FieldGrantedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGrantedAt(v)
 		return nil
 	case points.FieldDescription:
 		v, ok := value.(string)
@@ -2444,9 +2329,6 @@ func (m *PointsMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *PointsMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(points.FieldDeletedAt) {
-		fields = append(fields, points.FieldDeletedAt)
-	}
 	if m.FieldCleared(points.FieldDescription) {
 		fields = append(fields, points.FieldDescription)
 	}
@@ -2464,9 +2346,6 @@ func (m *PointsMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *PointsMutation) ClearField(name string) error {
 	switch name {
-	case points.FieldDeletedAt:
-		m.ClearDeletedAt()
-		return nil
 	case points.FieldDescription:
 		m.ClearDescription()
 		return nil
@@ -2478,17 +2357,11 @@ func (m *PointsMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *PointsMutation) ResetField(name string) error {
 	switch name {
-	case points.FieldCreatedAt:
-		m.ResetCreatedAt()
-		return nil
-	case points.FieldUpdatedAt:
-		m.ResetUpdatedAt()
-		return nil
-	case points.FieldDeletedAt:
-		m.ResetDeletedAt()
-		return nil
 	case points.FieldPoints:
 		m.ResetPoints()
+		return nil
+	case points.FieldGrantedAt:
+		m.ResetGrantedAt()
 		return nil
 	case points.FieldDescription:
 		m.ResetDescription()

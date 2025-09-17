@@ -1028,38 +1028,6 @@ type PointsWhereInput struct {
 	IDLT    *int  `json:"idLT,omitempty"`
 	IDLTE   *int  `json:"idLTE,omitempty"`
 
-	// "created_at" field predicates.
-	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
-	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
-	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
-	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
-	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
-	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
-	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
-	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
-
-	// "updated_at" field predicates.
-	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
-	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
-	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
-	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
-	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
-	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
-	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
-	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
-
-	// "deleted_at" field predicates.
-	DeletedAt       *time.Time  `json:"deletedAt,omitempty"`
-	DeletedAtNEQ    *time.Time  `json:"deletedAtNEQ,omitempty"`
-	DeletedAtIn     []time.Time `json:"deletedAtIn,omitempty"`
-	DeletedAtNotIn  []time.Time `json:"deletedAtNotIn,omitempty"`
-	DeletedAtGT     *time.Time  `json:"deletedAtGT,omitempty"`
-	DeletedAtGTE    *time.Time  `json:"deletedAtGTE,omitempty"`
-	DeletedAtLT     *time.Time  `json:"deletedAtLT,omitempty"`
-	DeletedAtLTE    *time.Time  `json:"deletedAtLTE,omitempty"`
-	DeletedAtIsNil  bool        `json:"deletedAtIsNil,omitempty"`
-	DeletedAtNotNil bool        `json:"deletedAtNotNil,omitempty"`
-
 	// "points" field predicates.
 	Points      *int  `json:"points,omitempty"`
 	PointsNEQ   *int  `json:"pointsNEQ,omitempty"`
@@ -1069,6 +1037,16 @@ type PointsWhereInput struct {
 	PointsGTE   *int  `json:"pointsGTE,omitempty"`
 	PointsLT    *int  `json:"pointsLT,omitempty"`
 	PointsLTE   *int  `json:"pointsLTE,omitempty"`
+
+	// "granted_at" field predicates.
+	GrantedAt      *time.Time  `json:"grantedAt,omitempty"`
+	GrantedAtNEQ   *time.Time  `json:"grantedAtNEQ,omitempty"`
+	GrantedAtIn    []time.Time `json:"grantedAtIn,omitempty"`
+	GrantedAtNotIn []time.Time `json:"grantedAtNotIn,omitempty"`
+	GrantedAtGT    *time.Time  `json:"grantedAtGT,omitempty"`
+	GrantedAtGTE   *time.Time  `json:"grantedAtGTE,omitempty"`
+	GrantedAtLT    *time.Time  `json:"grantedAtLT,omitempty"`
+	GrantedAtLTE   *time.Time  `json:"grantedAtLTE,omitempty"`
 
 	// "description" field predicates.
 	Description             *string  `json:"description,omitempty"`
@@ -1187,84 +1165,6 @@ func (i *PointsWhereInput) P() (predicate.Points, error) {
 	if i.IDLTE != nil {
 		predicates = append(predicates, points.IDLTE(*i.IDLTE))
 	}
-	if i.CreatedAt != nil {
-		predicates = append(predicates, points.CreatedAtEQ(*i.CreatedAt))
-	}
-	if i.CreatedAtNEQ != nil {
-		predicates = append(predicates, points.CreatedAtNEQ(*i.CreatedAtNEQ))
-	}
-	if len(i.CreatedAtIn) > 0 {
-		predicates = append(predicates, points.CreatedAtIn(i.CreatedAtIn...))
-	}
-	if len(i.CreatedAtNotIn) > 0 {
-		predicates = append(predicates, points.CreatedAtNotIn(i.CreatedAtNotIn...))
-	}
-	if i.CreatedAtGT != nil {
-		predicates = append(predicates, points.CreatedAtGT(*i.CreatedAtGT))
-	}
-	if i.CreatedAtGTE != nil {
-		predicates = append(predicates, points.CreatedAtGTE(*i.CreatedAtGTE))
-	}
-	if i.CreatedAtLT != nil {
-		predicates = append(predicates, points.CreatedAtLT(*i.CreatedAtLT))
-	}
-	if i.CreatedAtLTE != nil {
-		predicates = append(predicates, points.CreatedAtLTE(*i.CreatedAtLTE))
-	}
-	if i.UpdatedAt != nil {
-		predicates = append(predicates, points.UpdatedAtEQ(*i.UpdatedAt))
-	}
-	if i.UpdatedAtNEQ != nil {
-		predicates = append(predicates, points.UpdatedAtNEQ(*i.UpdatedAtNEQ))
-	}
-	if len(i.UpdatedAtIn) > 0 {
-		predicates = append(predicates, points.UpdatedAtIn(i.UpdatedAtIn...))
-	}
-	if len(i.UpdatedAtNotIn) > 0 {
-		predicates = append(predicates, points.UpdatedAtNotIn(i.UpdatedAtNotIn...))
-	}
-	if i.UpdatedAtGT != nil {
-		predicates = append(predicates, points.UpdatedAtGT(*i.UpdatedAtGT))
-	}
-	if i.UpdatedAtGTE != nil {
-		predicates = append(predicates, points.UpdatedAtGTE(*i.UpdatedAtGTE))
-	}
-	if i.UpdatedAtLT != nil {
-		predicates = append(predicates, points.UpdatedAtLT(*i.UpdatedAtLT))
-	}
-	if i.UpdatedAtLTE != nil {
-		predicates = append(predicates, points.UpdatedAtLTE(*i.UpdatedAtLTE))
-	}
-	if i.DeletedAt != nil {
-		predicates = append(predicates, points.DeletedAtEQ(*i.DeletedAt))
-	}
-	if i.DeletedAtNEQ != nil {
-		predicates = append(predicates, points.DeletedAtNEQ(*i.DeletedAtNEQ))
-	}
-	if len(i.DeletedAtIn) > 0 {
-		predicates = append(predicates, points.DeletedAtIn(i.DeletedAtIn...))
-	}
-	if len(i.DeletedAtNotIn) > 0 {
-		predicates = append(predicates, points.DeletedAtNotIn(i.DeletedAtNotIn...))
-	}
-	if i.DeletedAtGT != nil {
-		predicates = append(predicates, points.DeletedAtGT(*i.DeletedAtGT))
-	}
-	if i.DeletedAtGTE != nil {
-		predicates = append(predicates, points.DeletedAtGTE(*i.DeletedAtGTE))
-	}
-	if i.DeletedAtLT != nil {
-		predicates = append(predicates, points.DeletedAtLT(*i.DeletedAtLT))
-	}
-	if i.DeletedAtLTE != nil {
-		predicates = append(predicates, points.DeletedAtLTE(*i.DeletedAtLTE))
-	}
-	if i.DeletedAtIsNil {
-		predicates = append(predicates, points.DeletedAtIsNil())
-	}
-	if i.DeletedAtNotNil {
-		predicates = append(predicates, points.DeletedAtNotNil())
-	}
 	if i.Points != nil {
 		predicates = append(predicates, points.PointsEQ(*i.Points))
 	}
@@ -1288,6 +1188,30 @@ func (i *PointsWhereInput) P() (predicate.Points, error) {
 	}
 	if i.PointsLTE != nil {
 		predicates = append(predicates, points.PointsLTE(*i.PointsLTE))
+	}
+	if i.GrantedAt != nil {
+		predicates = append(predicates, points.GrantedAtEQ(*i.GrantedAt))
+	}
+	if i.GrantedAtNEQ != nil {
+		predicates = append(predicates, points.GrantedAtNEQ(*i.GrantedAtNEQ))
+	}
+	if len(i.GrantedAtIn) > 0 {
+		predicates = append(predicates, points.GrantedAtIn(i.GrantedAtIn...))
+	}
+	if len(i.GrantedAtNotIn) > 0 {
+		predicates = append(predicates, points.GrantedAtNotIn(i.GrantedAtNotIn...))
+	}
+	if i.GrantedAtGT != nil {
+		predicates = append(predicates, points.GrantedAtGT(*i.GrantedAtGT))
+	}
+	if i.GrantedAtGTE != nil {
+		predicates = append(predicates, points.GrantedAtGTE(*i.GrantedAtGTE))
+	}
+	if i.GrantedAtLT != nil {
+		predicates = append(predicates, points.GrantedAtLT(*i.GrantedAtLT))
+	}
+	if i.GrantedAtLTE != nil {
+		predicates = append(predicates, points.GrantedAtLTE(*i.GrantedAtLTE))
 	}
 	if i.Description != nil {
 		predicates = append(predicates, points.DescriptionEQ(*i.Description))

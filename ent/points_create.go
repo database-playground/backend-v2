@@ -21,48 +21,6 @@ type PointsCreate struct {
 	hooks    []Hook
 }
 
-// SetCreatedAt sets the "created_at" field.
-func (_c *PointsCreate) SetCreatedAt(v time.Time) *PointsCreate {
-	_c.mutation.SetCreatedAt(v)
-	return _c
-}
-
-// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (_c *PointsCreate) SetNillableCreatedAt(v *time.Time) *PointsCreate {
-	if v != nil {
-		_c.SetCreatedAt(*v)
-	}
-	return _c
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (_c *PointsCreate) SetUpdatedAt(v time.Time) *PointsCreate {
-	_c.mutation.SetUpdatedAt(v)
-	return _c
-}
-
-// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (_c *PointsCreate) SetNillableUpdatedAt(v *time.Time) *PointsCreate {
-	if v != nil {
-		_c.SetUpdatedAt(*v)
-	}
-	return _c
-}
-
-// SetDeletedAt sets the "deleted_at" field.
-func (_c *PointsCreate) SetDeletedAt(v time.Time) *PointsCreate {
-	_c.mutation.SetDeletedAt(v)
-	return _c
-}
-
-// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (_c *PointsCreate) SetNillableDeletedAt(v *time.Time) *PointsCreate {
-	if v != nil {
-		_c.SetDeletedAt(*v)
-	}
-	return _c
-}
-
 // SetPoints sets the "points" field.
 func (_c *PointsCreate) SetPoints(v int) *PointsCreate {
 	_c.mutation.SetPoints(v)
@@ -73,6 +31,20 @@ func (_c *PointsCreate) SetPoints(v int) *PointsCreate {
 func (_c *PointsCreate) SetNillablePoints(v *int) *PointsCreate {
 	if v != nil {
 		_c.SetPoints(*v)
+	}
+	return _c
+}
+
+// SetGrantedAt sets the "granted_at" field.
+func (_c *PointsCreate) SetGrantedAt(v time.Time) *PointsCreate {
+	_c.mutation.SetGrantedAt(v)
+	return _c
+}
+
+// SetNillableGrantedAt sets the "granted_at" field if the given value is not nil.
+func (_c *PointsCreate) SetNillableGrantedAt(v *time.Time) *PointsCreate {
+	if v != nil {
+		_c.SetGrantedAt(*v)
 	}
 	return _c
 }
@@ -109,9 +81,7 @@ func (_c *PointsCreate) Mutation() *PointsMutation {
 
 // Save creates the Points in the database.
 func (_c *PointsCreate) Save(ctx context.Context) (*Points, error) {
-	if err := _c.defaults(); err != nil {
-		return nil, err
-	}
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -138,38 +108,24 @@ func (_c *PointsCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *PointsCreate) defaults() error {
-	if _, ok := _c.mutation.CreatedAt(); !ok {
-		if points.DefaultCreatedAt == nil {
-			return fmt.Errorf("ent: uninitialized points.DefaultCreatedAt (forgotten import ent/runtime?)")
-		}
-		v := points.DefaultCreatedAt()
-		_c.mutation.SetCreatedAt(v)
-	}
-	if _, ok := _c.mutation.UpdatedAt(); !ok {
-		if points.DefaultUpdatedAt == nil {
-			return fmt.Errorf("ent: uninitialized points.DefaultUpdatedAt (forgotten import ent/runtime?)")
-		}
-		v := points.DefaultUpdatedAt()
-		_c.mutation.SetUpdatedAt(v)
-	}
+func (_c *PointsCreate) defaults() {
 	if _, ok := _c.mutation.Points(); !ok {
 		v := points.DefaultPoints
 		_c.mutation.SetPoints(v)
 	}
-	return nil
+	if _, ok := _c.mutation.GrantedAt(); !ok {
+		v := points.DefaultGrantedAt()
+		_c.mutation.SetGrantedAt(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *PointsCreate) check() error {
-	if _, ok := _c.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Points.created_at"`)}
-	}
-	if _, ok := _c.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Points.updated_at"`)}
-	}
 	if _, ok := _c.mutation.Points(); !ok {
 		return &ValidationError{Name: "points", err: errors.New(`ent: missing required field "Points.points"`)}
+	}
+	if _, ok := _c.mutation.GrantedAt(); !ok {
+		return &ValidationError{Name: "granted_at", err: errors.New(`ent: missing required field "Points.granted_at"`)}
 	}
 	if len(_c.mutation.UserIDs()) == 0 {
 		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Points.user"`)}
@@ -200,21 +156,13 @@ func (_c *PointsCreate) createSpec() (*Points, *sqlgraph.CreateSpec) {
 		_node = &Points{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(points.Table, sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt))
 	)
-	if value, ok := _c.mutation.CreatedAt(); ok {
-		_spec.SetField(points.FieldCreatedAt, field.TypeTime, value)
-		_node.CreatedAt = value
-	}
-	if value, ok := _c.mutation.UpdatedAt(); ok {
-		_spec.SetField(points.FieldUpdatedAt, field.TypeTime, value)
-		_node.UpdatedAt = value
-	}
-	if value, ok := _c.mutation.DeletedAt(); ok {
-		_spec.SetField(points.FieldDeletedAt, field.TypeTime, value)
-		_node.DeletedAt = value
-	}
 	if value, ok := _c.mutation.Points(); ok {
 		_spec.SetField(points.FieldPoints, field.TypeInt, value)
 		_node.Points = value
+	}
+	if value, ok := _c.mutation.GrantedAt(); ok {
+		_spec.SetField(points.FieldGrantedAt, field.TypeTime, value)
+		_node.GrantedAt = value
 	}
 	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(points.FieldDescription, field.TypeString, value)

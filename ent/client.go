@@ -828,14 +828,12 @@ func (c *PointsClient) QueryUser(_m *Points) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *PointsClient) Hooks() []Hook {
-	hooks := c.hooks.Points
-	return append(hooks[:len(hooks):len(hooks)], points.Hooks[:]...)
+	return c.hooks.Points
 }
 
 // Interceptors returns the client interceptors.
 func (c *PointsClient) Interceptors() []Interceptor {
-	inters := c.inters.Points
-	return append(inters[:len(inters):len(inters)], points.Interceptors[:]...)
+	return c.inters.Points
 }
 
 func (c *PointsClient) mutate(ctx context.Context, m *PointsMutation) (Value, error) {

@@ -55,159 +55,19 @@ func IDLTE(id int) predicate.Points {
 	return predicate.Points(sql.FieldLTE(FieldID, id))
 }
 
-// CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
-func CreatedAt(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldEQ(FieldCreatedAt, v))
-}
-
-// UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
-func UpdatedAt(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldEQ(FieldUpdatedAt, v))
-}
-
-// DeletedAt applies equality check predicate on the "deleted_at" field. It's identical to DeletedAtEQ.
-func DeletedAt(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldEQ(FieldDeletedAt, v))
-}
-
 // Points applies equality check predicate on the "points" field. It's identical to PointsEQ.
 func Points(v int) predicate.Points {
 	return predicate.Points(sql.FieldEQ(FieldPoints, v))
 }
 
+// GrantedAt applies equality check predicate on the "granted_at" field. It's identical to GrantedAtEQ.
+func GrantedAt(v time.Time) predicate.Points {
+	return predicate.Points(sql.FieldEQ(FieldGrantedAt, v))
+}
+
 // Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
 func Description(v string) predicate.Points {
 	return predicate.Points(sql.FieldEQ(FieldDescription, v))
-}
-
-// CreatedAtEQ applies the EQ predicate on the "created_at" field.
-func CreatedAtEQ(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldEQ(FieldCreatedAt, v))
-}
-
-// CreatedAtNEQ applies the NEQ predicate on the "created_at" field.
-func CreatedAtNEQ(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldNEQ(FieldCreatedAt, v))
-}
-
-// CreatedAtIn applies the In predicate on the "created_at" field.
-func CreatedAtIn(vs ...time.Time) predicate.Points {
-	return predicate.Points(sql.FieldIn(FieldCreatedAt, vs...))
-}
-
-// CreatedAtNotIn applies the NotIn predicate on the "created_at" field.
-func CreatedAtNotIn(vs ...time.Time) predicate.Points {
-	return predicate.Points(sql.FieldNotIn(FieldCreatedAt, vs...))
-}
-
-// CreatedAtGT applies the GT predicate on the "created_at" field.
-func CreatedAtGT(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldGT(FieldCreatedAt, v))
-}
-
-// CreatedAtGTE applies the GTE predicate on the "created_at" field.
-func CreatedAtGTE(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldGTE(FieldCreatedAt, v))
-}
-
-// CreatedAtLT applies the LT predicate on the "created_at" field.
-func CreatedAtLT(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldLT(FieldCreatedAt, v))
-}
-
-// CreatedAtLTE applies the LTE predicate on the "created_at" field.
-func CreatedAtLTE(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldLTE(FieldCreatedAt, v))
-}
-
-// UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
-func UpdatedAtEQ(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldEQ(FieldUpdatedAt, v))
-}
-
-// UpdatedAtNEQ applies the NEQ predicate on the "updated_at" field.
-func UpdatedAtNEQ(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldNEQ(FieldUpdatedAt, v))
-}
-
-// UpdatedAtIn applies the In predicate on the "updated_at" field.
-func UpdatedAtIn(vs ...time.Time) predicate.Points {
-	return predicate.Points(sql.FieldIn(FieldUpdatedAt, vs...))
-}
-
-// UpdatedAtNotIn applies the NotIn predicate on the "updated_at" field.
-func UpdatedAtNotIn(vs ...time.Time) predicate.Points {
-	return predicate.Points(sql.FieldNotIn(FieldUpdatedAt, vs...))
-}
-
-// UpdatedAtGT applies the GT predicate on the "updated_at" field.
-func UpdatedAtGT(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldGT(FieldUpdatedAt, v))
-}
-
-// UpdatedAtGTE applies the GTE predicate on the "updated_at" field.
-func UpdatedAtGTE(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldGTE(FieldUpdatedAt, v))
-}
-
-// UpdatedAtLT applies the LT predicate on the "updated_at" field.
-func UpdatedAtLT(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldLT(FieldUpdatedAt, v))
-}
-
-// UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
-func UpdatedAtLTE(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldLTE(FieldUpdatedAt, v))
-}
-
-// DeletedAtEQ applies the EQ predicate on the "deleted_at" field.
-func DeletedAtEQ(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldEQ(FieldDeletedAt, v))
-}
-
-// DeletedAtNEQ applies the NEQ predicate on the "deleted_at" field.
-func DeletedAtNEQ(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldNEQ(FieldDeletedAt, v))
-}
-
-// DeletedAtIn applies the In predicate on the "deleted_at" field.
-func DeletedAtIn(vs ...time.Time) predicate.Points {
-	return predicate.Points(sql.FieldIn(FieldDeletedAt, vs...))
-}
-
-// DeletedAtNotIn applies the NotIn predicate on the "deleted_at" field.
-func DeletedAtNotIn(vs ...time.Time) predicate.Points {
-	return predicate.Points(sql.FieldNotIn(FieldDeletedAt, vs...))
-}
-
-// DeletedAtGT applies the GT predicate on the "deleted_at" field.
-func DeletedAtGT(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldGT(FieldDeletedAt, v))
-}
-
-// DeletedAtGTE applies the GTE predicate on the "deleted_at" field.
-func DeletedAtGTE(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldGTE(FieldDeletedAt, v))
-}
-
-// DeletedAtLT applies the LT predicate on the "deleted_at" field.
-func DeletedAtLT(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldLT(FieldDeletedAt, v))
-}
-
-// DeletedAtLTE applies the LTE predicate on the "deleted_at" field.
-func DeletedAtLTE(v time.Time) predicate.Points {
-	return predicate.Points(sql.FieldLTE(FieldDeletedAt, v))
-}
-
-// DeletedAtIsNil applies the IsNil predicate on the "deleted_at" field.
-func DeletedAtIsNil() predicate.Points {
-	return predicate.Points(sql.FieldIsNull(FieldDeletedAt))
-}
-
-// DeletedAtNotNil applies the NotNil predicate on the "deleted_at" field.
-func DeletedAtNotNil() predicate.Points {
-	return predicate.Points(sql.FieldNotNull(FieldDeletedAt))
 }
 
 // PointsEQ applies the EQ predicate on the "points" field.
@@ -248,6 +108,46 @@ func PointsLT(v int) predicate.Points {
 // PointsLTE applies the LTE predicate on the "points" field.
 func PointsLTE(v int) predicate.Points {
 	return predicate.Points(sql.FieldLTE(FieldPoints, v))
+}
+
+// GrantedAtEQ applies the EQ predicate on the "granted_at" field.
+func GrantedAtEQ(v time.Time) predicate.Points {
+	return predicate.Points(sql.FieldEQ(FieldGrantedAt, v))
+}
+
+// GrantedAtNEQ applies the NEQ predicate on the "granted_at" field.
+func GrantedAtNEQ(v time.Time) predicate.Points {
+	return predicate.Points(sql.FieldNEQ(FieldGrantedAt, v))
+}
+
+// GrantedAtIn applies the In predicate on the "granted_at" field.
+func GrantedAtIn(vs ...time.Time) predicate.Points {
+	return predicate.Points(sql.FieldIn(FieldGrantedAt, vs...))
+}
+
+// GrantedAtNotIn applies the NotIn predicate on the "granted_at" field.
+func GrantedAtNotIn(vs ...time.Time) predicate.Points {
+	return predicate.Points(sql.FieldNotIn(FieldGrantedAt, vs...))
+}
+
+// GrantedAtGT applies the GT predicate on the "granted_at" field.
+func GrantedAtGT(v time.Time) predicate.Points {
+	return predicate.Points(sql.FieldGT(FieldGrantedAt, v))
+}
+
+// GrantedAtGTE applies the GTE predicate on the "granted_at" field.
+func GrantedAtGTE(v time.Time) predicate.Points {
+	return predicate.Points(sql.FieldGTE(FieldGrantedAt, v))
+}
+
+// GrantedAtLT applies the LT predicate on the "granted_at" field.
+func GrantedAtLT(v time.Time) predicate.Points {
+	return predicate.Points(sql.FieldLT(FieldGrantedAt, v))
+}
+
+// GrantedAtLTE applies the LTE predicate on the "granted_at" field.
+func GrantedAtLTE(v time.Time) predicate.Points {
+	return predicate.Points(sql.FieldLTE(FieldGrantedAt, v))
 }
 
 // DescriptionEQ applies the EQ predicate on the "description" field.

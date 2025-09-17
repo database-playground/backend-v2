@@ -52,7 +52,7 @@ func createLoginEvent(t *testing.T, client *ent.Client, userID int, triggeredAt 
 }
 
 // createPointsRecord creates a points record for the user with specified created_at time
-func createPointsRecord(t *testing.T, client *ent.Client, userID int, description string, pointsValue int, createdAt time.Time) {
+func createPointsRecord(t *testing.T, client *ent.Client, userID int, description string, pointsValue int, grantedAt time.Time) {
 	t.Helper()
 
 	ctx := context.Background()
@@ -62,7 +62,7 @@ func createPointsRecord(t *testing.T, client *ent.Client, userID int, descriptio
 		SetUserID(userID).
 		SetDescription(description).
 		SetPoints(pointsValue).
-		SetCreatedAt(createdAt).
+		SetGrantedAt(grantedAt).
 		Save(ctx)
 	require.NoError(t, err)
 }
@@ -288,22 +288,22 @@ func TestGrantWeeklyLoginPoints_NoLoginEvents(t *testing.T) {
 
 func TestGrantWeeklyLoginPoints_MultipleLoginsPerDay(t *testing.T) {
 	testCases := []struct {
-		name         string
-		days         int
-		shouldGrant  bool
-		description  string
+		name        string
+		days        int
+		shouldGrant bool
+		description string
 	}{
 		{
-			name:         "SufficientDays",
-			days:         7,
-			shouldGrant:  true,
-			description:  "Should grant points with 7 days of multiple logins per day",
+			name:        "SufficientDays",
+			days:        7,
+			shouldGrant: true,
+			description: "Should grant points with 7 days of multiple logins per day",
 		},
 		{
-			name:         "InsufficientDays",
-			days:         6,
-			shouldGrant:  false,
-			description:  "Should not grant points with only 6 days of multiple logins per day",
+			name:        "InsufficientDays",
+			days:        6,
+			shouldGrant: false,
+			description: "Should not grant points with only 6 days of multiple logins per day",
 		},
 	}
 

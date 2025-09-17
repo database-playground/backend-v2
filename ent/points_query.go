@@ -301,12 +301,12 @@ func (_q *PointsQuery) WithUser(opts ...func(*UserQuery)) *PointsQuery {
 // Example:
 //
 //	var v []struct {
-//		CreatedAt time.Time `json:"created_at,omitempty"`
+//		Points int `json:"points,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Points.Query().
-//		GroupBy(points.FieldCreatedAt).
+//		GroupBy(points.FieldPoints).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *PointsQuery) GroupBy(field string, fields ...string) *PointsGroupBy {
@@ -324,11 +324,11 @@ func (_q *PointsQuery) GroupBy(field string, fields ...string) *PointsGroupBy {
 // Example:
 //
 //	var v []struct {
-//		CreatedAt time.Time `json:"created_at,omitempty"`
+//		Points int `json:"points,omitempty"`
 //	}
 //
 //	client.Points.Query().
-//		Select(points.FieldCreatedAt).
+//		Select(points.FieldPoints).
 //		Scan(ctx, &v)
 func (_q *PointsQuery) Select(fields ...string) *PointsSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)

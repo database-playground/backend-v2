@@ -340,25 +340,15 @@ func (_q *PointsQuery) collectField(ctx context.Context, oneNode bool, opCtx *gr
 				return err
 			}
 			_q.withUser = query
-		case "createdAt":
-			if _, ok := fieldSeen[points.FieldCreatedAt]; !ok {
-				selectedFields = append(selectedFields, points.FieldCreatedAt)
-				fieldSeen[points.FieldCreatedAt] = struct{}{}
-			}
-		case "updatedAt":
-			if _, ok := fieldSeen[points.FieldUpdatedAt]; !ok {
-				selectedFields = append(selectedFields, points.FieldUpdatedAt)
-				fieldSeen[points.FieldUpdatedAt] = struct{}{}
-			}
-		case "deletedAt":
-			if _, ok := fieldSeen[points.FieldDeletedAt]; !ok {
-				selectedFields = append(selectedFields, points.FieldDeletedAt)
-				fieldSeen[points.FieldDeletedAt] = struct{}{}
-			}
 		case "points":
 			if _, ok := fieldSeen[points.FieldPoints]; !ok {
 				selectedFields = append(selectedFields, points.FieldPoints)
 				fieldSeen[points.FieldPoints] = struct{}{}
+			}
+		case "grantedAt":
+			if _, ok := fieldSeen[points.FieldGrantedAt]; !ok {
+				selectedFields = append(selectedFields, points.FieldGrantedAt)
+				fieldSeen[points.FieldGrantedAt] = struct{}{}
 			}
 		case "description":
 			if _, ok := fieldSeen[points.FieldDescription]; !ok {
