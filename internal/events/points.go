@@ -104,12 +104,13 @@ func (d *PointsGranter) GrantWeeklyLoginPoints(ctx context.Context, userID int) 
 	weekLoginRecords, err := d.entClient.Events.Query().
 		Where(events.Type(string(EventTypeLogin))).
 		Where(events.UserID(userID)).
+		Where(events.TriggeredAtGTE(time.Now().AddDate(0, 0, -7))).
 		All(ctx)
 	if err != nil {
 		return false, err
 	}
 
-	// aggreated by day
+	// Aggregated by day
 	weekLoginRecordsByDay := make(map[time.Time]int)
 	for _, record := range weekLoginRecords {
 		weekLoginRecordsByDay[record.TriggeredAt.Truncate(24*time.Hour)]++

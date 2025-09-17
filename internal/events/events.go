@@ -39,7 +39,7 @@ type EventHandler interface {
 
 // TriggerEvent triggers an event.
 func (s *EventService) TriggerEvent(ctx context.Context, event Event) {
-	err := s.triggerEvent(context.Background(), event)
+	err := s.triggerEvent(ctx, event)
 	if err != nil {
 		slog.Error("failed to trigger event", "error", err)
 	}

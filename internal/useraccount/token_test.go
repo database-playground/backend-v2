@@ -285,10 +285,6 @@ func TestGrantToken_LoginEventTriggered(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 
-	// Wait a bit for the async event processing to complete
-	// Since TriggerEvent runs in a goroutine, we need to give it time
-	time.Sleep(100 * time.Millisecond)
-
 	// Verify login event was created in database
 	loginEvents, err := client.Events.Query().
 		Where(events.UserIDEQ(user.ID)).
@@ -340,9 +336,6 @@ func TestGrantToken_ImpersonationEventTriggered(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
-
-	// Wait a bit for the async event processing to complete
-	time.Sleep(100 * time.Millisecond)
 
 	// Verify impersonation event was created in database
 	impersonationEvents, err := client.Events.Query().
@@ -419,9 +412,6 @@ func TestGrantToken_MultipleTokensCreateMultipleEvents(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotEmpty(t, token3)
-
-	// Wait for the third event to be processed
-	time.Sleep(100 * time.Millisecond)
 
 	// Verify three login events were created
 	loginEvents, err := client.Events.Query().
