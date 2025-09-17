@@ -41,7 +41,7 @@ type EventHandler interface {
 // TriggerEvent triggers an event.
 func (s *EventService) TriggerEvent(ctx context.Context, event Event) {
 	workers.Global.Go(func() {
-		err := s.triggerEvent(ctx, event)
+		err := s.triggerEvent(context.Background(), event)
 		if err != nil {
 			slog.Error("failed to trigger event", "error", err)
 		}
