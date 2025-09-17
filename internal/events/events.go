@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/internal/workers"
 )
 
 // EventService is the service for triggering events.
@@ -39,12 +40,12 @@ type EventHandler interface {
 
 // TriggerEvent triggers an event.
 func (s *EventService) TriggerEvent(ctx context.Context, event Event) {
-	go func() {
+	workers.Global.Go(func() {
 		err := s.triggerEvent(ctx, event)
 		if err != nil {
 			slog.Error("failed to trigger event", "error", err)
 		}
-	}()
+	})
 }
 
 // triggerEvent triggers an event synchronously.

@@ -24,6 +24,7 @@ import (
 	"github.com/database-playground/backend-v2/internal/httputils"
 	"github.com/database-playground/backend-v2/internal/sqlrunner"
 	"github.com/database-playground/backend-v2/internal/useraccount"
+	"github.com/database-playground/backend-v2/internal/workers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/rueidis"
@@ -144,12 +145,12 @@ func GinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Config)
 				}
 			}()
 
-			go func() {
+			workers.Global.Go(func() {
 				<-httpCtx.Done()
 				if err := srv.Shutdown(context.Background()); err != nil {
 					slog.Error("error shutting down gin engine", "error", err)
 				}
-			}()
+			})
 
 			return nil
 		},
@@ -160,6 +161,10 @@ func GinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Config)
 			default:
 				cancel()
 			}
+
+			// Wait for all workers to finish
+			slog.Info("waiting for workers to finish")
+			workers.Global.Wait()
 
 			return nil
 		},
