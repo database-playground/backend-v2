@@ -3,8 +3,6 @@
 package ent
 
 import (
-	"time"
-
 	"github.com/database-playground/backend-v2/ent/question"
 )
 
@@ -84,72 +82,6 @@ func (c *DatabaseUpdateOne) SetInput(i UpdateDatabaseInput) *DatabaseUpdateOne {
 	return c
 }
 
-// CreateEventsInput represents a mutation input for creating eventsslice.
-type CreateEventsInput struct {
-	Type        string
-	TriggeredAt *time.Time
-	Payload     map[string]interface{}
-	UserID      int
-}
-
-// Mutate applies the CreateEventsInput on the EventsMutation builder.
-func (i *CreateEventsInput) Mutate(m *EventsMutation) {
-	m.SetType(i.Type)
-	if v := i.TriggeredAt; v != nil {
-		m.SetTriggeredAt(*v)
-	}
-	if v := i.Payload; v != nil {
-		m.SetPayload(v)
-	}
-	m.SetUserID(i.UserID)
-}
-
-// SetInput applies the change-set in the CreateEventsInput on the EventsCreate builder.
-func (c *EventsCreate) SetInput(i CreateEventsInput) *EventsCreate {
-	i.Mutate(c.Mutation())
-	return c
-}
-
-// UpdateEventsInput represents a mutation input for updating eventsslice.
-type UpdateEventsInput struct {
-	Type         *string
-	TriggeredAt  *time.Time
-	ClearPayload bool
-	Payload      map[string]interface{}
-	UserID       *int
-}
-
-// Mutate applies the UpdateEventsInput on the EventsMutation builder.
-func (i *UpdateEventsInput) Mutate(m *EventsMutation) {
-	if v := i.Type; v != nil {
-		m.SetType(*v)
-	}
-	if v := i.TriggeredAt; v != nil {
-		m.SetTriggeredAt(*v)
-	}
-	if i.ClearPayload {
-		m.ClearPayload()
-	}
-	if v := i.Payload; v != nil {
-		m.SetPayload(v)
-	}
-	if v := i.UserID; v != nil {
-		m.SetUserID(*v)
-	}
-}
-
-// SetInput applies the change-set in the UpdateEventsInput on the EventsUpdate builder.
-func (c *EventsUpdate) SetInput(i UpdateEventsInput) *EventsUpdate {
-	i.Mutate(c.Mutation())
-	return c
-}
-
-// SetInput applies the change-set in the UpdateEventsInput on the EventsUpdateOne builder.
-func (c *EventsUpdateOne) SetInput(i UpdateEventsInput) *EventsUpdateOne {
-	i.Mutate(c.Mutation())
-	return c
-}
-
 // CreateGroupInput represents a mutation input for creating groups.
 type CreateGroupInput struct {
 	Name        string
@@ -214,74 +146,6 @@ func (c *GroupUpdate) SetInput(i UpdateGroupInput) *GroupUpdate {
 
 // SetInput applies the change-set in the UpdateGroupInput on the GroupUpdateOne builder.
 func (c *GroupUpdateOne) SetInput(i UpdateGroupInput) *GroupUpdateOne {
-	i.Mutate(c.Mutation())
-	return c
-}
-
-// CreatePointsInput represents a mutation input for creating pointsslice.
-type CreatePointsInput struct {
-	Points      *int
-	GrantedAt   *time.Time
-	Description *string
-	UserID      int
-}
-
-// Mutate applies the CreatePointsInput on the PointsMutation builder.
-func (i *CreatePointsInput) Mutate(m *PointsMutation) {
-	if v := i.Points; v != nil {
-		m.SetPoints(*v)
-	}
-	if v := i.GrantedAt; v != nil {
-		m.SetGrantedAt(*v)
-	}
-	if v := i.Description; v != nil {
-		m.SetDescription(*v)
-	}
-	m.SetUserID(i.UserID)
-}
-
-// SetInput applies the change-set in the CreatePointsInput on the PointsCreate builder.
-func (c *PointsCreate) SetInput(i CreatePointsInput) *PointsCreate {
-	i.Mutate(c.Mutation())
-	return c
-}
-
-// UpdatePointsInput represents a mutation input for updating pointsslice.
-type UpdatePointsInput struct {
-	Points           *int
-	GrantedAt        *time.Time
-	ClearDescription bool
-	Description      *string
-	UserID           *int
-}
-
-// Mutate applies the UpdatePointsInput on the PointsMutation builder.
-func (i *UpdatePointsInput) Mutate(m *PointsMutation) {
-	if v := i.Points; v != nil {
-		m.SetPoints(*v)
-	}
-	if v := i.GrantedAt; v != nil {
-		m.SetGrantedAt(*v)
-	}
-	if i.ClearDescription {
-		m.ClearDescription()
-	}
-	if v := i.Description; v != nil {
-		m.SetDescription(*v)
-	}
-	if v := i.UserID; v != nil {
-		m.SetUserID(*v)
-	}
-}
-
-// SetInput applies the change-set in the UpdatePointsInput on the PointsUpdate builder.
-func (c *PointsUpdate) SetInput(i UpdatePointsInput) *PointsUpdate {
-	i.Mutate(c.Mutation())
-	return c
-}
-
-// SetInput applies the change-set in the UpdatePointsInput on the PointsUpdateOne builder.
-func (c *PointsUpdateOne) SetInput(i UpdatePointsInput) *PointsUpdateOne {
 	i.Mutate(c.Mutation())
 	return c
 }
