@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/database-playground/backend-v2/ent"
@@ -30,6 +31,19 @@ func NewPointsGranter(entClient *ent.Client) *PointsGranter {
 	return &PointsGranter{
 		entClient: entClient,
 	}
+}
+
+// HandleEvent handles the event creation.
+func (d *PointsGranter) HandleEvent(ctx context.Context, event *ent.Events) error {
+	switch event.Type {
+	case string(EventTypeLogin):
+		ok, err := d.GrantDailyLoginPoints(ctx, event.UserID)
+		if ok {
+			slog.Info("granted daily login points", "user_id", event.UserID)
+		}
+		return err
+	}
+	return nil
 }
 
 // GrantDailyLoginPoints grants the "daily login" points to a user.
