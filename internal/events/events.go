@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/database-playground/backend-v2/ent"
@@ -37,7 +38,17 @@ type EventHandler interface {
 }
 
 // TriggerEvent triggers an event.
-func (s *EventService) TriggerEvent(ctx context.Context, event Event) error {
+func (s *EventService) TriggerEvent(ctx context.Context, event Event) {
+	go func() {
+		err := s.triggerEvent(ctx, event)
+		if err != nil {
+			slog.Error("failed to trigger event", "error", err)
+		}
+	}()
+}
+
+// triggerEvent triggers an event synchronously.
+func (s *EventService) triggerEvent(ctx context.Context, event Event) error {
 	eventEntity, err := s.entClient.Events.Create().
 		SetType(string(event.Type)).
 		SetPayload(event.Payload).
