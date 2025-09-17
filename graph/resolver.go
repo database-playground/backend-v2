@@ -27,10 +27,15 @@ type Resolver struct {
 	eventService *events.EventService
 }
 
+// NewResolver creates a new resolver.
+func NewResolver(ent *ent.Client, auth auth.Storage, sqlrunner *sqlrunner.SqlRunner, eventService *events.EventService) *Resolver {
+	return &Resolver{ent, auth, sqlrunner, eventService}
+}
+
 // NewSchema creates a graphql executable schema.
 func NewSchema(ent *ent.Client, auth auth.Storage, sqlrunner *sqlrunner.SqlRunner, eventService *events.EventService) graphql.ExecutableSchema {
 	return NewExecutableSchema(Config{
-		Resolvers: &Resolver{ent, auth, sqlrunner, eventService},
+		Resolvers: NewResolver(ent, auth, sqlrunner, eventService),
 		Directives: DirectiveRoot{
 			Scope: directive.ScopeDirective,
 		},
