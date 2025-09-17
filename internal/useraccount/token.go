@@ -6,6 +6,7 @@ import (
 
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/internal/auth"
+	"github.com/database-playground/backend-v2/internal/events"
 )
 
 const (
@@ -57,7 +58,22 @@ func (c *Context) GrantToken(ctx context.Context, user *ent.User, machine string
 		MetaInitiateFromFlow: options.flow,
 	}
 	if options.impersonatorID != 0 {
+		c.eventService.TriggerEvent(ctx, events.Event{
+			Type:   events.EventTypeImpersonated,
+			UserID: user.ID,
+			Payload: map[string]any{
+				"impersonator_id": options.impersonatorID,
+			},
+		})
 		meta[MetaImpersonation] = strconv.Itoa(options.impersonatorID)
+	} else {
+		c.eventService.TriggerEvent(ctx, events.Event{
+			Type:   events.EventTypeLogin,
+			UserID: user.ID,
+			Payload: map[string]any{
+				"machine": machine,
+			},
+		})
 	}
 
 	token, err := c.auth.Create(ctx, auth.TokenInfo{

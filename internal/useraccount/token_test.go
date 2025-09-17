@@ -4,9 +4,12 @@ import (
 	"context"
 	"strconv"
 	"testing"
+	"time"
 
+	"github.com/database-playground/backend-v2/ent/events"
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/internal/auth"
+	events_pkg "github.com/database-playground/backend-v2/internal/events"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,7 +18,8 @@ import (
 func TestGrantToken_Success(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	ctx := useraccount.NewContext(client, authStorage)
+	eventService := events_pkg.NewEventService(client)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
 	// Create a user in unverified group
@@ -51,7 +55,8 @@ func TestGrantToken_Success(t *testing.T) {
 func TestGrantToken_Impersonation(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	ctx := useraccount.NewContext(client, authStorage)
+	eventService := events_pkg.NewEventService(client)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
 	unverifiedGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).Only(context)
@@ -85,7 +90,8 @@ func TestGrantToken_Impersonation(t *testing.T) {
 func TestGrantToken_DefaultFlow(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	ctx := useraccount.NewContext(client, authStorage)
+	eventService := events_pkg.NewEventService(client)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
 	unverifiedGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).Only(context)
@@ -113,7 +119,8 @@ func TestGrantToken_DefaultFlow(t *testing.T) {
 func TestGrantToken_NewUserScopes(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	ctx := useraccount.NewContext(client, authStorage)
+	eventService := events_pkg.NewEventService(client)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
 	// Create a user in new-user group
@@ -146,7 +153,8 @@ func TestGrantToken_NewUserScopes(t *testing.T) {
 func TestGrantToken_UserWithoutScopeSet(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	ctx := useraccount.NewContext(client, authStorage)
+	eventService := events_pkg.NewEventService(client)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
 	// Create a group without scope set
@@ -179,7 +187,8 @@ func TestGrantToken_UserWithoutScopeSet(t *testing.T) {
 func TestRevokeToken_Success(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	ctx := useraccount.NewContext(client, authStorage)
+	eventService := events_pkg.NewEventService(client)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
 	unverifiedGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).Only(context)
@@ -210,7 +219,8 @@ func TestRevokeToken_Success(t *testing.T) {
 func TestRevokeAllTokens_Success(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	ctx := useraccount.NewContext(client, authStorage)
+	eventService := events_pkg.NewEventService(client)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
 	unverifiedGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).Only(context)
@@ -247,4 +257,189 @@ func TestRevokeAllTokens_Success(t *testing.T) {
 	_, err = authStorage.Get(context, token2)
 	require.Error(t, err)
 	assert.Equal(t, auth.ErrNotFound, err)
+}
+
+func TestGrantToken_LoginEventTriggered(t *testing.T) {
+	client := setupTestDatabase(t)
+	authStorage := newMockAuthStorage()
+	eventService := events_pkg.NewEventService(client)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
+	context := context.Background()
+
+	// Create a user in unverified group
+	unverifiedGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).Only(context)
+	require.NoError(t, err)
+
+	user, err := client.User.Create().
+		SetName("Test User").
+		SetEmail("test-event-login@example.com").
+		SetGroup(unverifiedGroup).
+		Save(context)
+	require.NoError(t, err)
+
+	// Grant token (should trigger login event)
+	token, err := ctx.GrantToken(
+		context, user, "test-machine-login",
+		useraccount.WithFlow("login"),
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, token)
+
+	// Wait a bit for the async event processing to complete
+	// Since TriggerEvent runs in a goroutine, we need to give it time
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify login event was created in database
+	loginEvents, err := client.Events.Query().
+		Where(events.UserIDEQ(user.ID)).
+		Where(events.TypeEQ(string(events_pkg.EventTypeLogin))).
+		All(context)
+	require.NoError(t, err)
+	require.Len(t, loginEvents, 1)
+
+	// Verify event payload contains correct machine info
+	loginEvent := loginEvents[0]
+	assert.Equal(t, user.ID, loginEvent.UserID)
+	assert.Equal(t, string(events_pkg.EventTypeLogin), loginEvent.Type)
+	assert.NotNil(t, loginEvent.Payload)
+	assert.Equal(t, "test-machine-login", loginEvent.Payload["machine"])
+	assert.NotZero(t, loginEvent.TriggeredAt)
+}
+
+func TestGrantToken_ImpersonationEventTriggered(t *testing.T) {
+	client := setupTestDatabase(t)
+	authStorage := newMockAuthStorage()
+	eventService := events_pkg.NewEventService(client)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
+	context := context.Background()
+
+	// Create a user in unverified group
+	unverifiedGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).Only(context)
+	require.NoError(t, err)
+
+	user, err := client.User.Create().
+		SetName("Test User").
+		SetEmail("test-event-impersonation@example.com").
+		SetGroup(unverifiedGroup).
+		Save(context)
+	require.NoError(t, err)
+
+	// Create an impersonator user
+	impersonator, err := client.User.Create().
+		SetName("Impersonator User").
+		SetEmail("impersonator@example.com").
+		SetGroup(unverifiedGroup).
+		Save(context)
+	require.NoError(t, err)
+
+	// Grant token with impersonation (should trigger impersonation event)
+	token, err := ctx.GrantToken(
+		context, user, "test-machine-impersonation",
+		useraccount.WithFlow("admin"),
+		useraccount.WithImpersonation(impersonator.ID),
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, token)
+
+	// Wait a bit for the async event processing to complete
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify impersonation event was created in database
+	impersonationEvents, err := client.Events.Query().
+		Where(events.UserIDEQ(user.ID)).
+		Where(events.TypeEQ(string(events_pkg.EventTypeImpersonated))).
+		All(context)
+	require.NoError(t, err)
+	require.Len(t, impersonationEvents, 1)
+
+	// Verify event payload contains correct impersonator info
+	impersonationEvent := impersonationEvents[0]
+	assert.Equal(t, user.ID, impersonationEvent.UserID)
+	assert.Equal(t, string(events_pkg.EventTypeImpersonated), impersonationEvent.Type)
+	assert.NotNil(t, impersonationEvent.Payload)
+
+	// JSON unmarshaling converts numbers to float64, so we need to convert
+	impersonatorIDFloat, ok := impersonationEvent.Payload["impersonator_id"].(float64)
+	require.True(t, ok, "impersonator_id should be a number")
+	assert.Equal(t, float64(impersonator.ID), impersonatorIDFloat)
+	assert.NotZero(t, impersonationEvent.TriggeredAt)
+
+	// Verify no login event was created (impersonation takes precedence)
+	loginEvents, err := client.Events.Query().
+		Where(events.UserIDEQ(user.ID)).
+		Where(events.TypeEQ(string(events_pkg.EventTypeLogin))).
+		All(context)
+	require.NoError(t, err)
+	require.Len(t, loginEvents, 0)
+}
+
+func TestGrantToken_MultipleTokensCreateMultipleEvents(t *testing.T) {
+	client := setupTestDatabase(t)
+	authStorage := newMockAuthStorage()
+	eventService := events_pkg.NewEventService(client)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
+	context := context.Background()
+
+	// Create a user in unverified group
+	unverifiedGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).Only(context)
+	require.NoError(t, err)
+
+	user, err := client.User.Create().
+		SetName("Test User").
+		SetEmail("test-event-multiple@example.com").
+		SetGroup(unverifiedGroup).
+		Save(context)
+	require.NoError(t, err)
+
+	// Grant multiple tokens (should create multiple login events)
+	// Note: We'll grant them sequentially to avoid race conditions
+	token1, err := ctx.GrantToken(
+		context, user, "machine-1",
+		useraccount.WithFlow("login"),
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, token1)
+
+	// Wait for the first event to be processed
+	time.Sleep(50 * time.Millisecond)
+
+	token2, err := ctx.GrantToken(
+		context, user, "machine-2",
+		useraccount.WithFlow("login"),
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, token2)
+
+	// Wait for the second event to be processed
+	time.Sleep(50 * time.Millisecond)
+
+	token3, err := ctx.GrantToken(
+		context, user, "machine-3",
+		useraccount.WithFlow("login"),
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, token3)
+
+	// Wait for the third event to be processed
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify three login events were created
+	loginEvents, err := client.Events.Query().
+		Where(events.UserIDEQ(user.ID)).
+		Where(events.TypeEQ(string(events_pkg.EventTypeLogin))).
+		All(context)
+	require.NoError(t, err)
+	require.Len(t, loginEvents, 3)
+
+	// Verify each event has different machine info
+	machines := make(map[string]bool)
+	for _, event := range loginEvents {
+		machine, ok := event.Payload["machine"].(string)
+		require.True(t, ok, "machine should be a string")
+		machines[machine] = true
+	}
+	assert.Len(t, machines, 3)
+	assert.True(t, machines["machine-1"])
+	assert.True(t, machines["machine-2"])
+	assert.True(t, machines["machine-3"])
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/internal/auth"
+	"github.com/database-playground/backend-v2/internal/events"
 	"github.com/database-playground/backend-v2/internal/setup"
 	"github.com/database-playground/backend-v2/internal/testhelper"
 	"github.com/database-playground/backend-v2/internal/useraccount"
@@ -71,15 +72,17 @@ func setupTestDatabase(t *testing.T) *ent.Client {
 func TestNewContext(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
+	eventService := events.NewEventService(client)
 
-	ctx := useraccount.NewContext(client, authStorage)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
 	require.NotNil(t, ctx)
 }
 
 func TestGetUser(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	ctx := useraccount.NewContext(client, authStorage)
+	eventService := events.NewEventService(client)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
 	// Create a group for the user
