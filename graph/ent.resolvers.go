@@ -6,6 +6,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 
 	"entgo.io/contrib/entgql"
 	"github.com/database-playground/backend-v2/ent"
@@ -66,6 +67,11 @@ func (r *queryResolver) ScopeSets(ctx context.Context) ([]*ent.ScopeSet, error) 
 	entClient := r.EntClient(ctx)
 
 	return entClient.ScopeSet.Query().All(ctx)
+}
+
+// Submissions is the resolver for the submissions field.
+func (r *queryResolver) Submissions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.SubmissionWhereInput) (*ent.SubmissionConnection, error) {
+	panic(fmt.Errorf("not implemented: Submissions - submissions"))
 }
 
 // Users is the resolver for the users field.

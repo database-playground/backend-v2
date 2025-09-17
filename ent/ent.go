@@ -18,6 +18,7 @@ import (
 	"github.com/database-playground/backend-v2/ent/points"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/scopeset"
+	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
@@ -79,13 +80,14 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			database.Table: database.ValidColumn,
-			events.Table:   events.ValidColumn,
-			group.Table:    group.ValidColumn,
-			points.Table:   points.ValidColumn,
-			question.Table: question.ValidColumn,
-			scopeset.Table: scopeset.ValidColumn,
-			user.Table:     user.ValidColumn,
+			database.Table:   database.ValidColumn,
+			events.Table:     events.ValidColumn,
+			group.Table:      group.ValidColumn,
+			points.Table:     points.ValidColumn,
+			question.Table:   question.ValidColumn,
+			scopeset.Table:   scopeset.ValidColumn,
+			submission.Table: submission.ValidColumn,
+			user.Table:       user.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

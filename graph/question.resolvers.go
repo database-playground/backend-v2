@@ -6,9 +6,11 @@ package graph
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/graph/model"
+	"github.com/database-playground/backend-v2/models"
 )
 
 // CreateQuestion is the resolver for the createQuestion field.
@@ -125,7 +127,16 @@ func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Q
 	}, nil
 }
 
+// Response is the resolver for the response field.
+func (r *submissionResultResolver) Response(ctx context.Context, obj *models.SubmissionResult) (*model.SQLResponse, error) {
+	panic(fmt.Errorf("not implemented: Response - response"))
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
+// SubmissionResult returns SubmissionResultResolver implementation.
+func (r *Resolver) SubmissionResult() SubmissionResultResolver { return &submissionResultResolver{r} }
+
 type mutationResolver struct{ *Resolver }
+type submissionResultResolver struct{ *Resolver }

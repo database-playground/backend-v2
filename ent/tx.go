@@ -24,6 +24,8 @@ type Tx struct {
 	Question *QuestionClient
 	// ScopeSet is the client for interacting with the ScopeSet builders.
 	ScopeSet *ScopeSetClient
+	// Submission is the client for interacting with the Submission builders.
+	Submission *SubmissionClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -163,6 +165,7 @@ func (tx *Tx) init() {
 	tx.Points = NewPointsClient(tx.config)
 	tx.Question = NewQuestionClient(tx.config)
 	tx.ScopeSet = NewScopeSetClient(tx.config)
+	tx.Submission = NewSubmissionClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 

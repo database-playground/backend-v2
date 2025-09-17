@@ -28,6 +28,8 @@ const (
 	FieldReferenceAnswer = "reference_answer"
 	// EdgeDatabase holds the string denoting the database edge name in mutations.
 	EdgeDatabase = "database"
+	// EdgeSubmissions holds the string denoting the submissions edge name in mutations.
+	EdgeSubmissions = "submissions"
 	// Table holds the table name of the question in the database.
 	Table = "questions"
 	// DatabaseTable is the table that holds the database relation/edge.
@@ -37,6 +39,13 @@ const (
 	DatabaseInverseTable = "databases"
 	// DatabaseColumn is the table column denoting the database relation/edge.
 	DatabaseColumn = "database_questions"
+	// SubmissionsTable is the table that holds the submissions relation/edge.
+	SubmissionsTable = "submissions"
+	// SubmissionsInverseTable is the table name for the Submission entity.
+	// It exists in this package in order to avoid circular dependency with the "submission" package.
+	SubmissionsInverseTable = "submissions"
+	// SubmissionsColumn is the table column denoting the submissions relation/edge.
+	SubmissionsColumn = "question_submissions"
 )
 
 // Columns holds all SQL columns for question fields.
@@ -142,11 +151,32 @@ func ByDatabaseField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newDatabaseStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// BySubmissionsCount orders the results by submissions count.
+func BySubmissionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSubmissionsStep(), opts...)
+	}
+}
+
+// BySubmissions orders the results by submissions terms.
+func BySubmissions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSubmissionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newDatabaseStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DatabaseInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, DatabaseTable, DatabaseColumn),
+	)
+}
+func newSubmissionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SubmissionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SubmissionsTable, SubmissionsColumn),
 	)
 }
 

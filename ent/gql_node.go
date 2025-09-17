@@ -16,6 +16,7 @@ import (
 	"github.com/database-playground/backend-v2/ent/points"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/scopeset"
+	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
 	"github.com/hashicorp/go-multierror"
 )
@@ -54,6 +55,11 @@ var scopesetImplementors = []string{"ScopeSet", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*ScopeSet) IsNode() {}
+
+var submissionImplementors = []string{"Submission", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*Submission) IsNode() {}
 
 var userImplementors = []string{"User", "Node"}
 
@@ -187,6 +193,15 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			Where(scopeset.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, scopesetImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case submission.Table:
+		query := c.Submission.Query().
+			Where(submission.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, submissionImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -357,6 +372,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		query := c.ScopeSet.Query().
 			Where(scopeset.IDIn(ids...))
 		query, err := query.CollectFields(ctx, scopesetImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case submission.Table:
+		query := c.Submission.Query().
+			Where(submission.IDIn(ids...))
+		query, err := query.CollectFields(ctx, submissionImplementors...)
 		if err != nil {
 			return nil, err
 		}

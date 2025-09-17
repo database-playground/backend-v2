@@ -20,6 +20,7 @@ import (
 	"github.com/database-playground/backend-v2/ent/points"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/scopeset"
+	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
@@ -1658,6 +1659,255 @@ func (_m *ScopeSet) ToEdge(order *ScopeSetOrder) *ScopeSetEdge {
 		order = DefaultScopeSetOrder
 	}
 	return &ScopeSetEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// SubmissionEdge is the edge representation of Submission.
+type SubmissionEdge struct {
+	Node   *Submission `json:"node"`
+	Cursor Cursor      `json:"cursor"`
+}
+
+// SubmissionConnection is the connection containing edges to Submission.
+type SubmissionConnection struct {
+	Edges      []*SubmissionEdge `json:"edges"`
+	PageInfo   PageInfo          `json:"pageInfo"`
+	TotalCount int               `json:"totalCount"`
+}
+
+func (c *SubmissionConnection) build(nodes []*Submission, pager *submissionPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *Submission
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *Submission {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *Submission {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*SubmissionEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &SubmissionEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// SubmissionPaginateOption enables pagination customization.
+type SubmissionPaginateOption func(*submissionPager) error
+
+// WithSubmissionOrder configures pagination ordering.
+func WithSubmissionOrder(order *SubmissionOrder) SubmissionPaginateOption {
+	if order == nil {
+		order = DefaultSubmissionOrder
+	}
+	o := *order
+	return func(pager *submissionPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultSubmissionOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithSubmissionFilter configures pagination filter.
+func WithSubmissionFilter(filter func(*SubmissionQuery) (*SubmissionQuery, error)) SubmissionPaginateOption {
+	return func(pager *submissionPager) error {
+		if filter == nil {
+			return errors.New("SubmissionQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type submissionPager struct {
+	reverse bool
+	order   *SubmissionOrder
+	filter  func(*SubmissionQuery) (*SubmissionQuery, error)
+}
+
+func newSubmissionPager(opts []SubmissionPaginateOption, reverse bool) (*submissionPager, error) {
+	pager := &submissionPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultSubmissionOrder
+	}
+	return pager, nil
+}
+
+func (p *submissionPager) applyFilter(query *SubmissionQuery) (*SubmissionQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *submissionPager) toCursor(_m *Submission) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *submissionPager) applyCursors(query *SubmissionQuery, after, before *Cursor) (*SubmissionQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultSubmissionOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *submissionPager) applyOrder(query *SubmissionQuery) *SubmissionQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultSubmissionOrder.Field {
+		query = query.Order(DefaultSubmissionOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *submissionPager) orderExpr(query *SubmissionQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultSubmissionOrder.Field {
+			b.Comma().Ident(DefaultSubmissionOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to Submission.
+func (_m *SubmissionQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...SubmissionPaginateOption,
+) (*SubmissionConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newSubmissionPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &SubmissionConnection{Edges: []*SubmissionEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// SubmissionOrderField defines the ordering field of Submission.
+type SubmissionOrderField struct {
+	// Value extracts the ordering value from the given Submission.
+	Value    func(*Submission) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) submission.OrderOption
+	toCursor func(*Submission) Cursor
+}
+
+// SubmissionOrder defines the ordering of Submission.
+type SubmissionOrder struct {
+	Direction OrderDirection        `json:"direction"`
+	Field     *SubmissionOrderField `json:"field"`
+}
+
+// DefaultSubmissionOrder is the default ordering of Submission.
+var DefaultSubmissionOrder = &SubmissionOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &SubmissionOrderField{
+		Value: func(_m *Submission) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: submission.FieldID,
+		toTerm: submission.ByID,
+		toCursor: func(_m *Submission) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts Submission into SubmissionEdge.
+func (_m *Submission) ToEdge(order *SubmissionOrder) *SubmissionEdge {
+	if order == nil {
+		order = DefaultSubmissionOrder
+	}
+	return &SubmissionEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

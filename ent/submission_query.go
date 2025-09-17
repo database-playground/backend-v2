@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -12,64 +11,63 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/submission"
+	"github.com/database-playground/backend-v2/ent/user"
 )
 
-// QuestionQuery is the builder for querying Question entities.
-type QuestionQuery struct {
+// SubmissionQuery is the builder for querying Submission entities.
+type SubmissionQuery struct {
 	config
-	ctx                  *QueryContext
-	order                []question.OrderOption
-	inters               []Interceptor
-	predicates           []predicate.Question
-	withDatabase         *DatabaseQuery
-	withSubmissions      *SubmissionQuery
-	withFKs              bool
-	modifiers            []func(*sql.Selector)
-	loadTotal            []func(context.Context, []*Question) error
-	withNamedSubmissions map[string]*SubmissionQuery
+	ctx          *QueryContext
+	order        []submission.OrderOption
+	inters       []Interceptor
+	predicates   []predicate.Submission
+	withQuestion *QuestionQuery
+	withUser     *UserQuery
+	withFKs      bool
+	modifiers    []func(*sql.Selector)
+	loadTotal    []func(context.Context, []*Submission) error
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the QuestionQuery builder.
-func (_q *QuestionQuery) Where(ps ...predicate.Question) *QuestionQuery {
+// Where adds a new predicate for the SubmissionQuery builder.
+func (_q *SubmissionQuery) Where(ps ...predicate.Submission) *SubmissionQuery {
 	_q.predicates = append(_q.predicates, ps...)
 	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *QuestionQuery) Limit(limit int) *QuestionQuery {
+func (_q *SubmissionQuery) Limit(limit int) *SubmissionQuery {
 	_q.ctx.Limit = &limit
 	return _q
 }
 
 // Offset to start from.
-func (_q *QuestionQuery) Offset(offset int) *QuestionQuery {
+func (_q *SubmissionQuery) Offset(offset int) *SubmissionQuery {
 	_q.ctx.Offset = &offset
 	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *QuestionQuery) Unique(unique bool) *QuestionQuery {
+func (_q *SubmissionQuery) Unique(unique bool) *SubmissionQuery {
 	_q.ctx.Unique = &unique
 	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (_q *QuestionQuery) Order(o ...question.OrderOption) *QuestionQuery {
+func (_q *SubmissionQuery) Order(o ...submission.OrderOption) *SubmissionQuery {
 	_q.order = append(_q.order, o...)
 	return _q
 }
 
-// QueryDatabase chains the current query on the "database" edge.
-func (_q *QuestionQuery) QueryDatabase() *DatabaseQuery {
-	query := (&DatabaseClient{config: _q.config}).Query()
+// QueryQuestion chains the current query on the "question" edge.
+func (_q *SubmissionQuery) QueryQuestion() *QuestionQuery {
+	query := (&QuestionClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -79,9 +77,9 @@ func (_q *QuestionQuery) QueryDatabase() *DatabaseQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(question.Table, question.FieldID, selector),
-			sqlgraph.To(database.Table, database.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, question.DatabaseTable, question.DatabaseColumn),
+			sqlgraph.From(submission.Table, submission.FieldID, selector),
+			sqlgraph.To(question.Table, question.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, submission.QuestionTable, submission.QuestionColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -89,9 +87,9 @@ func (_q *QuestionQuery) QueryDatabase() *DatabaseQuery {
 	return query
 }
 
-// QuerySubmissions chains the current query on the "submissions" edge.
-func (_q *QuestionQuery) QuerySubmissions() *SubmissionQuery {
-	query := (&SubmissionClient{config: _q.config}).Query()
+// QueryUser chains the current query on the "user" edge.
+func (_q *SubmissionQuery) QueryUser() *UserQuery {
+	query := (&UserClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -101,9 +99,9 @@ func (_q *QuestionQuery) QuerySubmissions() *SubmissionQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(question.Table, question.FieldID, selector),
-			sqlgraph.To(submission.Table, submission.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, question.SubmissionsTable, question.SubmissionsColumn),
+			sqlgraph.From(submission.Table, submission.FieldID, selector),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, submission.UserTable, submission.UserColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -111,21 +109,21 @@ func (_q *QuestionQuery) QuerySubmissions() *SubmissionQuery {
 	return query
 }
 
-// First returns the first Question entity from the query.
-// Returns a *NotFoundError when no Question was found.
-func (_q *QuestionQuery) First(ctx context.Context) (*Question, error) {
+// First returns the first Submission entity from the query.
+// Returns a *NotFoundError when no Submission was found.
+func (_q *SubmissionQuery) First(ctx context.Context) (*Submission, error) {
 	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{question.Label}
+		return nil, &NotFoundError{submission.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *QuestionQuery) FirstX(ctx context.Context) *Question {
+func (_q *SubmissionQuery) FirstX(ctx context.Context) *Submission {
 	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -133,22 +131,22 @@ func (_q *QuestionQuery) FirstX(ctx context.Context) *Question {
 	return node
 }
 
-// FirstID returns the first Question ID from the query.
-// Returns a *NotFoundError when no Question ID was found.
-func (_q *QuestionQuery) FirstID(ctx context.Context) (id int, err error) {
+// FirstID returns the first Submission ID from the query.
+// Returns a *NotFoundError when no Submission ID was found.
+func (_q *SubmissionQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{question.Label}
+		err = &NotFoundError{submission.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *QuestionQuery) FirstIDX(ctx context.Context) int {
+func (_q *SubmissionQuery) FirstIDX(ctx context.Context) int {
 	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -156,10 +154,10 @@ func (_q *QuestionQuery) FirstIDX(ctx context.Context) int {
 	return id
 }
 
-// Only returns a single Question entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one Question entity is found.
-// Returns a *NotFoundError when no Question entities are found.
-func (_q *QuestionQuery) Only(ctx context.Context) (*Question, error) {
+// Only returns a single Submission entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one Submission entity is found.
+// Returns a *NotFoundError when no Submission entities are found.
+func (_q *SubmissionQuery) Only(ctx context.Context) (*Submission, error) {
 	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -168,14 +166,14 @@ func (_q *QuestionQuery) Only(ctx context.Context) (*Question, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{question.Label}
+		return nil, &NotFoundError{submission.Label}
 	default:
-		return nil, &NotSingularError{question.Label}
+		return nil, &NotSingularError{submission.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *QuestionQuery) OnlyX(ctx context.Context) *Question {
+func (_q *SubmissionQuery) OnlyX(ctx context.Context) *Submission {
 	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -183,10 +181,10 @@ func (_q *QuestionQuery) OnlyX(ctx context.Context) *Question {
 	return node
 }
 
-// OnlyID is like Only, but returns the only Question ID in the query.
-// Returns a *NotSingularError when more than one Question ID is found.
+// OnlyID is like Only, but returns the only Submission ID in the query.
+// Returns a *NotSingularError when more than one Submission ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *QuestionQuery) OnlyID(ctx context.Context) (id int, err error) {
+func (_q *SubmissionQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
@@ -195,15 +193,15 @@ func (_q *QuestionQuery) OnlyID(ctx context.Context) (id int, err error) {
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{question.Label}
+		err = &NotFoundError{submission.Label}
 	default:
-		err = &NotSingularError{question.Label}
+		err = &NotSingularError{submission.Label}
 	}
 	return
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *QuestionQuery) OnlyIDX(ctx context.Context) int {
+func (_q *SubmissionQuery) OnlyIDX(ctx context.Context) int {
 	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -211,18 +209,18 @@ func (_q *QuestionQuery) OnlyIDX(ctx context.Context) int {
 	return id
 }
 
-// All executes the query and returns a list of Questions.
-func (_q *QuestionQuery) All(ctx context.Context) ([]*Question, error) {
+// All executes the query and returns a list of Submissions.
+func (_q *SubmissionQuery) All(ctx context.Context) ([]*Submission, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*Question, *QuestionQuery]()
-	return withInterceptors[[]*Question](ctx, _q, qr, _q.inters)
+	qr := querierAll[[]*Submission, *SubmissionQuery]()
+	return withInterceptors[[]*Submission](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *QuestionQuery) AllX(ctx context.Context) []*Question {
+func (_q *SubmissionQuery) AllX(ctx context.Context) []*Submission {
 	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
@@ -230,20 +228,20 @@ func (_q *QuestionQuery) AllX(ctx context.Context) []*Question {
 	return nodes
 }
 
-// IDs executes the query and returns a list of Question IDs.
-func (_q *QuestionQuery) IDs(ctx context.Context) (ids []int, err error) {
+// IDs executes the query and returns a list of Submission IDs.
+func (_q *SubmissionQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(question.FieldID).Scan(ctx, &ids); err != nil {
+	if err = _q.Select(submission.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (_q *QuestionQuery) IDsX(ctx context.Context) []int {
+func (_q *SubmissionQuery) IDsX(ctx context.Context) []int {
 	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -252,16 +250,16 @@ func (_q *QuestionQuery) IDsX(ctx context.Context) []int {
 }
 
 // Count returns the count of the given query.
-func (_q *QuestionQuery) Count(ctx context.Context) (int, error) {
+func (_q *SubmissionQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*QuestionQuery](), _q.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*SubmissionQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *QuestionQuery) CountX(ctx context.Context) int {
+func (_q *SubmissionQuery) CountX(ctx context.Context) int {
 	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -270,7 +268,7 @@ func (_q *QuestionQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *QuestionQuery) Exist(ctx context.Context) (bool, error) {
+func (_q *SubmissionQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
 	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
@@ -283,7 +281,7 @@ func (_q *QuestionQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *QuestionQuery) ExistX(ctx context.Context) bool {
+func (_q *SubmissionQuery) ExistX(ctx context.Context) bool {
 	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -291,45 +289,45 @@ func (_q *QuestionQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the QuestionQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the SubmissionQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *QuestionQuery) Clone() *QuestionQuery {
+func (_q *SubmissionQuery) Clone() *SubmissionQuery {
 	if _q == nil {
 		return nil
 	}
-	return &QuestionQuery{
-		config:          _q.config,
-		ctx:             _q.ctx.Clone(),
-		order:           append([]question.OrderOption{}, _q.order...),
-		inters:          append([]Interceptor{}, _q.inters...),
-		predicates:      append([]predicate.Question{}, _q.predicates...),
-		withDatabase:    _q.withDatabase.Clone(),
-		withSubmissions: _q.withSubmissions.Clone(),
+	return &SubmissionQuery{
+		config:       _q.config,
+		ctx:          _q.ctx.Clone(),
+		order:        append([]submission.OrderOption{}, _q.order...),
+		inters:       append([]Interceptor{}, _q.inters...),
+		predicates:   append([]predicate.Submission{}, _q.predicates...),
+		withQuestion: _q.withQuestion.Clone(),
+		withUser:     _q.withUser.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
 }
 
-// WithDatabase tells the query-builder to eager-load the nodes that are connected to
-// the "database" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *QuestionQuery) WithDatabase(opts ...func(*DatabaseQuery)) *QuestionQuery {
-	query := (&DatabaseClient{config: _q.config}).Query()
+// WithQuestion tells the query-builder to eager-load the nodes that are connected to
+// the "question" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *SubmissionQuery) WithQuestion(opts ...func(*QuestionQuery)) *SubmissionQuery {
+	query := (&QuestionClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withDatabase = query
+	_q.withQuestion = query
 	return _q
 }
 
-// WithSubmissions tells the query-builder to eager-load the nodes that are connected to
-// the "submissions" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *QuestionQuery) WithSubmissions(opts ...func(*SubmissionQuery)) *QuestionQuery {
-	query := (&SubmissionClient{config: _q.config}).Query()
+// WithUser tells the query-builder to eager-load the nodes that are connected to
+// the "user" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *SubmissionQuery) WithUser(opts ...func(*UserQuery)) *SubmissionQuery {
+	query := (&UserClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withSubmissions = query
+	_q.withUser = query
 	return _q
 }
 
@@ -339,19 +337,19 @@ func (_q *QuestionQuery) WithSubmissions(opts ...func(*SubmissionQuery)) *Questi
 // Example:
 //
 //	var v []struct {
-//		Category string `json:"category,omitempty"`
+//		SubmittedCode string `json:"submitted_code,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.Question.Query().
-//		GroupBy(question.FieldCategory).
+//	client.Submission.Query().
+//		GroupBy(submission.FieldSubmittedCode).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *QuestionQuery) GroupBy(field string, fields ...string) *QuestionGroupBy {
+func (_q *SubmissionQuery) GroupBy(field string, fields ...string) *SubmissionGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &QuestionGroupBy{build: _q}
+	grbuild := &SubmissionGroupBy{build: _q}
 	grbuild.flds = &_q.ctx.Fields
-	grbuild.label = question.Label
+	grbuild.label = submission.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -362,26 +360,26 @@ func (_q *QuestionQuery) GroupBy(field string, fields ...string) *QuestionGroupB
 // Example:
 //
 //	var v []struct {
-//		Category string `json:"category,omitempty"`
+//		SubmittedCode string `json:"submitted_code,omitempty"`
 //	}
 //
-//	client.Question.Query().
-//		Select(question.FieldCategory).
+//	client.Submission.Query().
+//		Select(submission.FieldSubmittedCode).
 //		Scan(ctx, &v)
-func (_q *QuestionQuery) Select(fields ...string) *QuestionSelect {
+func (_q *SubmissionQuery) Select(fields ...string) *SubmissionSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &QuestionSelect{QuestionQuery: _q}
-	sbuild.label = question.Label
+	sbuild := &SubmissionSelect{SubmissionQuery: _q}
+	sbuild.label = submission.Label
 	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a QuestionSelect configured with the given aggregations.
-func (_q *QuestionQuery) Aggregate(fns ...AggregateFunc) *QuestionSelect {
+// Aggregate returns a SubmissionSelect configured with the given aggregations.
+func (_q *SubmissionQuery) Aggregate(fns ...AggregateFunc) *SubmissionSelect {
 	return _q.Select().Aggregate(fns...)
 }
 
-func (_q *QuestionQuery) prepareQuery(ctx context.Context) error {
+func (_q *SubmissionQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -393,7 +391,7 @@ func (_q *QuestionQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range _q.ctx.Fields {
-		if !question.ValidColumn(f) {
+		if !submission.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -407,27 +405,27 @@ func (_q *QuestionQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (_q *QuestionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Question, error) {
+func (_q *SubmissionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Submission, error) {
 	var (
-		nodes       = []*Question{}
+		nodes       = []*Submission{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
 		loadedTypes = [2]bool{
-			_q.withDatabase != nil,
-			_q.withSubmissions != nil,
+			_q.withQuestion != nil,
+			_q.withUser != nil,
 		}
 	)
-	if _q.withDatabase != nil {
+	if _q.withQuestion != nil || _q.withUser != nil {
 		withFKs = true
 	}
 	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, question.ForeignKeys...)
+		_spec.Node.Columns = append(_spec.Node.Columns, submission.ForeignKeys...)
 	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*Question).scanValues(nil, columns)
+		return (*Submission).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Question{config: _q.config}
+		node := &Submission{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -444,23 +442,15 @@ func (_q *QuestionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Que
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := _q.withDatabase; query != nil {
-		if err := _q.loadDatabase(ctx, query, nodes, nil,
-			func(n *Question, e *Database) { n.Edges.Database = e }); err != nil {
+	if query := _q.withQuestion; query != nil {
+		if err := _q.loadQuestion(ctx, query, nodes, nil,
+			func(n *Submission, e *Question) { n.Edges.Question = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := _q.withSubmissions; query != nil {
-		if err := _q.loadSubmissions(ctx, query, nodes,
-			func(n *Question) { n.Edges.Submissions = []*Submission{} },
-			func(n *Question, e *Submission) { n.Edges.Submissions = append(n.Edges.Submissions, e) }); err != nil {
-			return nil, err
-		}
-	}
-	for name, query := range _q.withNamedSubmissions {
-		if err := _q.loadSubmissions(ctx, query, nodes,
-			func(n *Question) { n.appendNamedSubmissions(name) },
-			func(n *Question, e *Submission) { n.appendNamedSubmissions(name, e) }); err != nil {
+	if query := _q.withUser; query != nil {
+		if err := _q.loadUser(ctx, query, nodes, nil,
+			func(n *Submission, e *User) { n.Edges.User = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -472,14 +462,14 @@ func (_q *QuestionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Que
 	return nodes, nil
 }
 
-func (_q *QuestionQuery) loadDatabase(ctx context.Context, query *DatabaseQuery, nodes []*Question, init func(*Question), assign func(*Question, *Database)) error {
+func (_q *SubmissionQuery) loadQuestion(ctx context.Context, query *QuestionQuery, nodes []*Submission, init func(*Submission), assign func(*Submission, *Question)) error {
 	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*Question)
+	nodeids := make(map[int][]*Submission)
 	for i := range nodes {
-		if nodes[i].database_questions == nil {
+		if nodes[i].question_submissions == nil {
 			continue
 		}
-		fk := *nodes[i].database_questions
+		fk := *nodes[i].question_submissions
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -488,7 +478,7 @@ func (_q *QuestionQuery) loadDatabase(ctx context.Context, query *DatabaseQuery,
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(database.IDIn(ids...))
+	query.Where(question.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
@@ -496,7 +486,7 @@ func (_q *QuestionQuery) loadDatabase(ctx context.Context, query *DatabaseQuery,
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "database_questions" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "question_submissions" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -504,39 +494,40 @@ func (_q *QuestionQuery) loadDatabase(ctx context.Context, query *DatabaseQuery,
 	}
 	return nil
 }
-func (_q *QuestionQuery) loadSubmissions(ctx context.Context, query *SubmissionQuery, nodes []*Question, init func(*Question), assign func(*Question, *Submission)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*Question)
+func (_q *SubmissionQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Submission, init func(*Submission), assign func(*Submission, *User)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Submission)
 	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
+		if nodes[i].user_submissions == nil {
+			continue
 		}
+		fk := *nodes[i].user_submissions
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	query.withFKs = true
-	query.Where(predicate.Submission(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(question.SubmissionsColumn), fks...))
-	}))
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(user.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.question_submissions
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "question_submissions" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "question_submissions" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "user_submissions" returned %v`, n.ID)
 		}
-		assign(node, n)
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
 	}
 	return nil
 }
 
-func (_q *QuestionQuery) sqlCount(ctx context.Context) (int, error) {
+func (_q *SubmissionQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
 	if len(_q.modifiers) > 0 {
 		_spec.Modifiers = _q.modifiers
@@ -548,8 +539,8 @@ func (_q *QuestionQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (_q *QuestionQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(question.Table, question.Columns, sqlgraph.NewFieldSpec(question.FieldID, field.TypeInt))
+func (_q *SubmissionQuery) querySpec() *sqlgraph.QuerySpec {
+	_spec := sqlgraph.NewQuerySpec(submission.Table, submission.Columns, sqlgraph.NewFieldSpec(submission.FieldID, field.TypeInt))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -558,9 +549,9 @@ func (_q *QuestionQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, question.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, submission.FieldID)
 		for i := range fields {
-			if fields[i] != question.FieldID {
+			if fields[i] != submission.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
@@ -588,12 +579,12 @@ func (_q *QuestionQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *QuestionQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (_q *SubmissionQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(_q.driver.Dialect())
-	t1 := builder.Table(question.Table)
+	t1 := builder.Table(submission.Table)
 	columns := _q.ctx.Fields
 	if len(columns) == 0 {
-		columns = question.Columns
+		columns = submission.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if _q.sql != nil {
@@ -620,42 +611,28 @@ func (_q *QuestionQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// WithNamedSubmissions tells the query-builder to eager-load the nodes that are connected to the "submissions"
-// edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (_q *QuestionQuery) WithNamedSubmissions(name string, opts ...func(*SubmissionQuery)) *QuestionQuery {
-	query := (&SubmissionClient{config: _q.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	if _q.withNamedSubmissions == nil {
-		_q.withNamedSubmissions = make(map[string]*SubmissionQuery)
-	}
-	_q.withNamedSubmissions[name] = query
-	return _q
-}
-
-// QuestionGroupBy is the group-by builder for Question entities.
-type QuestionGroupBy struct {
+// SubmissionGroupBy is the group-by builder for Submission entities.
+type SubmissionGroupBy struct {
 	selector
-	build *QuestionQuery
+	build *SubmissionQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (_g *QuestionGroupBy) Aggregate(fns ...AggregateFunc) *QuestionGroupBy {
+func (_g *SubmissionGroupBy) Aggregate(fns ...AggregateFunc) *SubmissionGroupBy {
 	_g.fns = append(_g.fns, fns...)
 	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_g *QuestionGroupBy) Scan(ctx context.Context, v any) error {
+func (_g *SubmissionGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
 	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*QuestionQuery, *QuestionGroupBy](ctx, _g.build, _g, _g.build.inters, v)
+	return scanWithInterceptors[*SubmissionQuery, *SubmissionGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (_g *QuestionGroupBy) sqlScan(ctx context.Context, root *QuestionQuery, v any) error {
+func (_g *SubmissionGroupBy) sqlScan(ctx context.Context, root *SubmissionQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(_g.fns))
 	for _, fn := range _g.fns {
@@ -682,28 +659,28 @@ func (_g *QuestionGroupBy) sqlScan(ctx context.Context, root *QuestionQuery, v a
 	return sql.ScanSlice(rows, v)
 }
 
-// QuestionSelect is the builder for selecting fields of Question entities.
-type QuestionSelect struct {
-	*QuestionQuery
+// SubmissionSelect is the builder for selecting fields of Submission entities.
+type SubmissionSelect struct {
+	*SubmissionQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (_s *QuestionSelect) Aggregate(fns ...AggregateFunc) *QuestionSelect {
+func (_s *SubmissionSelect) Aggregate(fns ...AggregateFunc) *SubmissionSelect {
 	_s.fns = append(_s.fns, fns...)
 	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_s *QuestionSelect) Scan(ctx context.Context, v any) error {
+func (_s *SubmissionSelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
 	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*QuestionQuery, *QuestionSelect](ctx, _s.QuestionQuery, _s, _s.inters, v)
+	return scanWithInterceptors[*SubmissionQuery, *SubmissionSelect](ctx, _s.SubmissionQuery, _s, _s.inters, v)
 }
 
-func (_s *QuestionSelect) sqlScan(ctx context.Context, root *QuestionQuery, v any) error {
+func (_s *SubmissionSelect) sqlScan(ctx context.Context, root *SubmissionQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(_s.fns))
 	for _, fn := range _s.fns {

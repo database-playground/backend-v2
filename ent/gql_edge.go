@@ -56,6 +56,18 @@ func (_m *Question) Database(ctx context.Context) (*Database, error) {
 	return result, err
 }
 
+func (_m *Question) Submissions(ctx context.Context) (result []*Submission, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedSubmissions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.SubmissionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QuerySubmissions().All(ctx)
+	}
+	return result, err
+}
+
 func (_m *ScopeSet) Groups(ctx context.Context) (result []*Group, err error) {
 	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
 		result, err = _m.NamedGroups(graphql.GetFieldContext(ctx).Field.Alias)
@@ -64,6 +76,22 @@ func (_m *ScopeSet) Groups(ctx context.Context) (result []*Group, err error) {
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryGroups().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *Submission) Question(ctx context.Context) (*Question, error) {
+	result, err := _m.Edges.QuestionOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryQuestion().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *Submission) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
 	}
 	return result, err
 }
@@ -96,6 +124,18 @@ func (_m *User) Events(ctx context.Context) (result []*Events, err error) {
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryEvents().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) Submissions(ctx context.Context) (result []*Submission, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedSubmissions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.SubmissionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QuerySubmissions().All(ctx)
 	}
 	return result, err
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/scopeset"
+	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
@@ -236,6 +237,33 @@ func (f TraverseScopeSet) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.ScopeSetQuery", q)
 }
 
+// The SubmissionFunc type is an adapter to allow the use of ordinary function as a Querier.
+type SubmissionFunc func(context.Context, *ent.SubmissionQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f SubmissionFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.SubmissionQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.SubmissionQuery", q)
+}
+
+// The TraverseSubmission type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseSubmission func(context.Context, *ent.SubmissionQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseSubmission) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseSubmission) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.SubmissionQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.SubmissionQuery", q)
+}
+
 // The UserFunc type is an adapter to allow the use of ordinary function as a Querier.
 type UserFunc func(context.Context, *ent.UserQuery) (ent.Value, error)
 
@@ -278,6 +306,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.QuestionQuery, predicate.Question, question.OrderOption]{typ: ent.TypeQuestion, tq: q}, nil
 	case *ent.ScopeSetQuery:
 		return &query[*ent.ScopeSetQuery, predicate.ScopeSet, scopeset.OrderOption]{typ: ent.TypeScopeSet, tq: q}, nil
+	case *ent.SubmissionQuery:
+		return &query[*ent.SubmissionQuery, predicate.Submission, submission.OrderOption]{typ: ent.TypeSubmission, tq: q}, nil
 	case *ent.UserQuery:
 		return &query[*ent.UserQuery, predicate.User, user.OrderOption]{typ: ent.TypeUser, tq: q}, nil
 	default:

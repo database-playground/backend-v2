@@ -14,6 +14,7 @@ import (
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/scopeset"
+	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
@@ -1373,6 +1374,10 @@ type QuestionWhereInput struct {
 	// "database" edge predicates.
 	HasDatabase     *bool                 `json:"hasDatabase,omitempty"`
 	HasDatabaseWith []*DatabaseWhereInput `json:"hasDatabaseWith,omitempty"`
+
+	// "submissions" edge predicates.
+	HasSubmissions     *bool                   `json:"hasSubmissions,omitempty"`
+	HasSubmissionsWith []*SubmissionWhereInput `json:"hasSubmissionsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -1657,6 +1662,24 @@ func (i *QuestionWhereInput) P() (predicate.Question, error) {
 		}
 		predicates = append(predicates, question.HasDatabaseWith(with...))
 	}
+	if i.HasSubmissions != nil {
+		p := question.HasSubmissions()
+		if !*i.HasSubmissions {
+			p = question.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasSubmissionsWith) > 0 {
+		with := make([]predicate.Submission, 0, len(i.HasSubmissionsWith))
+		for _, w := range i.HasSubmissionsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasSubmissionsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, question.HasSubmissionsWith(with...))
+	}
 	switch len(predicates) {
 	case 0:
 		return nil, ErrEmptyQuestionWhereInput
@@ -1929,6 +1952,280 @@ func (i *ScopeSetWhereInput) P() (predicate.ScopeSet, error) {
 	}
 }
 
+// SubmissionWhereInput represents a where input for filtering Submission queries.
+type SubmissionWhereInput struct {
+	Predicates []predicate.Submission  `json:"-"`
+	Not        *SubmissionWhereInput   `json:"not,omitempty"`
+	Or         []*SubmissionWhereInput `json:"or,omitempty"`
+	And        []*SubmissionWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "submitted_code" field predicates.
+	SubmittedCode             *string  `json:"submittedCode,omitempty"`
+	SubmittedCodeNEQ          *string  `json:"submittedCodeNEQ,omitempty"`
+	SubmittedCodeIn           []string `json:"submittedCodeIn,omitempty"`
+	SubmittedCodeNotIn        []string `json:"submittedCodeNotIn,omitempty"`
+	SubmittedCodeGT           *string  `json:"submittedCodeGT,omitempty"`
+	SubmittedCodeGTE          *string  `json:"submittedCodeGTE,omitempty"`
+	SubmittedCodeLT           *string  `json:"submittedCodeLT,omitempty"`
+	SubmittedCodeLTE          *string  `json:"submittedCodeLTE,omitempty"`
+	SubmittedCodeContains     *string  `json:"submittedCodeContains,omitempty"`
+	SubmittedCodeHasPrefix    *string  `json:"submittedCodeHasPrefix,omitempty"`
+	SubmittedCodeHasSuffix    *string  `json:"submittedCodeHasSuffix,omitempty"`
+	SubmittedCodeEqualFold    *string  `json:"submittedCodeEqualFold,omitempty"`
+	SubmittedCodeContainsFold *string  `json:"submittedCodeContainsFold,omitempty"`
+
+	// "status" field predicates.
+	Status      *submission.Status  `json:"status,omitempty"`
+	StatusNEQ   *submission.Status  `json:"statusNEQ,omitempty"`
+	StatusIn    []submission.Status `json:"statusIn,omitempty"`
+	StatusNotIn []submission.Status `json:"statusNotIn,omitempty"`
+
+	// "submitted_at" field predicates.
+	SubmittedAt      *time.Time  `json:"submittedAt,omitempty"`
+	SubmittedAtNEQ   *time.Time  `json:"submittedAtNEQ,omitempty"`
+	SubmittedAtIn    []time.Time `json:"submittedAtIn,omitempty"`
+	SubmittedAtNotIn []time.Time `json:"submittedAtNotIn,omitempty"`
+	SubmittedAtGT    *time.Time  `json:"submittedAtGT,omitempty"`
+	SubmittedAtGTE   *time.Time  `json:"submittedAtGTE,omitempty"`
+	SubmittedAtLT    *time.Time  `json:"submittedAtLT,omitempty"`
+	SubmittedAtLTE   *time.Time  `json:"submittedAtLTE,omitempty"`
+
+	// "question" edge predicates.
+	HasQuestion     *bool                 `json:"hasQuestion,omitempty"`
+	HasQuestionWith []*QuestionWhereInput `json:"hasQuestionWith,omitempty"`
+
+	// "user" edge predicates.
+	HasUser     *bool             `json:"hasUser,omitempty"`
+	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *SubmissionWhereInput) AddPredicates(predicates ...predicate.Submission) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the SubmissionWhereInput filter on the SubmissionQuery builder.
+func (i *SubmissionWhereInput) Filter(q *SubmissionQuery) (*SubmissionQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptySubmissionWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptySubmissionWhereInput is returned in case the SubmissionWhereInput is empty.
+var ErrEmptySubmissionWhereInput = errors.New("ent: empty predicate SubmissionWhereInput")
+
+// P returns a predicate for filtering submissions.
+// An error is returned if the input is empty or invalid.
+func (i *SubmissionWhereInput) P() (predicate.Submission, error) {
+	var predicates []predicate.Submission
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, submission.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.Submission, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, submission.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.Submission, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, submission.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, submission.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, submission.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, submission.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, submission.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, submission.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, submission.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, submission.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, submission.IDLTE(*i.IDLTE))
+	}
+	if i.SubmittedCode != nil {
+		predicates = append(predicates, submission.SubmittedCodeEQ(*i.SubmittedCode))
+	}
+	if i.SubmittedCodeNEQ != nil {
+		predicates = append(predicates, submission.SubmittedCodeNEQ(*i.SubmittedCodeNEQ))
+	}
+	if len(i.SubmittedCodeIn) > 0 {
+		predicates = append(predicates, submission.SubmittedCodeIn(i.SubmittedCodeIn...))
+	}
+	if len(i.SubmittedCodeNotIn) > 0 {
+		predicates = append(predicates, submission.SubmittedCodeNotIn(i.SubmittedCodeNotIn...))
+	}
+	if i.SubmittedCodeGT != nil {
+		predicates = append(predicates, submission.SubmittedCodeGT(*i.SubmittedCodeGT))
+	}
+	if i.SubmittedCodeGTE != nil {
+		predicates = append(predicates, submission.SubmittedCodeGTE(*i.SubmittedCodeGTE))
+	}
+	if i.SubmittedCodeLT != nil {
+		predicates = append(predicates, submission.SubmittedCodeLT(*i.SubmittedCodeLT))
+	}
+	if i.SubmittedCodeLTE != nil {
+		predicates = append(predicates, submission.SubmittedCodeLTE(*i.SubmittedCodeLTE))
+	}
+	if i.SubmittedCodeContains != nil {
+		predicates = append(predicates, submission.SubmittedCodeContains(*i.SubmittedCodeContains))
+	}
+	if i.SubmittedCodeHasPrefix != nil {
+		predicates = append(predicates, submission.SubmittedCodeHasPrefix(*i.SubmittedCodeHasPrefix))
+	}
+	if i.SubmittedCodeHasSuffix != nil {
+		predicates = append(predicates, submission.SubmittedCodeHasSuffix(*i.SubmittedCodeHasSuffix))
+	}
+	if i.SubmittedCodeEqualFold != nil {
+		predicates = append(predicates, submission.SubmittedCodeEqualFold(*i.SubmittedCodeEqualFold))
+	}
+	if i.SubmittedCodeContainsFold != nil {
+		predicates = append(predicates, submission.SubmittedCodeContainsFold(*i.SubmittedCodeContainsFold))
+	}
+	if i.Status != nil {
+		predicates = append(predicates, submission.StatusEQ(*i.Status))
+	}
+	if i.StatusNEQ != nil {
+		predicates = append(predicates, submission.StatusNEQ(*i.StatusNEQ))
+	}
+	if len(i.StatusIn) > 0 {
+		predicates = append(predicates, submission.StatusIn(i.StatusIn...))
+	}
+	if len(i.StatusNotIn) > 0 {
+		predicates = append(predicates, submission.StatusNotIn(i.StatusNotIn...))
+	}
+	if i.SubmittedAt != nil {
+		predicates = append(predicates, submission.SubmittedAtEQ(*i.SubmittedAt))
+	}
+	if i.SubmittedAtNEQ != nil {
+		predicates = append(predicates, submission.SubmittedAtNEQ(*i.SubmittedAtNEQ))
+	}
+	if len(i.SubmittedAtIn) > 0 {
+		predicates = append(predicates, submission.SubmittedAtIn(i.SubmittedAtIn...))
+	}
+	if len(i.SubmittedAtNotIn) > 0 {
+		predicates = append(predicates, submission.SubmittedAtNotIn(i.SubmittedAtNotIn...))
+	}
+	if i.SubmittedAtGT != nil {
+		predicates = append(predicates, submission.SubmittedAtGT(*i.SubmittedAtGT))
+	}
+	if i.SubmittedAtGTE != nil {
+		predicates = append(predicates, submission.SubmittedAtGTE(*i.SubmittedAtGTE))
+	}
+	if i.SubmittedAtLT != nil {
+		predicates = append(predicates, submission.SubmittedAtLT(*i.SubmittedAtLT))
+	}
+	if i.SubmittedAtLTE != nil {
+		predicates = append(predicates, submission.SubmittedAtLTE(*i.SubmittedAtLTE))
+	}
+
+	if i.HasQuestion != nil {
+		p := submission.HasQuestion()
+		if !*i.HasQuestion {
+			p = submission.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasQuestionWith) > 0 {
+		with := make([]predicate.Question, 0, len(i.HasQuestionWith))
+		for _, w := range i.HasQuestionWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasQuestionWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, submission.HasQuestionWith(with...))
+	}
+	if i.HasUser != nil {
+		p := submission.HasUser()
+		if !*i.HasUser {
+			p = submission.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasUserWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasUserWith))
+		for _, w := range i.HasUserWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasUserWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, submission.HasUserWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptySubmissionWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return submission.And(predicates...), nil
+	}
+}
+
 // UserWhereInput represents a where input for filtering User queries.
 type UserWhereInput struct {
 	Predicates []predicate.User  `json:"-"`
@@ -2036,6 +2333,10 @@ type UserWhereInput struct {
 	// "events" edge predicates.
 	HasEvents     *bool               `json:"hasEvents,omitempty"`
 	HasEventsWith []*EventsWhereInput `json:"hasEventsWith,omitempty"`
+
+	// "submissions" edge predicates.
+	HasSubmissions     *bool                   `json:"hasSubmissions,omitempty"`
+	HasSubmissionsWith []*SubmissionWhereInput `json:"hasSubmissionsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -2388,6 +2689,24 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasEventsWith(with...))
+	}
+	if i.HasSubmissions != nil {
+		p := user.HasSubmissions()
+		if !*i.HasSubmissions {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasSubmissionsWith) > 0 {
+		with := make([]predicate.Submission, 0, len(i.HasSubmissionsWith))
+		for _, w := range i.HasSubmissionsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasSubmissionsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasSubmissionsWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

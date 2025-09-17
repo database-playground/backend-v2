@@ -13,6 +13,7 @@ import (
 	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/question"
+	"github.com/database-playground/backend-v2/ent/submission"
 )
 
 // QuestionUpdate is the builder for updating Question entities.
@@ -95,6 +96,21 @@ func (_u *QuestionUpdate) SetDatabase(v *Database) *QuestionUpdate {
 	return _u.SetDatabaseID(v.ID)
 }
 
+// AddSubmissionIDs adds the "submissions" edge to the Submission entity by IDs.
+func (_u *QuestionUpdate) AddSubmissionIDs(ids ...int) *QuestionUpdate {
+	_u.mutation.AddSubmissionIDs(ids...)
+	return _u
+}
+
+// AddSubmissions adds the "submissions" edges to the Submission entity.
+func (_u *QuestionUpdate) AddSubmissions(v ...*Submission) *QuestionUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSubmissionIDs(ids...)
+}
+
 // Mutation returns the QuestionMutation object of the builder.
 func (_u *QuestionUpdate) Mutation() *QuestionMutation {
 	return _u.mutation
@@ -104,6 +120,27 @@ func (_u *QuestionUpdate) Mutation() *QuestionMutation {
 func (_u *QuestionUpdate) ClearDatabase() *QuestionUpdate {
 	_u.mutation.ClearDatabase()
 	return _u
+}
+
+// ClearSubmissions clears all "submissions" edges to the Submission entity.
+func (_u *QuestionUpdate) ClearSubmissions() *QuestionUpdate {
+	_u.mutation.ClearSubmissions()
+	return _u
+}
+
+// RemoveSubmissionIDs removes the "submissions" edge to Submission entities by IDs.
+func (_u *QuestionUpdate) RemoveSubmissionIDs(ids ...int) *QuestionUpdate {
+	_u.mutation.RemoveSubmissionIDs(ids...)
+	return _u
+}
+
+// RemoveSubmissions removes "submissions" edges to Submission entities.
+func (_u *QuestionUpdate) RemoveSubmissions(v ...*Submission) *QuestionUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSubmissionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -199,6 +236,51 @@ func (_u *QuestionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.SubmissionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   question.SubmissionsTable,
+			Columns: []string{question.SubmissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(submission.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSubmissionsIDs(); len(nodes) > 0 && !_u.mutation.SubmissionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   question.SubmissionsTable,
+			Columns: []string{question.SubmissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(submission.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SubmissionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   question.SubmissionsTable,
+			Columns: []string{question.SubmissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(submission.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{question.Label}
@@ -286,6 +368,21 @@ func (_u *QuestionUpdateOne) SetDatabase(v *Database) *QuestionUpdateOne {
 	return _u.SetDatabaseID(v.ID)
 }
 
+// AddSubmissionIDs adds the "submissions" edge to the Submission entity by IDs.
+func (_u *QuestionUpdateOne) AddSubmissionIDs(ids ...int) *QuestionUpdateOne {
+	_u.mutation.AddSubmissionIDs(ids...)
+	return _u
+}
+
+// AddSubmissions adds the "submissions" edges to the Submission entity.
+func (_u *QuestionUpdateOne) AddSubmissions(v ...*Submission) *QuestionUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSubmissionIDs(ids...)
+}
+
 // Mutation returns the QuestionMutation object of the builder.
 func (_u *QuestionUpdateOne) Mutation() *QuestionMutation {
 	return _u.mutation
@@ -295,6 +392,27 @@ func (_u *QuestionUpdateOne) Mutation() *QuestionMutation {
 func (_u *QuestionUpdateOne) ClearDatabase() *QuestionUpdateOne {
 	_u.mutation.ClearDatabase()
 	return _u
+}
+
+// ClearSubmissions clears all "submissions" edges to the Submission entity.
+func (_u *QuestionUpdateOne) ClearSubmissions() *QuestionUpdateOne {
+	_u.mutation.ClearSubmissions()
+	return _u
+}
+
+// RemoveSubmissionIDs removes the "submissions" edge to Submission entities by IDs.
+func (_u *QuestionUpdateOne) RemoveSubmissionIDs(ids ...int) *QuestionUpdateOne {
+	_u.mutation.RemoveSubmissionIDs(ids...)
+	return _u
+}
+
+// RemoveSubmissions removes "submissions" edges to Submission entities.
+func (_u *QuestionUpdateOne) RemoveSubmissions(v ...*Submission) *QuestionUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSubmissionIDs(ids...)
 }
 
 // Where appends a list predicates to the QuestionUpdate builder.
@@ -413,6 +531,51 @@ func (_u *QuestionUpdateOne) sqlSave(ctx context.Context) (_node *Question, err 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(database.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SubmissionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   question.SubmissionsTable,
+			Columns: []string{question.SubmissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(submission.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSubmissionsIDs(); len(nodes) > 0 && !_u.mutation.SubmissionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   question.SubmissionsTable,
+			Columns: []string{question.SubmissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(submission.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SubmissionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   question.SubmissionsTable,
+			Columns: []string{question.SubmissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(submission.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
