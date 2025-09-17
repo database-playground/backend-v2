@@ -13,7 +13,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/database-playground/backend-v2/ent/database"
+	"github.com/database-playground/backend-v2/ent/events"
 	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/ent/points"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/scopeset"
 	"github.com/database-playground/backend-v2/ent/user"
@@ -78,7 +80,9 @@ func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			database.Table: database.ValidColumn,
+			events.Table:   events.ValidColumn,
 			group.Table:    group.ValidColumn,
+			points.Table:   points.ValidColumn,
 			question.Table: question.ValidColumn,
 			scopeset.Table: scopeset.ValidColumn,
 			user.Table:     user.ValidColumn,

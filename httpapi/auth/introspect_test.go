@@ -15,8 +15,10 @@ import (
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/config"
+	"github.com/database-playground/backend-v2/internal/events"
 	"github.com/database-playground/backend-v2/internal/setup"
 	"github.com/database-playground/backend-v2/internal/testhelper"
+	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -52,8 +54,10 @@ func setupTestAuthServiceWithDatabase(t *testing.T) (*AuthService, *mockAuthStor
 
 	storage := newMockAuthStorageForIntrospect()
 	cfg := config.Config{}
+	eventService := events.NewEventService(entClient)
+	useraccount := useraccount.NewContext(entClient, storage, eventService)
 
-	authService := NewAuthService(entClient, storage, cfg)
+	authService := NewAuthService(entClient, storage, cfg, useraccount)
 	return authService, storage, entClient
 }
 

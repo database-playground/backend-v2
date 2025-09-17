@@ -6,6 +6,7 @@ import (
 
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/internal/events"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/stretchr/testify/require"
 )
@@ -35,7 +36,8 @@ func TestDeleteUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			client := setupTestDatabase(t)
 			authStorage := newMockAuthStorage()
-			ctx := useraccount.NewContext(client, authStorage)
+			eventService := events.NewEventService(client)
+			ctx := useraccount.NewContext(client, authStorage, eventService)
 
 			var userID int
 			if tt.setupUser {
@@ -76,7 +78,8 @@ func TestDeleteUser(t *testing.T) {
 func TestDeleteUser_Integration(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	ctx := useraccount.NewContext(client, authStorage)
+	eventService := events.NewEventService(client)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
 
 	// Get the unverified group
 	unverifiedGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).Only(context.Background())

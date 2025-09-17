@@ -20,8 +20,11 @@ import (
 	authservice "github.com/database-playground/backend-v2/httpapi/auth"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/config"
+	"github.com/database-playground/backend-v2/internal/events"
 	"github.com/database-playground/backend-v2/internal/httputils"
 	"github.com/database-playground/backend-v2/internal/sqlrunner"
+	"github.com/database-playground/backend-v2/internal/useraccount"
+	"github.com/database-playground/backend-v2/internal/workers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/rueidis"
@@ -41,8 +44,8 @@ func SqlRunner(cfg config.Config) *sqlrunner.SqlRunner {
 }
 
 // GqlgenHandler creates a gqlgen handler.
-func GqlgenHandler(entClient *ent.Client, storage auth.Storage, sqlrunner *sqlrunner.SqlRunner) *handler.Server {
-	srv := handler.New(graph.NewSchema(entClient, storage, sqlrunner))
+func GqlgenHandler(entClient *ent.Client, storage auth.Storage, sqlrunner *sqlrunner.SqlRunner, eventService *events.EventService) *handler.Server {
+	srv := handler.New(graph.NewSchema(entClient, storage, sqlrunner, eventService))
 
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
@@ -61,9 +64,19 @@ func GqlgenHandler(entClient *ent.Client, storage auth.Storage, sqlrunner *sqlru
 	return srv
 }
 
+// UserAccountContext creates a useraccount.Context.
+func UserAccountContext(entClient *ent.Client, storage auth.Storage, eventService *events.EventService) *useraccount.Context {
+	return useraccount.NewContext(entClient, storage, eventService)
+}
+
+// EventService creates an events.EventService.
+func EventService(entClient *ent.Client) *events.EventService {
+	return events.NewEventService(entClient)
+}
+
 // AuthService creates an auth service.
-func AuthService(entClient *ent.Client, storage auth.Storage, config config.Config) httpapi.Service {
-	return authservice.NewAuthService(entClient, storage, config)
+func AuthService(entClient *ent.Client, storage auth.Storage, config config.Config, useraccount *useraccount.Context) httpapi.Service {
+	return authservice.NewAuthService(entClient, storage, config, useraccount)
 }
 
 // GinEngine creates a gin engine.
@@ -132,12 +145,12 @@ func GinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Config)
 				}
 			}()
 
-			go func() {
+			workers.Global.Go(func() {
 				<-httpCtx.Done()
 				if err := srv.Shutdown(context.Background()); err != nil {
 					slog.Error("error shutting down gin engine", "error", err)
 				}
-			}()
+			})
 
 			return nil
 		},
@@ -148,6 +161,10 @@ func GinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Config)
 			default:
 				cancel()
 			}
+
+			// Wait for all workers to finish
+			slog.Info("waiting for workers to finish")
+			workers.Global.Wait()
 
 			return nil
 		},

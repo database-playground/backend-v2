@@ -30,6 +30,8 @@ func (User) Fields() []ent.Field {
 func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("group", Group.Type).Unique().Required(),
+		edge.To("points", Points.Type),
+		edge.To("events", Events.Type),
 	}
 }
 

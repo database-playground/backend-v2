@@ -296,10 +296,12 @@ func (c *ScopeSetUpdateOne) SetInput(i UpdateScopeSetInput) *ScopeSetUpdateOne {
 
 // CreateUserInput represents a mutation input for creating users.
 type CreateUserInput struct {
-	Name    string
-	Email   string
-	Avatar  *string
-	GroupID int
+	Name     string
+	Email    string
+	Avatar   *string
+	GroupID  int
+	PointIDs []int
+	EventIDs []int
 }
 
 // Mutate applies the CreateUserInput on the UserMutation builder.
@@ -310,6 +312,12 @@ func (i *CreateUserInput) Mutate(m *UserMutation) {
 		m.SetAvatar(*v)
 	}
 	m.SetGroupID(i.GroupID)
+	if v := i.PointIDs; len(v) > 0 {
+		m.AddPointIDs(v...)
+	}
+	if v := i.EventIDs; len(v) > 0 {
+		m.AddEventIDs(v...)
+	}
 }
 
 // SetInput applies the change-set in the CreateUserInput on the UserCreate builder.
@@ -320,10 +328,16 @@ func (c *UserCreate) SetInput(i CreateUserInput) *UserCreate {
 
 // UpdateUserInput represents a mutation input for updating users.
 type UpdateUserInput struct {
-	Name        *string
-	ClearAvatar bool
-	Avatar      *string
-	GroupID     *int
+	Name           *string
+	ClearAvatar    bool
+	Avatar         *string
+	GroupID        *int
+	ClearPoints    bool
+	AddPointIDs    []int
+	RemovePointIDs []int
+	ClearEvents    bool
+	AddEventIDs    []int
+	RemoveEventIDs []int
 }
 
 // Mutate applies the UpdateUserInput on the UserMutation builder.
@@ -339,6 +353,24 @@ func (i *UpdateUserInput) Mutate(m *UserMutation) {
 	}
 	if v := i.GroupID; v != nil {
 		m.SetGroupID(*v)
+	}
+	if i.ClearPoints {
+		m.ClearPoints()
+	}
+	if v := i.AddPointIDs; len(v) > 0 {
+		m.AddPointIDs(v...)
+	}
+	if v := i.RemovePointIDs; len(v) > 0 {
+		m.RemovePointIDs(v...)
+	}
+	if i.ClearEvents {
+		m.ClearEvents()
+	}
+	if v := i.AddEventIDs; len(v) > 0 {
+		m.AddEventIDs(v...)
+	}
+	if v := i.RemoveEventIDs; len(v) > 0 {
+		m.RemoveEventIDs(v...)
 	}
 }
 

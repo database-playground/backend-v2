@@ -9,6 +9,7 @@ import (
 	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/graph/directive"
 	"github.com/database-playground/backend-v2/internal/auth"
+	"github.com/database-playground/backend-v2/internal/events"
 	"github.com/database-playground/backend-v2/internal/sqlrunner"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/vektah/gqlparser/v2/gqlerror"
@@ -20,15 +21,21 @@ import (
 
 // Resolver is the resolver root.
 type Resolver struct {
-	ent       *ent.Client
-	auth      auth.Storage
-	sqlrunner *sqlrunner.SqlRunner
+	ent          *ent.Client
+	auth         auth.Storage
+	sqlrunner    *sqlrunner.SqlRunner
+	eventService *events.EventService
+}
+
+// NewResolver creates a new resolver.
+func NewResolver(ent *ent.Client, auth auth.Storage, sqlrunner *sqlrunner.SqlRunner, eventService *events.EventService) *Resolver {
+	return &Resolver{ent, auth, sqlrunner, eventService}
 }
 
 // NewSchema creates a graphql executable schema.
-func NewSchema(ent *ent.Client, auth auth.Storage, sqlrunner *sqlrunner.SqlRunner) graphql.ExecutableSchema {
+func NewSchema(ent *ent.Client, auth auth.Storage, sqlrunner *sqlrunner.SqlRunner, eventService *events.EventService) graphql.ExecutableSchema {
 	return NewExecutableSchema(Config{
-		Resolvers: &Resolver{ent, auth, sqlrunner},
+		Resolvers: NewResolver(ent, auth, sqlrunner, eventService),
 		Directives: DirectiveRoot{
 			Scope: directive.ScopeDirective,
 		},
@@ -36,7 +43,7 @@ func NewSchema(ent *ent.Client, auth auth.Storage, sqlrunner *sqlrunner.SqlRunne
 }
 
 func (r *Resolver) UserAccount(ctx context.Context) *useraccount.Context {
-	return useraccount.NewContext(r.EntClient(ctx), r.auth)
+	return useraccount.NewContext(r.EntClient(ctx), r.auth, r.eventService)
 }
 
 func (r *Resolver) EntClient(ctx context.Context) *ent.Client {

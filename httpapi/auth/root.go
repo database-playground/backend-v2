@@ -13,22 +13,26 @@ import (
 )
 
 type AuthService struct {
-	entClient *ent.Client
-	storage   auth.Storage
-	config    config.Config
+	entClient   *ent.Client
+	storage     auth.Storage
+	config      config.Config
+	useraccount *useraccount.Context
 }
 
-func NewAuthService(entClient *ent.Client, storage auth.Storage, config config.Config) *AuthService {
-	return &AuthService{entClient: entClient, storage: storage, config: config}
+func NewAuthService(entClient *ent.Client, storage auth.Storage, config config.Config, useraccount *useraccount.Context) *AuthService {
+	return &AuthService{
+		entClient:   entClient,
+		storage:     storage,
+		config:      config,
+		useraccount: useraccount,
+	}
 }
 
 func (s *AuthService) Register(router gin.IRouter) {
-	useraccount := useraccount.NewContext(s.entClient, s.storage)
-
 	auth := router.Group("/auth/v2")
 	oauthConfig := BuildOAuthConfig(s.config.GAuth)
 	oauthConfig.RedirectURL = fmt.Sprintf("%s%s/callback/google", s.config.Server.URI, auth.BasePath())
-	gauthHandler := NewGauthHandler(oauthConfig, useraccount, s.config.GAuth.RedirectURIs, s.config.GAuth.Secret)
+	gauthHandler := NewGauthHandler(oauthConfig, s.useraccount, s.config.GAuth.RedirectURIs, s.config.GAuth.Secret)
 
 	auth.GET("/authorize/google", gauthHandler.Authorize)
 	auth.GET("/callback/google", gauthHandler.Callback)
