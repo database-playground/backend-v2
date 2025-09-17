@@ -16,6 +16,8 @@ func main() {
 		fx.Provide(
 			AuthStorage,
 			SqlRunner,
+			UserAccountContext,
+			EventService,
 			AnnotateService(AuthService),
 			GqlgenHandler,
 			fx.Annotate(

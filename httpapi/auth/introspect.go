@@ -76,8 +76,7 @@ func (s *AuthService) IntrospectToken(c *gin.Context) {
 	}
 
 	// Get user information
-	useraccountCtx := useraccount.NewContext(s.entClient, s.storage)
-	entUser, err := useraccountCtx.GetUser(c.Request.Context(), tokenInfo.UserID)
+	entUser, err := s.useraccount.GetUser(c.Request.Context(), tokenInfo.UserID)
 	if err != nil {
 		if errors.Is(err, useraccount.ErrUserNotFound) {
 			// User not found - token is technically invalid
