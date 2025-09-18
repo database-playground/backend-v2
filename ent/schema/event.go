@@ -48,6 +48,5 @@ func (Event) Annotations() []schema.Annotation {
 			ScopeDirective("user:read"),
 		),
 		entgql.RelayConnection(),
-		entgql.OrderField("triggered_at"),
 	}
 }
