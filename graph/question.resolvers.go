@@ -9,7 +9,6 @@ import (
 	"errors"
 
 	"entgo.io/contrib/entgql"
-	"entgo.io/ent/dialect/sql"
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/ent/question"
 	entSubmission "github.com/database-playground/backend-v2/ent/submission"
@@ -161,7 +160,7 @@ func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Q
 }
 
 // SubmissionsOfQuestion is the resolver for the submissionsOfQuestion field.
-func (r *userResolver) SubmissionsOfQuestion(ctx context.Context, obj *ent.User, questionID int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *model.SubmissionsOfQuestionWhereInput) (*ent.SubmissionConnection, error) {
+func (r *userResolver) SubmissionsOfQuestion(ctx context.Context, obj *ent.User, questionID int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *model.SubmissionsOfQuestionWhereInput, orderBy *ent.SubmissionOrder) (*ent.SubmissionConnection, error) {
 	query := obj.QuerySubmissions()
 	query.Where(entSubmission.HasQuestionWith(question.ID(questionID)))
 
@@ -171,9 +170,7 @@ func (r *userResolver) SubmissionsOfQuestion(ctx context.Context, obj *ent.User,
 		}
 	}
 
-	query.Order(entSubmission.BySubmittedAt(sql.OrderDesc()))
-
-	return query.Paginate(ctx, after, first, before, last)
+	return query.Paginate(ctx, after, first, before, last, ent.WithSubmissionOrder(orderBy))
 }
 
 // Mutation returns MutationResolver implementation.

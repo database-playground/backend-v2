@@ -89,6 +89,11 @@ extend type User {
     The where input to filter the submissions.
     """
     where: SubmissionsOfQuestionWhereInput
+
+    """
+    The order by input to order the submissions.
+    """
+    orderBy: SubmissionOrder
   ): SubmissionConnection!
 }
 
