@@ -52,10 +52,8 @@ func Middleware(storage Storage) gin.HandlerFunc {
 	}
 }
 
-var (
-	// ErrBadTokenFormat is returned when the Authorization header is not in the correct Bearer format.
-	ErrBadTokenFormat = errors.New("bad token format")
-)
+// ErrBadTokenFormat is returned when the Authorization header is not in the correct Bearer format.
+var ErrBadTokenFormat = errors.New("bad token format")
 
 // ExtractToken extracts the token from the Authorization header and returns the user information.
 //
