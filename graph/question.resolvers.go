@@ -95,9 +95,7 @@ func (r *mutationResolver) SubmitAnswer(ctx context.Context, id int, input model
 		return nil, defs.ErrUnauthorized
 	}
 
-	submissionService := r.SubmissionService(ctx)
-
-	submissionResult, err := submissionService.SubmitAnswer(ctx, submission.SubmitAnswerInput{
+	submissionResult, err := r.submissionService.SubmitAnswer(ctx, submission.SubmitAnswerInput{
 		SubmitterID: user.UserID,
 		QuestionID:  id,
 		Answer:      input.Answer,

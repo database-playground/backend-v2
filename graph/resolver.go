@@ -22,33 +22,35 @@ import (
 
 // Resolver is the resolver root.
 type Resolver struct {
-	ent          *ent.Client
-	auth         auth.Storage
-	sqlrunner    *sqlrunner.SqlRunner
-	eventService *events.EventService
+	ent         *ent.Client
+	auth        auth.Storage
+	sqlrunner   *sqlrunner.SqlRunner
+	useraccount *useraccount.Context
+
+	eventService      *events.EventService
+	submissionService *submission.SubmissionService
 }
 
 // NewResolver creates a new resolver.
-func NewResolver(ent *ent.Client, auth auth.Storage, sqlrunner *sqlrunner.SqlRunner, eventService *events.EventService) *Resolver {
-	return &Resolver{ent, auth, sqlrunner, eventService}
+func NewResolver(ent *ent.Client, auth auth.Storage, sqlrunner *sqlrunner.SqlRunner, useraccount *useraccount.Context, eventService *events.EventService, submissionService *submission.SubmissionService) *Resolver {
+	return &Resolver{ent, auth, sqlrunner, useraccount, eventService, submissionService}
 }
 
 // NewSchema creates a graphql executable schema.
-func NewSchema(ent *ent.Client, auth auth.Storage, sqlrunner *sqlrunner.SqlRunner, eventService *events.EventService) graphql.ExecutableSchema {
+func NewSchema(
+	ent *ent.Client,
+	auth auth.Storage,
+	sqlrunner *sqlrunner.SqlRunner,
+	useraccount *useraccount.Context,
+	eventService *events.EventService,
+	submissionService *submission.SubmissionService,
+) graphql.ExecutableSchema {
 	return NewExecutableSchema(Config{
-		Resolvers: NewResolver(ent, auth, sqlrunner, eventService),
+		Resolvers: NewResolver(ent, auth, sqlrunner, useraccount, eventService, submissionService),
 		Directives: DirectiveRoot{
 			Scope: directive.ScopeDirective,
 		},
 	})
-}
-
-func (r *Resolver) UserAccount(ctx context.Context) *useraccount.Context {
-	return useraccount.NewContext(r.EntClient(ctx), r.auth, r.eventService)
-}
-
-func (r *Resolver) SubmissionService(ctx context.Context) *submission.SubmissionService {
-	return submission.NewSubmissionService(r.EntClient(ctx), r.eventService)
 }
 
 func (r *Resolver) EntClient(ctx context.Context) *ent.Client {
