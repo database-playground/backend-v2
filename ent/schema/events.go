@@ -22,7 +22,8 @@ func (Events) Fields() []ent.Field {
 		field.String("type").
 			NotEmpty(),
 		field.Time("triggered_at").
-			Default(time.Now),
+			Default(time.Now).
+			Annotations(entgql.OrderField("TRIGGERED_AT")),
 		field.JSON("payload", map[string]any{}).
 			Optional(),
 	}
@@ -47,5 +48,6 @@ func (Events) Annotations() []schema.Annotation {
 			ScopeDirective("user:read"),
 		),
 		entgql.RelayConnection(),
+		entgql.OrderField("triggered_at"),
 	}
 }

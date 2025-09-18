@@ -20,7 +20,8 @@ func (Points) Fields() []ent.Field {
 		field.Int("points").
 			Default(0),
 		field.Time("granted_at").
-			Default(time.Now),
+			Default(time.Now).
+			Annotations(entgql.OrderField("GRANTED_AT")),
 		field.String("description").
 			Optional(),
 	}
@@ -38,5 +39,6 @@ func (Points) Annotations() []schema.Annotation {
 			ScopeDirective("user:read"),
 		),
 		entgql.RelayConnection(),
+		entgql.OrderField("granted_at"),
 	}
 }
