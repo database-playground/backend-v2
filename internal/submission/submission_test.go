@@ -155,7 +155,7 @@ func TestSubmitAnswer_Failed_UserQueryError(t *testing.T) {
 	require.Equal(t, submission.StatusFailed, result.Status)
 	require.Nil(t, result.QueryResult)
 	require.NotNil(t, result.Error)
-	require.Contains(t, *result.Error, "query error")
+	require.Contains(t, *result.Error, "QUERY_ERROR")
 }
 
 func TestSubmitAnswer_Failed_ReferenceQueryError(t *testing.T) {
@@ -471,7 +471,7 @@ func TestSubmitAnswer_EventAndSubmissionRecordGeneration(t *testing.T) {
 		require.Equal(t, "SELECT * FROM nonexistent_table;", failedSubmission.SubmittedCode)
 		require.Nil(t, failedSubmission.QueryResult) // Should be nil for failed queries
 		require.NotNil(t, failedSubmission.Error)
-		require.Contains(t, *failedSubmission.Error, "query error")
+		require.Contains(t, *failedSubmission.Error, "QUERY_ERROR")
 		require.NotZero(t, failedSubmission.SubmittedAt)
 
 		// Verify event count increased (should now have 2 events total)
