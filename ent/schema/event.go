@@ -11,12 +11,12 @@ import (
 	"entgo.io/ent/schema/index"
 )
 
-// Events records the events (what users do) of a user.
-type Events struct {
+// Event records the events (what users do) of a user.
+type Event struct {
 	ent.Schema
 }
 
-func (Events) Fields() []ent.Field {
+func (Event) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int("user_id"),
 		field.String("type").
@@ -29,20 +29,20 @@ func (Events) Fields() []ent.Field {
 	}
 }
 
-func (Events) Edges() []ent.Edge {
+func (Event) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("user", User.Type).Ref("events").Field("user_id").Unique().Required(),
 	}
 }
 
-func (Events) Indexes() []ent.Index {
+func (Event) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("type"),
 		index.Fields("type", "user_id"),
 	}
 }
 
-func (Events) Annotations() []schema.Annotation {
+func (Event) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entgql.QueryField().Directives(
 			ScopeDirective("user:read"),
