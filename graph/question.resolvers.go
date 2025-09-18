@@ -6,9 +6,14 @@ package graph
 
 import (
 	"context"
+	"errors"
 
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/graph/model"
+	"github.com/database-playground/backend-v2/internal/auth"
+	"github.com/database-playground/backend-v2/internal/submission"
+	"github.com/database-playground/backend-v2/models"
 )
 
 // CreateQuestion is the resolver for the createQuestion field.
@@ -83,6 +88,32 @@ func (r *mutationResolver) DeleteDatabase(ctx context.Context, id int) (bool, er
 	return true, nil
 }
 
+// SubmitAnswer is the resolver for the submitAnswer field.
+func (r *mutationResolver) SubmitAnswer(ctx context.Context, id int, answer string) (*model.SubmissionResult, error) {
+	user, ok := auth.GetUser(ctx)
+	if !ok {
+		return nil, defs.ErrUnauthorized
+	}
+
+	submissionResult, err := r.submissionService.SubmitAnswer(ctx, submission.SubmitAnswerInput{
+		SubmitterID: user.UserID,
+		QuestionID:  id,
+		Answer:      answer,
+	})
+	if err != nil {
+		if errors.Is(err, submission.ErrQuestionNotFound) {
+			return nil, defs.ErrNotFound
+		}
+
+		return nil, err
+	}
+
+	return &model.SubmissionResult{
+		Result: submissionResult.QueryResult,
+		Error:  submissionResult.Error,
+	}, nil
+}
+
 // Question is the resolver for the question field.
 func (r *queryResolver) Question(ctx context.Context, id int) (*ent.Question, error) {
 	entClient := r.EntClient(ctx)
@@ -108,7 +139,7 @@ func (r *queryResolver) Database(ctx context.Context, id int) (*ent.Database, er
 }
 
 // ReferenceAnswerResult is the resolver for the referenceAnswerResult field.
-func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Question) (*model.SQLResponse, error) {
+func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Question) (*models.SQLExecutionResult, error) {
 	database, err := obj.QueryDatabase().Only(ctx)
 	if err != nil {
 		return nil, err
@@ -119,7 +150,7 @@ func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Q
 		return nil, err
 	}
 
-	return &model.SQLResponse{
+	return &models.SQLExecutionResult{
 		Columns: response.Columns,
 		Rows:    response.Rows,
 	}, nil

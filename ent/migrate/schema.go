@@ -131,6 +131,37 @@ var (
 		Columns:    ScopeSetsColumns,
 		PrimaryKey: []*schema.Column{ScopeSetsColumns[0]},
 	}
+	// SubmissionsColumns holds the columns for the "submissions" table.
+	SubmissionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "submitted_code", Type: field.TypeString},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "success", "failed"}},
+		{Name: "query_result", Type: field.TypeJSON, Nullable: true},
+		{Name: "error", Type: field.TypeString, Nullable: true},
+		{Name: "submitted_at", Type: field.TypeTime},
+		{Name: "question_submissions", Type: field.TypeInt},
+		{Name: "user_submissions", Type: field.TypeInt},
+	}
+	// SubmissionsTable holds the schema information for the "submissions" table.
+	SubmissionsTable = &schema.Table{
+		Name:       "submissions",
+		Columns:    SubmissionsColumns,
+		PrimaryKey: []*schema.Column{SubmissionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "submissions_questions_submissions",
+				Columns:    []*schema.Column{SubmissionsColumns[6]},
+				RefColumns: []*schema.Column{QuestionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "submissions_users_submissions",
+				Columns:    []*schema.Column{SubmissionsColumns[7]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -189,6 +220,7 @@ var (
 		PointsTable,
 		QuestionsTable,
 		ScopeSetsTable,
+		SubmissionsTable,
 		UsersTable,
 		GroupScopeSetsTable,
 	}
@@ -215,6 +247,11 @@ func init() {
 	}
 	ScopeSetsTable.Annotation = &entsql.Annotation{
 		IncrementStart: func(i int) *int { return &i }(8589934592),
+	}
+	SubmissionsTable.ForeignKeys[0].RefTable = QuestionsTable
+	SubmissionsTable.ForeignKeys[1].RefTable = UsersTable
+	SubmissionsTable.Annotation = &entsql.Annotation{
+		IncrementStart: func(i int) *int { return &i }(30064771072),
 	}
 	UsersTable.ForeignKeys[0].RefTable = GroupsTable
 	UsersTable.Annotation = &entsql.Annotation{

@@ -18,7 +18,9 @@ import (
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/scopeset"
+	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
+	"github.com/database-playground/backend-v2/models"
 )
 
 const (
@@ -30,13 +32,14 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeDatabase = "Database"
-	TypeEvents   = "Events"
-	TypeGroup    = "Group"
-	TypePoints   = "Points"
-	TypeQuestion = "Question"
-	TypeScopeSet = "ScopeSet"
-	TypeUser     = "User"
+	TypeDatabase   = "Database"
+	TypeEvents     = "Events"
+	TypeGroup      = "Group"
+	TypePoints     = "Points"
+	TypeQuestion   = "Question"
+	TypeScopeSet   = "ScopeSet"
+	TypeSubmission = "Submission"
+	TypeUser       = "User"
 )
 
 // DatabaseMutation represents an operation that mutates the Database nodes in the graph.
@@ -2447,20 +2450,23 @@ func (m *PointsMutation) ResetEdge(name string) error {
 // QuestionMutation represents an operation that mutates the Question nodes in the graph.
 type QuestionMutation struct {
 	config
-	op               Op
-	typ              string
-	id               *int
-	category         *string
-	difficulty       *question.Difficulty
-	title            *string
-	description      *string
-	reference_answer *string
-	clearedFields    map[string]struct{}
-	database         *int
-	cleareddatabase  bool
-	done             bool
-	oldValue         func(context.Context) (*Question, error)
-	predicates       []predicate.Question
+	op                 Op
+	typ                string
+	id                 *int
+	category           *string
+	difficulty         *question.Difficulty
+	title              *string
+	description        *string
+	reference_answer   *string
+	clearedFields      map[string]struct{}
+	database           *int
+	cleareddatabase    bool
+	submissions        map[int]struct{}
+	removedsubmissions map[int]struct{}
+	clearedsubmissions bool
+	done               bool
+	oldValue           func(context.Context) (*Question, error)
+	predicates         []predicate.Question
 }
 
 var _ ent.Mutation = (*QuestionMutation)(nil)
@@ -2780,6 +2786,60 @@ func (m *QuestionMutation) ResetDatabase() {
 	m.cleareddatabase = false
 }
 
+// AddSubmissionIDs adds the "submissions" edge to the Submission entity by ids.
+func (m *QuestionMutation) AddSubmissionIDs(ids ...int) {
+	if m.submissions == nil {
+		m.submissions = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.submissions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSubmissions clears the "submissions" edge to the Submission entity.
+func (m *QuestionMutation) ClearSubmissions() {
+	m.clearedsubmissions = true
+}
+
+// SubmissionsCleared reports if the "submissions" edge to the Submission entity was cleared.
+func (m *QuestionMutation) SubmissionsCleared() bool {
+	return m.clearedsubmissions
+}
+
+// RemoveSubmissionIDs removes the "submissions" edge to the Submission entity by IDs.
+func (m *QuestionMutation) RemoveSubmissionIDs(ids ...int) {
+	if m.removedsubmissions == nil {
+		m.removedsubmissions = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.submissions, ids[i])
+		m.removedsubmissions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSubmissions returns the removed IDs of the "submissions" edge to the Submission entity.
+func (m *QuestionMutation) RemovedSubmissionsIDs() (ids []int) {
+	for id := range m.removedsubmissions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SubmissionsIDs returns the "submissions" edge IDs in the mutation.
+func (m *QuestionMutation) SubmissionsIDs() (ids []int) {
+	for id := range m.submissions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSubmissions resets all changes to the "submissions" edge.
+func (m *QuestionMutation) ResetSubmissions() {
+	m.submissions = nil
+	m.clearedsubmissions = false
+	m.removedsubmissions = nil
+}
+
 // Where appends a list predicates to the QuestionMutation builder.
 func (m *QuestionMutation) Where(ps ...predicate.Question) {
 	m.predicates = append(m.predicates, ps...)
@@ -2981,9 +3041,12 @@ func (m *QuestionMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *QuestionMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.database != nil {
 		edges = append(edges, question.EdgeDatabase)
+	}
+	if m.submissions != nil {
+		edges = append(edges, question.EdgeSubmissions)
 	}
 	return edges
 }
@@ -2996,27 +3059,47 @@ func (m *QuestionMutation) AddedIDs(name string) []ent.Value {
 		if id := m.database; id != nil {
 			return []ent.Value{*id}
 		}
+	case question.EdgeSubmissions:
+		ids := make([]ent.Value, 0, len(m.submissions))
+		for id := range m.submissions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *QuestionMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.removedsubmissions != nil {
+		edges = append(edges, question.EdgeSubmissions)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *QuestionMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case question.EdgeSubmissions:
+		ids := make([]ent.Value, 0, len(m.removedsubmissions))
+		for id := range m.removedsubmissions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *QuestionMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.cleareddatabase {
 		edges = append(edges, question.EdgeDatabase)
+	}
+	if m.clearedsubmissions {
+		edges = append(edges, question.EdgeSubmissions)
 	}
 	return edges
 }
@@ -3027,6 +3110,8 @@ func (m *QuestionMutation) EdgeCleared(name string) bool {
 	switch name {
 	case question.EdgeDatabase:
 		return m.cleareddatabase
+	case question.EdgeSubmissions:
+		return m.clearedsubmissions
 	}
 	return false
 }
@@ -3048,6 +3133,9 @@ func (m *QuestionMutation) ResetEdge(name string) error {
 	switch name {
 	case question.EdgeDatabase:
 		m.ResetDatabase()
+		return nil
+	case question.EdgeSubmissions:
+		m.ResetSubmissions()
 		return nil
 	}
 	return fmt.Errorf("unknown Question edge %s", name)
@@ -3618,30 +3706,742 @@ func (m *ScopeSetMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown ScopeSet edge %s", name)
 }
 
+// SubmissionMutation represents an operation that mutates the Submission nodes in the graph.
+type SubmissionMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *int
+	submitted_code  *string
+	status          *submission.Status
+	query_result    **models.UserSQLExecutionResult
+	error           *string
+	submitted_at    *time.Time
+	clearedFields   map[string]struct{}
+	question        *int
+	clearedquestion bool
+	user            *int
+	cleareduser     bool
+	done            bool
+	oldValue        func(context.Context) (*Submission, error)
+	predicates      []predicate.Submission
+}
+
+var _ ent.Mutation = (*SubmissionMutation)(nil)
+
+// submissionOption allows management of the mutation configuration using functional options.
+type submissionOption func(*SubmissionMutation)
+
+// newSubmissionMutation creates new mutation for the Submission entity.
+func newSubmissionMutation(c config, op Op, opts ...submissionOption) *SubmissionMutation {
+	m := &SubmissionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeSubmission,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withSubmissionID sets the ID field of the mutation.
+func withSubmissionID(id int) submissionOption {
+	return func(m *SubmissionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Submission
+		)
+		m.oldValue = func(ctx context.Context) (*Submission, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Submission.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withSubmission sets the old Submission of the mutation.
+func withSubmission(node *Submission) submissionOption {
+	return func(m *SubmissionMutation) {
+		m.oldValue = func(context.Context) (*Submission, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m SubmissionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m SubmissionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *SubmissionMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *SubmissionMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Submission.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetSubmittedCode sets the "submitted_code" field.
+func (m *SubmissionMutation) SetSubmittedCode(s string) {
+	m.submitted_code = &s
+}
+
+// SubmittedCode returns the value of the "submitted_code" field in the mutation.
+func (m *SubmissionMutation) SubmittedCode() (r string, exists bool) {
+	v := m.submitted_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSubmittedCode returns the old "submitted_code" field's value of the Submission entity.
+// If the Submission object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubmissionMutation) OldSubmittedCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSubmittedCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSubmittedCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubmittedCode: %w", err)
+	}
+	return oldValue.SubmittedCode, nil
+}
+
+// ResetSubmittedCode resets all changes to the "submitted_code" field.
+func (m *SubmissionMutation) ResetSubmittedCode() {
+	m.submitted_code = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *SubmissionMutation) SetStatus(s submission.Status) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *SubmissionMutation) Status() (r submission.Status, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the Submission entity.
+// If the Submission object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubmissionMutation) OldStatus(ctx context.Context) (v submission.Status, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *SubmissionMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetQueryResult sets the "query_result" field.
+func (m *SubmissionMutation) SetQueryResult(mser *models.UserSQLExecutionResult) {
+	m.query_result = &mser
+}
+
+// QueryResult returns the value of the "query_result" field in the mutation.
+func (m *SubmissionMutation) QueryResult() (r *models.UserSQLExecutionResult, exists bool) {
+	v := m.query_result
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldQueryResult returns the old "query_result" field's value of the Submission entity.
+// If the Submission object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubmissionMutation) OldQueryResult(ctx context.Context) (v *models.UserSQLExecutionResult, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldQueryResult is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldQueryResult requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldQueryResult: %w", err)
+	}
+	return oldValue.QueryResult, nil
+}
+
+// ClearQueryResult clears the value of the "query_result" field.
+func (m *SubmissionMutation) ClearQueryResult() {
+	m.query_result = nil
+	m.clearedFields[submission.FieldQueryResult] = struct{}{}
+}
+
+// QueryResultCleared returns if the "query_result" field was cleared in this mutation.
+func (m *SubmissionMutation) QueryResultCleared() bool {
+	_, ok := m.clearedFields[submission.FieldQueryResult]
+	return ok
+}
+
+// ResetQueryResult resets all changes to the "query_result" field.
+func (m *SubmissionMutation) ResetQueryResult() {
+	m.query_result = nil
+	delete(m.clearedFields, submission.FieldQueryResult)
+}
+
+// SetError sets the "error" field.
+func (m *SubmissionMutation) SetError(s string) {
+	m.error = &s
+}
+
+// Error returns the value of the "error" field in the mutation.
+func (m *SubmissionMutation) Error() (r string, exists bool) {
+	v := m.error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldError returns the old "error" field's value of the Submission entity.
+// If the Submission object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubmissionMutation) OldError(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldError: %w", err)
+	}
+	return oldValue.Error, nil
+}
+
+// ClearError clears the value of the "error" field.
+func (m *SubmissionMutation) ClearError() {
+	m.error = nil
+	m.clearedFields[submission.FieldError] = struct{}{}
+}
+
+// ErrorCleared returns if the "error" field was cleared in this mutation.
+func (m *SubmissionMutation) ErrorCleared() bool {
+	_, ok := m.clearedFields[submission.FieldError]
+	return ok
+}
+
+// ResetError resets all changes to the "error" field.
+func (m *SubmissionMutation) ResetError() {
+	m.error = nil
+	delete(m.clearedFields, submission.FieldError)
+}
+
+// SetSubmittedAt sets the "submitted_at" field.
+func (m *SubmissionMutation) SetSubmittedAt(t time.Time) {
+	m.submitted_at = &t
+}
+
+// SubmittedAt returns the value of the "submitted_at" field in the mutation.
+func (m *SubmissionMutation) SubmittedAt() (r time.Time, exists bool) {
+	v := m.submitted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSubmittedAt returns the old "submitted_at" field's value of the Submission entity.
+// If the Submission object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubmissionMutation) OldSubmittedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSubmittedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSubmittedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubmittedAt: %w", err)
+	}
+	return oldValue.SubmittedAt, nil
+}
+
+// ResetSubmittedAt resets all changes to the "submitted_at" field.
+func (m *SubmissionMutation) ResetSubmittedAt() {
+	m.submitted_at = nil
+}
+
+// SetQuestionID sets the "question" edge to the Question entity by id.
+func (m *SubmissionMutation) SetQuestionID(id int) {
+	m.question = &id
+}
+
+// ClearQuestion clears the "question" edge to the Question entity.
+func (m *SubmissionMutation) ClearQuestion() {
+	m.clearedquestion = true
+}
+
+// QuestionCleared reports if the "question" edge to the Question entity was cleared.
+func (m *SubmissionMutation) QuestionCleared() bool {
+	return m.clearedquestion
+}
+
+// QuestionID returns the "question" edge ID in the mutation.
+func (m *SubmissionMutation) QuestionID() (id int, exists bool) {
+	if m.question != nil {
+		return *m.question, true
+	}
+	return
+}
+
+// QuestionIDs returns the "question" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// QuestionID instead. It exists only for internal usage by the builders.
+func (m *SubmissionMutation) QuestionIDs() (ids []int) {
+	if id := m.question; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetQuestion resets all changes to the "question" edge.
+func (m *SubmissionMutation) ResetQuestion() {
+	m.question = nil
+	m.clearedquestion = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *SubmissionMutation) SetUserID(id int) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *SubmissionMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *SubmissionMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *SubmissionMutation) UserID() (id int, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *SubmissionMutation) UserIDs() (ids []int) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *SubmissionMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the SubmissionMutation builder.
+func (m *SubmissionMutation) Where(ps ...predicate.Submission) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the SubmissionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *SubmissionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Submission, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *SubmissionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *SubmissionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Submission).
+func (m *SubmissionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *SubmissionMutation) Fields() []string {
+	fields := make([]string, 0, 5)
+	if m.submitted_code != nil {
+		fields = append(fields, submission.FieldSubmittedCode)
+	}
+	if m.status != nil {
+		fields = append(fields, submission.FieldStatus)
+	}
+	if m.query_result != nil {
+		fields = append(fields, submission.FieldQueryResult)
+	}
+	if m.error != nil {
+		fields = append(fields, submission.FieldError)
+	}
+	if m.submitted_at != nil {
+		fields = append(fields, submission.FieldSubmittedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *SubmissionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case submission.FieldSubmittedCode:
+		return m.SubmittedCode()
+	case submission.FieldStatus:
+		return m.Status()
+	case submission.FieldQueryResult:
+		return m.QueryResult()
+	case submission.FieldError:
+		return m.Error()
+	case submission.FieldSubmittedAt:
+		return m.SubmittedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *SubmissionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case submission.FieldSubmittedCode:
+		return m.OldSubmittedCode(ctx)
+	case submission.FieldStatus:
+		return m.OldStatus(ctx)
+	case submission.FieldQueryResult:
+		return m.OldQueryResult(ctx)
+	case submission.FieldError:
+		return m.OldError(ctx)
+	case submission.FieldSubmittedAt:
+		return m.OldSubmittedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown Submission field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SubmissionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case submission.FieldSubmittedCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSubmittedCode(v)
+		return nil
+	case submission.FieldStatus:
+		v, ok := value.(submission.Status)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case submission.FieldQueryResult:
+		v, ok := value.(*models.UserSQLExecutionResult)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetQueryResult(v)
+		return nil
+	case submission.FieldError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetError(v)
+		return nil
+	case submission.FieldSubmittedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSubmittedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Submission field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *SubmissionMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *SubmissionMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SubmissionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Submission numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *SubmissionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(submission.FieldQueryResult) {
+		fields = append(fields, submission.FieldQueryResult)
+	}
+	if m.FieldCleared(submission.FieldError) {
+		fields = append(fields, submission.FieldError)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *SubmissionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *SubmissionMutation) ClearField(name string) error {
+	switch name {
+	case submission.FieldQueryResult:
+		m.ClearQueryResult()
+		return nil
+	case submission.FieldError:
+		m.ClearError()
+		return nil
+	}
+	return fmt.Errorf("unknown Submission nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *SubmissionMutation) ResetField(name string) error {
+	switch name {
+	case submission.FieldSubmittedCode:
+		m.ResetSubmittedCode()
+		return nil
+	case submission.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case submission.FieldQueryResult:
+		m.ResetQueryResult()
+		return nil
+	case submission.FieldError:
+		m.ResetError()
+		return nil
+	case submission.FieldSubmittedAt:
+		m.ResetSubmittedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown Submission field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *SubmissionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.question != nil {
+		edges = append(edges, submission.EdgeQuestion)
+	}
+	if m.user != nil {
+		edges = append(edges, submission.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *SubmissionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case submission.EdgeQuestion:
+		if id := m.question; id != nil {
+			return []ent.Value{*id}
+		}
+	case submission.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *SubmissionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *SubmissionMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *SubmissionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedquestion {
+		edges = append(edges, submission.EdgeQuestion)
+	}
+	if m.cleareduser {
+		edges = append(edges, submission.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *SubmissionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case submission.EdgeQuestion:
+		return m.clearedquestion
+	case submission.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *SubmissionMutation) ClearEdge(name string) error {
+	switch name {
+	case submission.EdgeQuestion:
+		m.ClearQuestion()
+		return nil
+	case submission.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown Submission unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *SubmissionMutation) ResetEdge(name string) error {
+	switch name {
+	case submission.EdgeQuestion:
+		m.ResetQuestion()
+		return nil
+	case submission.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown Submission edge %s", name)
+}
+
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	created_at    *time.Time
-	updated_at    *time.Time
-	deleted_at    *time.Time
-	name          *string
-	email         *string
-	avatar        *string
-	clearedFields map[string]struct{}
-	group         *int
-	clearedgroup  bool
-	points        map[int]struct{}
-	removedpoints map[int]struct{}
-	clearedpoints bool
-	events        map[int]struct{}
-	removedevents map[int]struct{}
-	clearedevents bool
-	done          bool
-	oldValue      func(context.Context) (*User, error)
-	predicates    []predicate.User
+	op                 Op
+	typ                string
+	id                 *int
+	created_at         *time.Time
+	updated_at         *time.Time
+	deleted_at         *time.Time
+	name               *string
+	email              *string
+	avatar             *string
+	clearedFields      map[string]struct{}
+	group              *int
+	clearedgroup       bool
+	points             map[int]struct{}
+	removedpoints      map[int]struct{}
+	clearedpoints      bool
+	events             map[int]struct{}
+	removedevents      map[int]struct{}
+	clearedevents      bool
+	submissions        map[int]struct{}
+	removedsubmissions map[int]struct{}
+	clearedsubmissions bool
+	done               bool
+	oldValue           func(context.Context) (*User, error)
+	predicates         []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -4131,6 +4931,60 @@ func (m *UserMutation) ResetEvents() {
 	m.removedevents = nil
 }
 
+// AddSubmissionIDs adds the "submissions" edge to the Submission entity by ids.
+func (m *UserMutation) AddSubmissionIDs(ids ...int) {
+	if m.submissions == nil {
+		m.submissions = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.submissions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSubmissions clears the "submissions" edge to the Submission entity.
+func (m *UserMutation) ClearSubmissions() {
+	m.clearedsubmissions = true
+}
+
+// SubmissionsCleared reports if the "submissions" edge to the Submission entity was cleared.
+func (m *UserMutation) SubmissionsCleared() bool {
+	return m.clearedsubmissions
+}
+
+// RemoveSubmissionIDs removes the "submissions" edge to the Submission entity by IDs.
+func (m *UserMutation) RemoveSubmissionIDs(ids ...int) {
+	if m.removedsubmissions == nil {
+		m.removedsubmissions = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.submissions, ids[i])
+		m.removedsubmissions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSubmissions returns the removed IDs of the "submissions" edge to the Submission entity.
+func (m *UserMutation) RemovedSubmissionsIDs() (ids []int) {
+	for id := range m.removedsubmissions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SubmissionsIDs returns the "submissions" edge IDs in the mutation.
+func (m *UserMutation) SubmissionsIDs() (ids []int) {
+	for id := range m.submissions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSubmissions resets all changes to the "submissions" edge.
+func (m *UserMutation) ResetSubmissions() {
+	m.submissions = nil
+	m.clearedsubmissions = false
+	m.removedsubmissions = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -4364,7 +5218,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.group != nil {
 		edges = append(edges, user.EdgeGroup)
 	}
@@ -4373,6 +5227,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.events != nil {
 		edges = append(edges, user.EdgeEvents)
+	}
+	if m.submissions != nil {
+		edges = append(edges, user.EdgeSubmissions)
 	}
 	return edges
 }
@@ -4397,18 +5254,27 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeSubmissions:
+		ids := make([]ent.Value, 0, len(m.submissions))
+		for id := range m.submissions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedpoints != nil {
 		edges = append(edges, user.EdgePoints)
 	}
 	if m.removedevents != nil {
 		edges = append(edges, user.EdgeEvents)
+	}
+	if m.removedsubmissions != nil {
+		edges = append(edges, user.EdgeSubmissions)
 	}
 	return edges
 }
@@ -4429,13 +5295,19 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeSubmissions:
+		ids := make([]ent.Value, 0, len(m.removedsubmissions))
+		for id := range m.removedsubmissions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedgroup {
 		edges = append(edges, user.EdgeGroup)
 	}
@@ -4444,6 +5316,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearedevents {
 		edges = append(edges, user.EdgeEvents)
+	}
+	if m.clearedsubmissions {
+		edges = append(edges, user.EdgeSubmissions)
 	}
 	return edges
 }
@@ -4458,6 +5333,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedpoints
 	case user.EdgeEvents:
 		return m.clearedevents
+	case user.EdgeSubmissions:
+		return m.clearedsubmissions
 	}
 	return false
 }
@@ -4485,6 +5362,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeEvents:
 		m.ResetEvents()
+		return nil
+	case user.EdgeSubmissions:
+		m.ResetSubmissions()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

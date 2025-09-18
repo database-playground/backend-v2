@@ -44,13 +44,30 @@ extend type Mutation {
   Delete a database.
   """
   deleteDatabase(id: ID!): Boolean! @scope(scope: "database:write")
+
+  """
+  Submit your answer to a question.
+  """
+  submitAnswer(id: ID!, answer: String!): SubmissionResult!
+    @scope(scope: "submission:write")
 }
 
 extend type Question {
-  referenceAnswerResult: SqlResponse! @scope(scope: "question:read")
+  referenceAnswerResult: SQLExecutionResult! @scope(scope: "question:read")
 }
 
-type SqlResponse {
+type SQLExecutionResult {
   columns: [String!]!
   rows: [[String!]!]!
+}
+
+type UserSQLExecutionResult {
+  columns: [String!]!
+  rows: [[String!]!]!
+  matchAnswer: Boolean!
+}
+
+type SubmissionResult {
+  result: UserSQLExecutionResult
+  error: String
 }

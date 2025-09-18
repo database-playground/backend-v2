@@ -163,10 +163,8 @@ func (r *mutationResolver) DeleteGroup(ctx context.Context, id int) (bool, error
 
 // ImpersonateUser is the resolver for the impersonateUser field.
 func (r *mutationResolver) ImpersonateUser(ctx context.Context, userID int) (string, error) {
-	userAccountSrv := r.UserAccount(ctx)
-
 	// Get the user to impersonate.
-	user, err := userAccountSrv.GetUser(ctx, userID)
+	user, err := r.useraccount.GetUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, useraccount.ErrUserNotFound) {
 			return "", defs.ErrNotFound
@@ -177,7 +175,7 @@ func (r *mutationResolver) ImpersonateUser(ctx context.Context, userID int) (str
 
 	machineName := httputils.GetMachineName(ctx)
 
-	token, err := userAccountSrv.GrantToken(
+	token, err := r.useraccount.GrantToken(
 		ctx, user, machineName,
 		useraccount.WithFlow("impersonation"),
 		useraccount.WithImpersonation(userID),
@@ -191,9 +189,7 @@ func (r *mutationResolver) ImpersonateUser(ctx context.Context, userID int) (str
 
 // LogoutUser is the resolver for the logoutUser field.
 func (r *mutationResolver) LogoutUser(ctx context.Context, userID int) (bool, error) {
-	userAccountSrv := r.UserAccount(ctx)
-
-	err := userAccountSrv.RevokeAllTokens(ctx, userID)
+	err := r.useraccount.RevokeAllTokens(ctx, userID)
 	if err != nil {
 		return false, err
 	}
@@ -220,9 +216,7 @@ func (r *mutationResolver) VerifyRegistration(ctx context.Context) (bool, error)
 		return false, defs.ErrUnauthorized
 	}
 
-	userAccountSrv := r.UserAccount(ctx)
-
-	err := userAccountSrv.Verify(ctx, tokenInfo.UserID)
+	err := r.useraccount.Verify(ctx, tokenInfo.UserID)
 	if err != nil {
 		if errors.Is(err, useraccount.ErrUserVerified) {
 			return false, defs.ErrVerified
@@ -242,9 +236,7 @@ func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
 		return nil, defs.ErrUnauthorized
 	}
 
-	userAccountSrv := r.UserAccount(ctx)
-
-	user, err := userAccountSrv.GetUser(ctx, tokenInfo.UserID)
+	user, err := r.useraccount.GetUser(ctx, tokenInfo.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +320,5 @@ func (r *userResolver) ImpersonatedBy(ctx context.Context, obj *ent.User) (*ent.
 		return nil, nil
 	}
 
-	userAccountSrv := r.UserAccount(ctx)
-
-	return userAccountSrv.GetUser(ctx, impersonatedBy)
+	return r.useraccount.GetUser(ctx, impersonatedBy)
 }

@@ -24,3 +24,13 @@ entClient := testhelper.NewEntSqliteClient(t)
 ```
 
 你不需要 clean up：這個方法實作了 `t.Cleanup` 關閉 Ent 用戶端並釋放記憶體。
+
+## SQL Runner
+
+如果一個測試需要引入 SQL Runner 來執行 SQL 語句，你可以使用 testhelper 中的 `NewSQLRunnerClient` 來取得 SQL Runner 實例。
+
+```go
+sqlrunner := testhelper.NewSQLRunnerClient(t)
+```
+
+你不需要 clean up：這個方法實作了 `t.Cleanup` 關閉 SQL Runner 用戶端並釋放記憶體。

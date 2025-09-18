@@ -16,6 +16,7 @@ import (
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/events"
 	"github.com/database-playground/backend-v2/internal/setup"
+	"github.com/database-playground/backend-v2/internal/submission"
 	"github.com/database-playground/backend-v2/internal/testhelper"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/stretchr/testify/require"
@@ -49,10 +50,23 @@ func (m *mockAuthStorage) Peek(ctx context.Context, token string) (auth.TokenInf
 	panic("unimplemented")
 }
 
+// NewTestResolver creates a resolver with all necessary dependencies for testing
+func NewTestResolver(t *testing.T, entClient *ent.Client, authStorage auth.Storage) *Resolver {
+	t.Helper()
+
+	eventService := events.NewEventService(entClient)
+	sqlrunner := testhelper.NewSQLRunnerClient(t)
+
+	submissionService := submission.NewSubmissionService(entClient, eventService, sqlrunner)
+	useraccountCtx := useraccount.NewContext(entClient, authStorage, eventService)
+
+	return NewResolver(entClient, authStorage, sqlrunner, useraccountCtx, eventService, submissionService)
+}
+
 func TestMutationResolver_LogoutAll(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -81,7 +95,7 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 
 	t.Run("unauthenticated", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -106,7 +120,7 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 	t.Run("insufficient scope", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)
 
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -138,9 +152,9 @@ func TestMutationResolver_LogoutAll(t *testing.T) {
 
 		// Setup test resolver with mock auth storage
 		storageErr := errors.New("storage error")
-		resolver := NewResolver(entClient, &mockAuthStorage{
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{
 			deleteByUserErr: storageErr,
-		}, nil, events.NewEventService(entClient))
+		})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -186,9 +200,9 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 
 		// Setup test resolver with mock auth storage
 		expectedToken := "test-token"
-		resolver := NewResolver(entClient, &mockAuthStorage{
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{
 			createToken: expectedToken,
-		}, nil, events.NewEventService(entClient))
+		})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -218,7 +232,7 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 	t.Run("unauthenticated", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)
 
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -243,7 +257,7 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 	t.Run("insufficient scope", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)
 
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -287,9 +301,9 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 
 		// Setup test resolver with mock auth storage
 		storageErr := errors.New("storage error")
-		resolver := NewResolver(entClient, &mockAuthStorage{
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{
 			createErr: storageErr,
-		}, nil, events.NewEventService(entClient))
+		})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -318,7 +332,7 @@ func TestMutationResolver_ImpersonateUser(t *testing.T) {
 
 	t.Run("no such user", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -388,7 +402,7 @@ func TestQueryResolver_Me(t *testing.T) {
 		require.NoError(t, err)
 
 		// Setup test resolver
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -424,7 +438,7 @@ func TestQueryResolver_Me(t *testing.T) {
 	t.Run("unauthenticated", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)
 
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -451,7 +465,7 @@ func TestQueryResolver_Me(t *testing.T) {
 	t.Run("insufficient scope", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)
 
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -483,7 +497,7 @@ func TestQueryResolver_Me(t *testing.T) {
 	t.Run("invalid user id", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)
 
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -515,7 +529,7 @@ func TestQueryResolver_Me(t *testing.T) {
 
 func TestQueryResolver_User(t *testing.T) {
 	entClient := testhelper.NewEntSqliteClient(t)
-	resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+	resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 	cfg := Config{
 		Resolvers:  resolver,
 		Directives: DirectiveRoot{Scope: directive.ScopeDirective},
@@ -599,7 +613,7 @@ func TestQueryResolver_User(t *testing.T) {
 
 func TestQueryResolver_Group(t *testing.T) {
 	entClient := testhelper.NewEntSqliteClient(t)
-	resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+	resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 	cfg := Config{
 		Resolvers:  resolver,
 		Directives: DirectiveRoot{Scope: directive.ScopeDirective},
@@ -676,7 +690,7 @@ func TestQueryResolver_Group(t *testing.T) {
 
 func TestQueryResolver_ScopeSet(t *testing.T) {
 	entClient := testhelper.NewEntSqliteClient(t)
-	resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+	resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 	cfg := Config{
 		Resolvers:  resolver,
 		Directives: DirectiveRoot{Scope: directive.ScopeDirective},
@@ -832,7 +846,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 		require.NoError(t, err)
 
 		// Setup test resolver
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -871,7 +885,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 	t.Run("unauthenticated", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)
 
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -912,7 +926,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 			Save(context.Background())
 		require.NoError(t, err)
 
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -962,7 +976,7 @@ func TestUserResolver_ImpersonatedBy(t *testing.T) {
 		require.NoError(t, err)
 
 		// Setup test resolver
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -1012,7 +1026,7 @@ func TestMutationResolver_UpdateMe(t *testing.T) {
 			Save(context.Background())
 		require.NoError(t, err)
 
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -1055,7 +1069,7 @@ func TestMutationResolver_UpdateMe(t *testing.T) {
 			Save(context.Background())
 		require.NoError(t, err)
 
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -1086,7 +1100,7 @@ func TestMutationResolver_UpdateMe(t *testing.T) {
 	t.Run("unauthenticated", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)
 
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -1113,7 +1127,7 @@ func TestMutationResolver_UpdateMe(t *testing.T) {
 	t.Run("insufficient scope", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)
 
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -1146,7 +1160,7 @@ func TestMutationResolver_UpdateMe(t *testing.T) {
 	t.Run("user not found", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)
 
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -1197,7 +1211,7 @@ func TestMutationResolver_VerifyRegistration(t *testing.T) {
 			Save(context.Background())
 		require.NoError(t, err)
 
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -1234,7 +1248,7 @@ func TestMutationResolver_VerifyRegistration(t *testing.T) {
 
 	t.Run("unauthenticated", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -1259,7 +1273,7 @@ func TestMutationResolver_VerifyRegistration(t *testing.T) {
 	t.Run("insufficient scope", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)
 
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -1308,7 +1322,7 @@ func TestMutationResolver_VerifyRegistration(t *testing.T) {
 			Save(context.Background())
 		require.NoError(t, err)
 
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{
@@ -1342,7 +1356,7 @@ func TestMutationResolver_VerifyRegistration(t *testing.T) {
 		_, err := setup.Setup(context.Background(), entClient)
 		require.NoError(t, err)
 
-		resolver := NewResolver(entClient, &mockAuthStorage{}, nil, events.NewEventService(entClient))
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
 
 		// Create test server with scope directive
 		cfg := Config{

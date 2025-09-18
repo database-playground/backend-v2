@@ -13,6 +13,7 @@ import (
 	"github.com/database-playground/backend-v2/ent/events"
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/points"
+	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
@@ -130,6 +131,21 @@ func (_c *UserCreate) AddEvents(v ...*Events) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddEventIDs(ids...)
+}
+
+// AddSubmissionIDs adds the "submissions" edge to the Submission entity by IDs.
+func (_c *UserCreate) AddSubmissionIDs(ids ...int) *UserCreate {
+	_c.mutation.AddSubmissionIDs(ids...)
+	return _c
+}
+
+// AddSubmissions adds the "submissions" edges to the Submission entity.
+func (_c *UserCreate) AddSubmissions(v ...*Submission) *UserCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddSubmissionIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -305,6 +321,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(events.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.SubmissionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SubmissionsTable,
+			Columns: []string{user.SubmissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(submission.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

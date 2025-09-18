@@ -16,24 +16,27 @@ import (
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/points"
 	"github.com/database-playground/backend-v2/ent/predicate"
+	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	ctx             *QueryContext
-	order           []user.OrderOption
-	inters          []Interceptor
-	predicates      []predicate.User
-	withGroup       *GroupQuery
-	withPoints      *PointsQuery
-	withEvents      *EventsQuery
-	withFKs         bool
-	modifiers       []func(*sql.Selector)
-	loadTotal       []func(context.Context, []*User) error
-	withNamedPoints map[string]*PointsQuery
-	withNamedEvents map[string]*EventsQuery
+	ctx                  *QueryContext
+	order                []user.OrderOption
+	inters               []Interceptor
+	predicates           []predicate.User
+	withGroup            *GroupQuery
+	withPoints           *PointsQuery
+	withEvents           *EventsQuery
+	withSubmissions      *SubmissionQuery
+	withFKs              bool
+	modifiers            []func(*sql.Selector)
+	loadTotal            []func(context.Context, []*User) error
+	withNamedPoints      map[string]*PointsQuery
+	withNamedEvents      map[string]*EventsQuery
+	withNamedSubmissions map[string]*SubmissionQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -129,6 +132,28 @@ func (_q *UserQuery) QueryEvents() *EventsQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(events.Table, events.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.EventsTable, user.EventsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySubmissions chains the current query on the "submissions" edge.
+func (_q *UserQuery) QuerySubmissions() *SubmissionQuery {
+	query := (&SubmissionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(submission.Table, submission.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.SubmissionsTable, user.SubmissionsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -323,14 +348,15 @@ func (_q *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:     _q.config,
-		ctx:        _q.ctx.Clone(),
-		order:      append([]user.OrderOption{}, _q.order...),
-		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.User{}, _q.predicates...),
-		withGroup:  _q.withGroup.Clone(),
-		withPoints: _q.withPoints.Clone(),
-		withEvents: _q.withEvents.Clone(),
+		config:          _q.config,
+		ctx:             _q.ctx.Clone(),
+		order:           append([]user.OrderOption{}, _q.order...),
+		inters:          append([]Interceptor{}, _q.inters...),
+		predicates:      append([]predicate.User{}, _q.predicates...),
+		withGroup:       _q.withGroup.Clone(),
+		withPoints:      _q.withPoints.Clone(),
+		withEvents:      _q.withEvents.Clone(),
+		withSubmissions: _q.withSubmissions.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -367,6 +393,17 @@ func (_q *UserQuery) WithEvents(opts ...func(*EventsQuery)) *UserQuery {
 		opt(query)
 	}
 	_q.withEvents = query
+	return _q
+}
+
+// WithSubmissions tells the query-builder to eager-load the nodes that are connected to
+// the "submissions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithSubmissions(opts ...func(*SubmissionQuery)) *UserQuery {
+	query := (&SubmissionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withSubmissions = query
 	return _q
 }
 
@@ -449,10 +486,11 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		nodes       = []*User{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			_q.withGroup != nil,
 			_q.withPoints != nil,
 			_q.withEvents != nil,
+			_q.withSubmissions != nil,
 		}
 	)
 	if _q.withGroup != nil {
@@ -502,6 +540,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withSubmissions; query != nil {
+		if err := _q.loadSubmissions(ctx, query, nodes,
+			func(n *User) { n.Edges.Submissions = []*Submission{} },
+			func(n *User, e *Submission) { n.Edges.Submissions = append(n.Edges.Submissions, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedPoints {
 		if err := _q.loadPoints(ctx, query, nodes,
 			func(n *User) { n.appendNamedPoints(name) },
@@ -513,6 +558,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadEvents(ctx, query, nodes,
 			func(n *User) { n.appendNamedEvents(name) },
 			func(n *User, e *Events) { n.appendNamedEvents(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedSubmissions {
+		if err := _q.loadSubmissions(ctx, query, nodes,
+			func(n *User) { n.appendNamedSubmissions(name) },
+			func(n *User, e *Submission) { n.appendNamedSubmissions(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -612,6 +664,37 @@ func (_q *UserQuery) loadEvents(ctx context.Context, query *EventsQuery, nodes [
 		node, ok := nodeids[fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadSubmissions(ctx context.Context, query *SubmissionQuery, nodes []*User, init func(*User), assign func(*User, *Submission)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Submission(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.SubmissionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_submissions
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_submissions" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_submissions" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -727,6 +810,20 @@ func (_q *UserQuery) WithNamedEvents(name string, opts ...func(*EventsQuery)) *U
 		_q.withNamedEvents = make(map[string]*EventsQuery)
 	}
 	_q.withNamedEvents[name] = query
+	return _q
+}
+
+// WithNamedSubmissions tells the query-builder to eager-load the nodes that are connected to the "submissions"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedSubmissions(name string, opts ...func(*SubmissionQuery)) *UserQuery {
+	query := (&SubmissionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedSubmissions == nil {
+		_q.withNamedSubmissions = make(map[string]*SubmissionQuery)
+	}
+	_q.withNamedSubmissions[name] = query
 	return _q
 }
 

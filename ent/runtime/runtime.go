@@ -12,6 +12,7 @@ import (
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/schema"
 	"github.com/database-playground/backend-v2/ent/scopeset"
+	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
@@ -92,6 +93,16 @@ func init() {
 	scopesetDescScopes := scopesetFields[2].Descriptor()
 	// scopeset.DefaultScopes holds the default value on creation for the scopes field.
 	scopeset.DefaultScopes = scopesetDescScopes.Default.([]string)
+	submissionFields := schema.Submission{}.Fields()
+	_ = submissionFields
+	// submissionDescSubmittedCode is the schema descriptor for submitted_code field.
+	submissionDescSubmittedCode := submissionFields[0].Descriptor()
+	// submission.SubmittedCodeValidator is a validator for the "submitted_code" field. It is called by the builders before save.
+	submission.SubmittedCodeValidator = submissionDescSubmittedCode.Validators[0].(func(string) error)
+	// submissionDescSubmittedAt is the schema descriptor for submitted_at field.
+	submissionDescSubmittedAt := submissionFields[4].Descriptor()
+	// submission.DefaultSubmittedAt holds the default value on creation for the submitted_at field.
+	submission.DefaultSubmittedAt = submissionDescSubmittedAt.Default.(func() time.Time)
 	userMixin := schema.User{}.Mixin()
 	userMixinHooks0 := userMixin[0].Hooks()
 	user.Hooks[0] = userMixinHooks0[0]

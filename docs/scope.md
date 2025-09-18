@@ -9,6 +9,7 @@
 - `scopeset`：範圍集合操作
 - `database`：題庫對應資料庫的操作
 - `question`：題庫操作
+- `submission`：提交紀錄操作（做題）
 
 ## 動作
 

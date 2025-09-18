@@ -45,14 +45,17 @@ type UserEdges struct {
 	Points []*Points `json:"points,omitempty"`
 	// Events holds the value of the events edge.
 	Events []*Events `json:"events,omitempty"`
+	// Submissions holds the value of the submissions edge.
+	Submissions []*Submission `json:"submissions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 	// totalCount holds the count of the edges above.
-	totalCount [3]map[string]int
+	totalCount [4]map[string]int
 
-	namedPoints map[string][]*Points
-	namedEvents map[string][]*Events
+	namedPoints      map[string][]*Points
+	namedEvents      map[string][]*Events
+	namedSubmissions map[string][]*Submission
 }
 
 // GroupOrErr returns the Group value or an error if the edge
@@ -82,6 +85,15 @@ func (e UserEdges) EventsOrErr() ([]*Events, error) {
 		return e.Events, nil
 	}
 	return nil, &NotLoadedError{edge: "events"}
+}
+
+// SubmissionsOrErr returns the Submissions value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) SubmissionsOrErr() ([]*Submission, error) {
+	if e.loadedTypes[3] {
+		return e.Submissions, nil
+	}
+	return nil, &NotLoadedError{edge: "submissions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -189,6 +201,11 @@ func (_m *User) QueryEvents() *EventsQuery {
 	return NewUserClient(_m.config).QueryEvents(_m)
 }
 
+// QuerySubmissions queries the "submissions" edge of the User entity.
+func (_m *User) QuerySubmissions() *SubmissionQuery {
+	return NewUserClient(_m.config).QuerySubmissions(_m)
+}
+
 // Update returns a builder for updating this User.
 // Note that you need to call User.Unwrap() before calling this method if this User
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -278,6 +295,30 @@ func (_m *User) appendNamedEvents(name string, edges ...*Events) {
 		_m.Edges.namedEvents[name] = []*Events{}
 	} else {
 		_m.Edges.namedEvents[name] = append(_m.Edges.namedEvents[name], edges...)
+	}
+}
+
+// NamedSubmissions returns the Submissions named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedSubmissions(name string) ([]*Submission, error) {
+	if _m.Edges.namedSubmissions == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedSubmissions[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedSubmissions(name string, edges ...*Submission) {
+	if _m.Edges.namedSubmissions == nil {
+		_m.Edges.namedSubmissions = make(map[string][]*Submission)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedSubmissions[name] = []*Submission{}
+	} else {
+		_m.Edges.namedSubmissions[name] = append(_m.Edges.namedSubmissions[name], edges...)
 	}
 }
 

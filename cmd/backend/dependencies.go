@@ -23,6 +23,7 @@ import (
 	"github.com/database-playground/backend-v2/internal/events"
 	"github.com/database-playground/backend-v2/internal/httputils"
 	"github.com/database-playground/backend-v2/internal/sqlrunner"
+	"github.com/database-playground/backend-v2/internal/submission"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/database-playground/backend-v2/internal/workers"
 	"github.com/gin-contrib/cors"
@@ -44,8 +45,8 @@ func SqlRunner(cfg config.Config) *sqlrunner.SqlRunner {
 }
 
 // GqlgenHandler creates a gqlgen handler.
-func GqlgenHandler(entClient *ent.Client, storage auth.Storage, sqlrunner *sqlrunner.SqlRunner, eventService *events.EventService) *handler.Server {
-	srv := handler.New(graph.NewSchema(entClient, storage, sqlrunner, eventService))
+func GqlgenHandler(entClient *ent.Client, storage auth.Storage, sqlrunner *sqlrunner.SqlRunner, useraccount *useraccount.Context, eventService *events.EventService, submissionService *submission.SubmissionService) *handler.Server {
+	srv := handler.New(graph.NewSchema(entClient, storage, sqlrunner, useraccount, eventService, submissionService))
 
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
@@ -72,6 +73,11 @@ func UserAccountContext(entClient *ent.Client, storage auth.Storage, eventServic
 // EventService creates an events.EventService.
 func EventService(entClient *ent.Client) *events.EventService {
 	return events.NewEventService(entClient)
+}
+
+// SubmissionService creates a submission.SubmissionService.
+func SubmissionService(entClient *ent.Client, eventService *events.EventService, sqlrunner *sqlrunner.SqlRunner) *submission.SubmissionService {
+	return submission.NewSubmissionService(entClient, eventService, sqlrunner)
 }
 
 // AuthService creates an auth service.

@@ -13,6 +13,7 @@ import (
 	"github.com/database-playground/backend-v2/ent/points"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/scopeset"
+	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
@@ -428,6 +429,19 @@ func (_q *QuestionQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 				return err
 			}
 			_q.withDatabase = query
+
+		case "submissions":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&SubmissionClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, submissionImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedSubmissions(alias, func(wq *SubmissionQuery) {
+				*wq = *query
+			})
 		case "category":
 			if _, ok := fieldSeen[question.FieldCategory]; !ok {
 				selectedFields = append(selectedFields, question.FieldCategory)
@@ -607,6 +621,115 @@ func newScopeSetPaginateArgs(rv map[string]any) *scopesetPaginateArgs {
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *SubmissionQuery) CollectFields(ctx context.Context, satisfies ...string) (*SubmissionQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *SubmissionQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(submission.Columns))
+		selectedFields = []string{submission.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "question":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&QuestionClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, questionImplementors)...); err != nil {
+				return err
+			}
+			_q.withQuestion = query
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "submittedCode":
+			if _, ok := fieldSeen[submission.FieldSubmittedCode]; !ok {
+				selectedFields = append(selectedFields, submission.FieldSubmittedCode)
+				fieldSeen[submission.FieldSubmittedCode] = struct{}{}
+			}
+		case "status":
+			if _, ok := fieldSeen[submission.FieldStatus]; !ok {
+				selectedFields = append(selectedFields, submission.FieldStatus)
+				fieldSeen[submission.FieldStatus] = struct{}{}
+			}
+		case "queryResult":
+			if _, ok := fieldSeen[submission.FieldQueryResult]; !ok {
+				selectedFields = append(selectedFields, submission.FieldQueryResult)
+				fieldSeen[submission.FieldQueryResult] = struct{}{}
+			}
+		case "error":
+			if _, ok := fieldSeen[submission.FieldError]; !ok {
+				selectedFields = append(selectedFields, submission.FieldError)
+				fieldSeen[submission.FieldError] = struct{}{}
+			}
+		case "submittedAt":
+			if _, ok := fieldSeen[submission.FieldSubmittedAt]; !ok {
+				selectedFields = append(selectedFields, submission.FieldSubmittedAt)
+				fieldSeen[submission.FieldSubmittedAt] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type submissionPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []SubmissionPaginateOption
+}
+
+func newSubmissionPaginateArgs(rv map[string]any) *submissionPaginateArgs {
+	args := &submissionPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*SubmissionWhereInput); ok {
+		args.opts = append(args.opts, WithSubmissionFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *UserQuery) CollectFields(ctx context.Context, satisfies ...string) (*UserQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -662,6 +785,19 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				return err
 			}
 			_q.WithNamedEvents(alias, func(wq *EventsQuery) {
+				*wq = *query
+			})
+
+		case "submissions":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&SubmissionClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, submissionImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedSubmissions(alias, func(wq *SubmissionQuery) {
 				*wq = *query
 			})
 		case "createdAt":

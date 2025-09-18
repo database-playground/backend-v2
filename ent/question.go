@@ -38,11 +38,15 @@ type Question struct {
 type QuestionEdges struct {
 	// Database holds the value of the database edge.
 	Database *Database `json:"database,omitempty"`
+	// Submissions holds the value of the submissions edge.
+	Submissions []*Submission `json:"submissions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 	// totalCount holds the count of the edges above.
-	totalCount [1]map[string]int
+	totalCount [2]map[string]int
+
+	namedSubmissions map[string][]*Submission
 }
 
 // DatabaseOrErr returns the Database value or an error if the edge
@@ -54,6 +58,15 @@ func (e QuestionEdges) DatabaseOrErr() (*Database, error) {
 		return nil, &NotFoundError{label: database.Label}
 	}
 	return nil, &NotLoadedError{edge: "database"}
+}
+
+// SubmissionsOrErr returns the Submissions value or an error if the edge
+// was not loaded in eager-loading.
+func (e QuestionEdges) SubmissionsOrErr() ([]*Submission, error) {
+	if e.loadedTypes[1] {
+		return e.Submissions, nil
+	}
+	return nil, &NotLoadedError{edge: "submissions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -143,6 +156,11 @@ func (_m *Question) QueryDatabase() *DatabaseQuery {
 	return NewQuestionClient(_m.config).QueryDatabase(_m)
 }
 
+// QuerySubmissions queries the "submissions" edge of the Question entity.
+func (_m *Question) QuerySubmissions() *SubmissionQuery {
+	return NewQuestionClient(_m.config).QuerySubmissions(_m)
+}
+
 // Update returns a builder for updating this Question.
 // Note that you need to call Question.Unwrap() before calling this method if this Question
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -182,6 +200,30 @@ func (_m *Question) String() string {
 	builder.WriteString(_m.ReferenceAnswer)
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedSubmissions returns the Submissions named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Question) NamedSubmissions(name string) ([]*Submission, error) {
+	if _m.Edges.namedSubmissions == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedSubmissions[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Question) appendNamedSubmissions(name string, edges ...*Submission) {
+	if _m.Edges.namedSubmissions == nil {
+		_m.Edges.namedSubmissions = make(map[string][]*Submission)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedSubmissions[name] = []*Submission{}
+	} else {
+		_m.Edges.namedSubmissions[name] = append(_m.Edges.namedSubmissions[name], edges...)
+	}
 }
 
 // Questions is a parsable slice of Question.

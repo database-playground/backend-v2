@@ -158,6 +158,7 @@ type CreateQuestionInput struct {
 	Description     string
 	ReferenceAnswer string
 	DatabaseID      int
+	SubmissionIDs   []int
 }
 
 // Mutate applies the CreateQuestionInput on the QuestionMutation builder.
@@ -170,6 +171,9 @@ func (i *CreateQuestionInput) Mutate(m *QuestionMutation) {
 	m.SetDescription(i.Description)
 	m.SetReferenceAnswer(i.ReferenceAnswer)
 	m.SetDatabaseID(i.DatabaseID)
+	if v := i.SubmissionIDs; len(v) > 0 {
+		m.AddSubmissionIDs(v...)
+	}
 }
 
 // SetInput applies the change-set in the CreateQuestionInput on the QuestionCreate builder.
@@ -180,11 +184,14 @@ func (c *QuestionCreate) SetInput(i CreateQuestionInput) *QuestionCreate {
 
 // UpdateQuestionInput represents a mutation input for updating questions.
 type UpdateQuestionInput struct {
-	Difficulty      *question.Difficulty
-	Title           *string
-	Description     *string
-	ReferenceAnswer *string
-	DatabaseID      *int
+	Difficulty          *question.Difficulty
+	Title               *string
+	Description         *string
+	ReferenceAnswer     *string
+	DatabaseID          *int
+	ClearSubmissions    bool
+	AddSubmissionIDs    []int
+	RemoveSubmissionIDs []int
 }
 
 // Mutate applies the UpdateQuestionInput on the QuestionMutation builder.
@@ -203,6 +210,15 @@ func (i *UpdateQuestionInput) Mutate(m *QuestionMutation) {
 	}
 	if v := i.DatabaseID; v != nil {
 		m.SetDatabaseID(*v)
+	}
+	if i.ClearSubmissions {
+		m.ClearSubmissions()
+	}
+	if v := i.AddSubmissionIDs; len(v) > 0 {
+		m.AddSubmissionIDs(v...)
+	}
+	if v := i.RemoveSubmissionIDs; len(v) > 0 {
+		m.RemoveSubmissionIDs(v...)
 	}
 }
 
@@ -296,12 +312,13 @@ func (c *ScopeSetUpdateOne) SetInput(i UpdateScopeSetInput) *ScopeSetUpdateOne {
 
 // CreateUserInput represents a mutation input for creating users.
 type CreateUserInput struct {
-	Name     string
-	Email    string
-	Avatar   *string
-	GroupID  int
-	PointIDs []int
-	EventIDs []int
+	Name          string
+	Email         string
+	Avatar        *string
+	GroupID       int
+	PointIDs      []int
+	EventIDs      []int
+	SubmissionIDs []int
 }
 
 // Mutate applies the CreateUserInput on the UserMutation builder.
@@ -318,6 +335,9 @@ func (i *CreateUserInput) Mutate(m *UserMutation) {
 	if v := i.EventIDs; len(v) > 0 {
 		m.AddEventIDs(v...)
 	}
+	if v := i.SubmissionIDs; len(v) > 0 {
+		m.AddSubmissionIDs(v...)
+	}
 }
 
 // SetInput applies the change-set in the CreateUserInput on the UserCreate builder.
@@ -328,16 +348,19 @@ func (c *UserCreate) SetInput(i CreateUserInput) *UserCreate {
 
 // UpdateUserInput represents a mutation input for updating users.
 type UpdateUserInput struct {
-	Name           *string
-	ClearAvatar    bool
-	Avatar         *string
-	GroupID        *int
-	ClearPoints    bool
-	AddPointIDs    []int
-	RemovePointIDs []int
-	ClearEvents    bool
-	AddEventIDs    []int
-	RemoveEventIDs []int
+	Name                *string
+	ClearAvatar         bool
+	Avatar              *string
+	GroupID             *int
+	ClearPoints         bool
+	AddPointIDs         []int
+	RemovePointIDs      []int
+	ClearEvents         bool
+	AddEventIDs         []int
+	RemoveEventIDs      []int
+	ClearSubmissions    bool
+	AddSubmissionIDs    []int
+	RemoveSubmissionIDs []int
 }
 
 // Mutate applies the UpdateUserInput on the UserMutation builder.
@@ -371,6 +394,15 @@ func (i *UpdateUserInput) Mutate(m *UserMutation) {
 	}
 	if v := i.RemoveEventIDs; len(v) > 0 {
 		m.RemoveEventIDs(v...)
+	}
+	if i.ClearSubmissions {
+		m.ClearSubmissions()
+	}
+	if v := i.AddSubmissionIDs; len(v) > 0 {
+		m.AddSubmissionIDs(v...)
+	}
+	if v := i.RemoveSubmissionIDs; len(v) > 0 {
+		m.RemoveSubmissionIDs(v...)
 	}
 }
 

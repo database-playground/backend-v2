@@ -376,6 +376,29 @@ func HasDatabaseWith(preds ...predicate.Database) predicate.Question {
 	})
 }
 
+// HasSubmissions applies the HasEdge predicate on the "submissions" edge.
+func HasSubmissions() predicate.Question {
+	return predicate.Question(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SubmissionsTable, SubmissionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSubmissionsWith applies the HasEdge predicate on the "submissions" edge with a given conditions (other predicates).
+func HasSubmissionsWith(preds ...predicate.Submission) predicate.Question {
+	return predicate.Question(func(s *sql.Selector) {
+		step := newSubmissionsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Question) predicate.Question {
 	return predicate.Question(sql.AndPredicates(predicates...))

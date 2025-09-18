@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/question"
+	"github.com/database-playground/backend-v2/ent/submission"
 )
 
 // QuestionCreate is the builder for creating a Question entity.
@@ -67,6 +68,21 @@ func (_c *QuestionCreate) SetDatabaseID(id int) *QuestionCreate {
 // SetDatabase sets the "database" edge to the Database entity.
 func (_c *QuestionCreate) SetDatabase(v *Database) *QuestionCreate {
 	return _c.SetDatabaseID(v.ID)
+}
+
+// AddSubmissionIDs adds the "submissions" edge to the Submission entity by IDs.
+func (_c *QuestionCreate) AddSubmissionIDs(ids ...int) *QuestionCreate {
+	_c.mutation.AddSubmissionIDs(ids...)
+	return _c
+}
+
+// AddSubmissions adds the "submissions" edges to the Submission entity.
+func (_c *QuestionCreate) AddSubmissions(v ...*Submission) *QuestionCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddSubmissionIDs(ids...)
 }
 
 // Mutation returns the QuestionMutation object of the builder.
@@ -201,6 +217,22 @@ func (_c *QuestionCreate) createSpec() (*Question, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.database_questions = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.SubmissionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   question.SubmissionsTable,
+			Columns: []string{question.SubmissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(submission.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

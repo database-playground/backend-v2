@@ -18,6 +18,7 @@ func main() {
 			SqlRunner,
 			UserAccountContext,
 			EventService,
+			SubmissionService,
 			AnnotateService(AuthService),
 			GqlgenHandler,
 			fx.Annotate(

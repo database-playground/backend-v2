@@ -32,6 +32,7 @@ func (User) Edges() []ent.Edge {
 		edge.To("group", Group.Type).Unique().Required(),
 		edge.To("points", Points.Type),
 		edge.To("events", Events.Type),
+		edge.To("submissions", Submission.Type),
 	}
 }
 

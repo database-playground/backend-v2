@@ -24,5 +24,8 @@ type Question func(*sql.Selector)
 // ScopeSet is the predicate function for scopeset builders.
 type ScopeSet func(*sql.Selector)
 
+// Submission is the predicate function for submission builders.
+type Submission func(*sql.Selector)
+
 // User is the predicate function for user builders.
 type User func(*sql.Selector)
