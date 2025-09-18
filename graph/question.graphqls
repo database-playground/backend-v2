@@ -8,6 +8,14 @@ extend type Query {
   Get a database by ID.
   """
   database(id: ID!): Database! @scope(scope: "database:read")
+
+  """
+  Get a submission by ID.
+
+  If you have the "submission:read" scope, you can get any submission by ID;
+  otherwise, you can only get your own submissions.
+  """
+  submission(id: ID!): Submission!
 }
 
 extend type Mutation {
