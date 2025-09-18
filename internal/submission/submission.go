@@ -19,8 +19,8 @@ type SubmissionService struct {
 	sqlrunner    *sqlrunner.SqlRunner
 }
 
-func NewSubmissionService(entClient *ent.Client, eventService *events.EventService) *SubmissionService {
-	return &SubmissionService{entClient: entClient, eventService: eventService}
+func NewSubmissionService(entClient *ent.Client, eventService *events.EventService, sqlrunner *sqlrunner.SqlRunner) *SubmissionService {
+	return &SubmissionService{entClient: entClient, eventService: eventService, sqlrunner: sqlrunner}
 }
 
 type SubmitAnswerInput struct {
@@ -49,7 +49,8 @@ func (ss *SubmissionService) SubmitAnswer(ctx context.Context, input SubmitAnswe
 
 	submissionModel := ss.entClient.Submission.Create().
 		SetQuestion(question).
-		SetUserID(input.SubmitterID)
+		SetUserID(input.SubmitterID).
+		SetSubmittedCode(input.Answer)
 
 	result, err := ss.runAnswer(ctx, database.Schema, input.Answer, question.ReferenceAnswer)
 	if err != nil {
@@ -89,13 +90,13 @@ func (ss *SubmissionService) runAnswer(ctx context.Context, schema, answer, refe
 	// run the reference answer
 	referenceAnswerResponse, err := ss.sqlrunner.Query(ctx, schema, referenceAnswer)
 	if err != nil {
-		return nil, fmt.Errorf("cannot run reference answer: %w", err)
+		return nil, fmt.Errorf("run reference answer: %w", err)
 	}
 
 	// run the user's answer
 	response, err := ss.sqlrunner.Query(ctx, schema, answer)
 	if err != nil {
-		return nil, fmt.Errorf("cannot run user's answer: %w", err)
+		return nil, err
 	}
 
 	return &models.UserSQLExecutionResult{

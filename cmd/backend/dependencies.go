@@ -76,8 +76,8 @@ func EventService(entClient *ent.Client) *events.EventService {
 }
 
 // SubmissionService creates a submission.SubmissionService.
-func SubmissionService(entClient *ent.Client, eventService *events.EventService) *submission.SubmissionService {
-	return submission.NewSubmissionService(entClient, eventService)
+func SubmissionService(entClient *ent.Client, eventService *events.EventService, sqlrunner *sqlrunner.SqlRunner) *submission.SubmissionService {
+	return submission.NewSubmissionService(entClient, eventService, sqlrunner)
 }
 
 // AuthService creates an auth service.
