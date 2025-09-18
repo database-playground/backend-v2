@@ -206,6 +206,28 @@ func newEventsPaginateArgs(rv map[string]any) *eventsPaginateArgs {
 	if v := rv[beforeField]; v != nil {
 		args.before = v.(*Cursor)
 	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &EventsOrder{Field: &EventsOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithEventsOrder(order))
+			}
+		case *EventsOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithEventsOrder(v))
+			}
+		}
+	}
 	if v, ok := rv[whereField].(*EventsWhereInput); ok {
 		args.opts = append(args.opts, WithEventsFilter(v.Filter))
 	}
@@ -393,6 +415,28 @@ func newPointsPaginateArgs(rv map[string]any) *pointsPaginateArgs {
 	}
 	if v := rv[beforeField]; v != nil {
 		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &PointsOrder{Field: &PointsOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithPointsOrder(order))
+			}
+		case *PointsOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithPointsOrder(v))
+			}
+		}
 	}
 	if v, ok := rv[whereField].(*PointsWhereInput); ok {
 		args.opts = append(args.opts, WithPointsFilter(v.Filter))
@@ -725,6 +769,28 @@ func newSubmissionPaginateArgs(rv map[string]any) *submissionPaginateArgs {
 	}
 	if v := rv[beforeField]; v != nil {
 		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &SubmissionOrder{Field: &SubmissionOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithSubmissionOrder(order))
+			}
+		case *SubmissionOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithSubmissionOrder(v))
+			}
+		}
 	}
 	if v, ok := rv[whereField].(*SubmissionWhereInput); ok {
 		args.opts = append(args.opts, WithSubmissionFilter(v.Filter))

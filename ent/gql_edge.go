@@ -105,9 +105,10 @@ func (_m *User) Group(ctx context.Context) (*Group, error) {
 }
 
 func (_m *User) Points(
-	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, where *PointsWhereInput,
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *PointsOrder, where *PointsWhereInput,
 ) (*PointsConnection, error) {
 	opts := []PointsPaginateOption{
+		WithPointsOrder(orderBy),
 		WithPointsFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
@@ -125,9 +126,10 @@ func (_m *User) Points(
 }
 
 func (_m *User) Events(
-	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, where *EventsWhereInput,
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *EventsOrder, where *EventsWhereInput,
 ) (*EventsConnection, error) {
 	opts := []EventsPaginateOption{
+		WithEventsOrder(orderBy),
 		WithEventsFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
@@ -145,9 +147,10 @@ func (_m *User) Events(
 }
 
 func (_m *User) Submissions(
-	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, where *SubmissionWhereInput,
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *SubmissionOrder, where *SubmissionWhereInput,
 ) (*SubmissionConnection, error) {
 	opts := []SubmissionPaginateOption{
+		WithSubmissionOrder(orderBy),
 		WithSubmissionFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias

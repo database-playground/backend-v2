@@ -562,6 +562,53 @@ func (_m *EventsQuery) Paginate(
 	return conn, nil
 }
 
+var (
+	// EventsOrderFieldTriggeredAt orders Events by triggered_at.
+	EventsOrderFieldTriggeredAt = &EventsOrderField{
+		Value: func(_m *Events) (ent.Value, error) {
+			return _m.TriggeredAt, nil
+		},
+		column: events.FieldTriggeredAt,
+		toTerm: events.ByTriggeredAt,
+		toCursor: func(_m *Events) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.TriggeredAt,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f EventsOrderField) String() string {
+	var str string
+	switch f.column {
+	case EventsOrderFieldTriggeredAt.column:
+		str = "TRIGGERED_AT"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f EventsOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *EventsOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("EventsOrderField %T must be a string", v)
+	}
+	switch str {
+	case "TRIGGERED_AT":
+		*f = *EventsOrderFieldTriggeredAt
+	default:
+		return fmt.Errorf("%s is not a valid EventsOrderField", str)
+	}
+	return nil
+}
+
 // EventsOrderField defines the ordering field of Events.
 type EventsOrderField struct {
 	// Value extracts the ordering value from the given Events.
@@ -1058,6 +1105,53 @@ func (_m *PointsQuery) Paginate(
 	}
 	conn.build(nodes, pager, after, first, before, last)
 	return conn, nil
+}
+
+var (
+	// PointsOrderFieldGrantedAt orders Points by granted_at.
+	PointsOrderFieldGrantedAt = &PointsOrderField{
+		Value: func(_m *Points) (ent.Value, error) {
+			return _m.GrantedAt, nil
+		},
+		column: points.FieldGrantedAt,
+		toTerm: points.ByGrantedAt,
+		toCursor: func(_m *Points) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.GrantedAt,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f PointsOrderField) String() string {
+	var str string
+	switch f.column {
+	case PointsOrderFieldGrantedAt.column:
+		str = "GRANTED_AT"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f PointsOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *PointsOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("PointsOrderField %T must be a string", v)
+	}
+	switch str {
+	case "GRANTED_AT":
+		*f = *PointsOrderFieldGrantedAt
+	default:
+		return fmt.Errorf("%s is not a valid PointsOrderField", str)
+	}
+	return nil
 }
 
 // PointsOrderField defines the ordering field of Points.
@@ -1870,6 +1964,53 @@ func (_m *SubmissionQuery) Paginate(
 	}
 	conn.build(nodes, pager, after, first, before, last)
 	return conn, nil
+}
+
+var (
+	// SubmissionOrderFieldSubmittedAt orders Submission by submitted_at.
+	SubmissionOrderFieldSubmittedAt = &SubmissionOrderField{
+		Value: func(_m *Submission) (ent.Value, error) {
+			return _m.SubmittedAt, nil
+		},
+		column: submission.FieldSubmittedAt,
+		toTerm: submission.BySubmittedAt,
+		toCursor: func(_m *Submission) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.SubmittedAt,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f SubmissionOrderField) String() string {
+	var str string
+	switch f.column {
+	case SubmissionOrderFieldSubmittedAt.column:
+		str = "SUBMITTED_AT"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f SubmissionOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *SubmissionOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("SubmissionOrderField %T must be a string", v)
+	}
+	switch str {
+	case "SUBMITTED_AT":
+		*f = *SubmissionOrderFieldSubmittedAt
+	default:
+		return fmt.Errorf("%s is not a valid SubmissionOrderField", str)
+	}
+	return nil
 }
 
 // SubmissionOrderField defines the ordering field of Submission.

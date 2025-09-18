@@ -35,7 +35,7 @@ func (r *queryResolver) Databases(ctx context.Context) ([]*ent.Database, error) 
 }
 
 // EventsSlice is the resolver for the eventsSlice field.
-func (r *queryResolver) EventsSlice(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.EventsWhereInput) (*ent.EventsConnection, error) {
+func (r *queryResolver) EventsSlice(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventsOrder, where *ent.EventsWhereInput) (*ent.EventsConnection, error) {
 	entClient := r.EntClient(ctx)
 
 	return entClient.Events.Query().Paginate(ctx, after, first, before, last, ent.WithEventsFilter(where.Filter))
@@ -49,7 +49,7 @@ func (r *queryResolver) Groups(ctx context.Context) ([]*ent.Group, error) {
 }
 
 // PointsSlice is the resolver for the pointsSlice field.
-func (r *queryResolver) PointsSlice(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.PointsWhereInput) (*ent.PointsConnection, error) {
+func (r *queryResolver) PointsSlice(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PointsOrder, where *ent.PointsWhereInput) (*ent.PointsConnection, error) {
 	entClient := r.EntClient(ctx)
 
 	return entClient.Points.Query().Paginate(ctx, after, first, before, last, ent.WithPointsFilter(where.Filter))
@@ -70,7 +70,7 @@ func (r *queryResolver) ScopeSets(ctx context.Context) ([]*ent.ScopeSet, error) 
 }
 
 // Submissions is the resolver for the submissions field.
-func (r *queryResolver) Submissions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.SubmissionWhereInput) (*ent.SubmissionConnection, error) {
+func (r *queryResolver) Submissions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.SubmissionOrder, where *ent.SubmissionWhereInput) (*ent.SubmissionConnection, error) {
 	panic(fmt.Errorf("not implemented: Submissions - submissions"))
 }
 
