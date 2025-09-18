@@ -21,8 +21,10 @@ const (
 	FieldSubmittedCode = "submitted_code"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
-	// FieldResult holds the string denoting the result field in the database.
-	FieldResult = "result"
+	// FieldQueryResult holds the string denoting the query_result field in the database.
+	FieldQueryResult = "query_result"
+	// FieldError holds the string denoting the error field in the database.
+	FieldError = "error"
 	// FieldSubmittedAt holds the string denoting the submitted_at field in the database.
 	FieldSubmittedAt = "submitted_at"
 	// EdgeQuestion holds the string denoting the question edge name in mutations.
@@ -52,7 +54,8 @@ var Columns = []string{
 	FieldID,
 	FieldSubmittedCode,
 	FieldStatus,
-	FieldResult,
+	FieldQueryResult,
+	FieldError,
 	FieldSubmittedAt,
 }
 
@@ -125,6 +128,11 @@ func BySubmittedCode(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByError orders the results by the error field.
+func ByError(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldError, opts...).ToFunc()
 }
 
 // BySubmittedAt orders the results by the submitted_at field.

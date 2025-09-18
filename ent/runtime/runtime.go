@@ -100,7 +100,7 @@ func init() {
 	// submission.SubmittedCodeValidator is a validator for the "submitted_code" field. It is called by the builders before save.
 	submission.SubmittedCodeValidator = submissionDescSubmittedCode.Validators[0].(func(string) error)
 	// submissionDescSubmittedAt is the schema descriptor for submitted_at field.
-	submissionDescSubmittedAt := submissionFields[3].Descriptor()
+	submissionDescSubmittedAt := submissionFields[4].Descriptor()
 	// submission.DefaultSubmittedAt holds the default value on creation for the submitted_at field.
 	submission.DefaultSubmittedAt = submissionDescSubmittedAt.Default.(func() time.Time)
 	userMixin := schema.User{}.Mixin()

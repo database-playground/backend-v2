@@ -956,7 +956,8 @@ type Submission implements Node {
   id: ID!
   submittedCode: String!
   status: SubmissionStatus!
-  result: SubmissionResult!
+  queryResult: UserSQLExecutionResult
+  error: String
   submittedAt: Time!
   question: Question!
   user: User!
@@ -1041,6 +1042,24 @@ input SubmissionWhereInput {
   statusNEQ: SubmissionStatus
   statusIn: [SubmissionStatus!]
   statusNotIn: [SubmissionStatus!]
+  """
+  error field predicates
+  """
+  error: String
+  errorNEQ: String
+  errorIn: [String!]
+  errorNotIn: [String!]
+  errorGT: String
+  errorGTE: String
+  errorLT: String
+  errorLTE: String
+  errorContains: String
+  errorHasPrefix: String
+  errorHasSuffix: String
+  errorIsNil: Boolean
+  errorNotNil: Boolean
+  errorEqualFold: String
+  errorContainsFold: String
   """
   submitted_at field predicates
   """

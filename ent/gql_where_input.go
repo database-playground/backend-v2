@@ -1990,6 +1990,23 @@ type SubmissionWhereInput struct {
 	StatusIn    []submission.Status `json:"statusIn,omitempty"`
 	StatusNotIn []submission.Status `json:"statusNotIn,omitempty"`
 
+	// "error" field predicates.
+	Error             *string  `json:"error,omitempty"`
+	ErrorNEQ          *string  `json:"errorNEQ,omitempty"`
+	ErrorIn           []string `json:"errorIn,omitempty"`
+	ErrorNotIn        []string `json:"errorNotIn,omitempty"`
+	ErrorGT           *string  `json:"errorGT,omitempty"`
+	ErrorGTE          *string  `json:"errorGTE,omitempty"`
+	ErrorLT           *string  `json:"errorLT,omitempty"`
+	ErrorLTE          *string  `json:"errorLTE,omitempty"`
+	ErrorContains     *string  `json:"errorContains,omitempty"`
+	ErrorHasPrefix    *string  `json:"errorHasPrefix,omitempty"`
+	ErrorHasSuffix    *string  `json:"errorHasSuffix,omitempty"`
+	ErrorIsNil        bool     `json:"errorIsNil,omitempty"`
+	ErrorNotNil       bool     `json:"errorNotNil,omitempty"`
+	ErrorEqualFold    *string  `json:"errorEqualFold,omitempty"`
+	ErrorContainsFold *string  `json:"errorContainsFold,omitempty"`
+
 	// "submitted_at" field predicates.
 	SubmittedAt      *time.Time  `json:"submittedAt,omitempty"`
 	SubmittedAtNEQ   *time.Time  `json:"submittedAtNEQ,omitempty"`
@@ -2154,6 +2171,51 @@ func (i *SubmissionWhereInput) P() (predicate.Submission, error) {
 	}
 	if len(i.StatusNotIn) > 0 {
 		predicates = append(predicates, submission.StatusNotIn(i.StatusNotIn...))
+	}
+	if i.Error != nil {
+		predicates = append(predicates, submission.ErrorEQ(*i.Error))
+	}
+	if i.ErrorNEQ != nil {
+		predicates = append(predicates, submission.ErrorNEQ(*i.ErrorNEQ))
+	}
+	if len(i.ErrorIn) > 0 {
+		predicates = append(predicates, submission.ErrorIn(i.ErrorIn...))
+	}
+	if len(i.ErrorNotIn) > 0 {
+		predicates = append(predicates, submission.ErrorNotIn(i.ErrorNotIn...))
+	}
+	if i.ErrorGT != nil {
+		predicates = append(predicates, submission.ErrorGT(*i.ErrorGT))
+	}
+	if i.ErrorGTE != nil {
+		predicates = append(predicates, submission.ErrorGTE(*i.ErrorGTE))
+	}
+	if i.ErrorLT != nil {
+		predicates = append(predicates, submission.ErrorLT(*i.ErrorLT))
+	}
+	if i.ErrorLTE != nil {
+		predicates = append(predicates, submission.ErrorLTE(*i.ErrorLTE))
+	}
+	if i.ErrorContains != nil {
+		predicates = append(predicates, submission.ErrorContains(*i.ErrorContains))
+	}
+	if i.ErrorHasPrefix != nil {
+		predicates = append(predicates, submission.ErrorHasPrefix(*i.ErrorHasPrefix))
+	}
+	if i.ErrorHasSuffix != nil {
+		predicates = append(predicates, submission.ErrorHasSuffix(*i.ErrorHasSuffix))
+	}
+	if i.ErrorIsNil {
+		predicates = append(predicates, submission.ErrorIsNil())
+	}
+	if i.ErrorNotNil {
+		predicates = append(predicates, submission.ErrorNotNil())
+	}
+	if i.ErrorEqualFold != nil {
+		predicates = append(predicates, submission.ErrorEqualFold(*i.ErrorEqualFold))
+	}
+	if i.ErrorContainsFold != nil {
+		predicates = append(predicates, submission.ErrorContainsFold(*i.ErrorContainsFold))
 	}
 	if i.SubmittedAt != nil {
 		predicates = append(predicates, submission.SubmittedAtEQ(*i.SubmittedAt))

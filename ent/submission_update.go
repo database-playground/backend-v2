@@ -59,17 +59,35 @@ func (_u *SubmissionUpdate) SetNillableStatus(v *submission.Status) *SubmissionU
 	return _u
 }
 
-// SetResult sets the "result" field.
-func (_u *SubmissionUpdate) SetResult(v models.SubmissionResult) *SubmissionUpdate {
-	_u.mutation.SetResult(v)
+// SetQueryResult sets the "query_result" field.
+func (_u *SubmissionUpdate) SetQueryResult(v *models.UserSQLExecutionResult) *SubmissionUpdate {
+	_u.mutation.SetQueryResult(v)
 	return _u
 }
 
-// SetNillableResult sets the "result" field if the given value is not nil.
-func (_u *SubmissionUpdate) SetNillableResult(v *models.SubmissionResult) *SubmissionUpdate {
+// ClearQueryResult clears the value of the "query_result" field.
+func (_u *SubmissionUpdate) ClearQueryResult() *SubmissionUpdate {
+	_u.mutation.ClearQueryResult()
+	return _u
+}
+
+// SetError sets the "error" field.
+func (_u *SubmissionUpdate) SetError(v string) *SubmissionUpdate {
+	_u.mutation.SetError(v)
+	return _u
+}
+
+// SetNillableError sets the "error" field if the given value is not nil.
+func (_u *SubmissionUpdate) SetNillableError(v *string) *SubmissionUpdate {
 	if v != nil {
-		_u.SetResult(*v)
+		_u.SetError(*v)
 	}
+	return _u
+}
+
+// ClearError clears the value of the "error" field.
+func (_u *SubmissionUpdate) ClearError() *SubmissionUpdate {
+	_u.mutation.ClearError()
 	return _u
 }
 
@@ -192,8 +210,17 @@ func (_u *SubmissionUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(submission.FieldStatus, field.TypeEnum, value)
 	}
-	if value, ok := _u.mutation.Result(); ok {
-		_spec.SetField(submission.FieldResult, field.TypeJSON, value)
+	if value, ok := _u.mutation.QueryResult(); ok {
+		_spec.SetField(submission.FieldQueryResult, field.TypeJSON, value)
+	}
+	if _u.mutation.QueryResultCleared() {
+		_spec.ClearField(submission.FieldQueryResult, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.Error(); ok {
+		_spec.SetField(submission.FieldError, field.TypeString, value)
+	}
+	if _u.mutation.ErrorCleared() {
+		_spec.ClearField(submission.FieldError, field.TypeString)
 	}
 	if value, ok := _u.mutation.SubmittedAt(); ok {
 		_spec.SetField(submission.FieldSubmittedAt, field.TypeTime, value)
@@ -304,17 +331,35 @@ func (_u *SubmissionUpdateOne) SetNillableStatus(v *submission.Status) *Submissi
 	return _u
 }
 
-// SetResult sets the "result" field.
-func (_u *SubmissionUpdateOne) SetResult(v models.SubmissionResult) *SubmissionUpdateOne {
-	_u.mutation.SetResult(v)
+// SetQueryResult sets the "query_result" field.
+func (_u *SubmissionUpdateOne) SetQueryResult(v *models.UserSQLExecutionResult) *SubmissionUpdateOne {
+	_u.mutation.SetQueryResult(v)
 	return _u
 }
 
-// SetNillableResult sets the "result" field if the given value is not nil.
-func (_u *SubmissionUpdateOne) SetNillableResult(v *models.SubmissionResult) *SubmissionUpdateOne {
+// ClearQueryResult clears the value of the "query_result" field.
+func (_u *SubmissionUpdateOne) ClearQueryResult() *SubmissionUpdateOne {
+	_u.mutation.ClearQueryResult()
+	return _u
+}
+
+// SetError sets the "error" field.
+func (_u *SubmissionUpdateOne) SetError(v string) *SubmissionUpdateOne {
+	_u.mutation.SetError(v)
+	return _u
+}
+
+// SetNillableError sets the "error" field if the given value is not nil.
+func (_u *SubmissionUpdateOne) SetNillableError(v *string) *SubmissionUpdateOne {
 	if v != nil {
-		_u.SetResult(*v)
+		_u.SetError(*v)
 	}
+	return _u
+}
+
+// ClearError clears the value of the "error" field.
+func (_u *SubmissionUpdateOne) ClearError() *SubmissionUpdateOne {
+	_u.mutation.ClearError()
 	return _u
 }
 
@@ -467,8 +512,17 @@ func (_u *SubmissionUpdateOne) sqlSave(ctx context.Context) (_node *Submission, 
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(submission.FieldStatus, field.TypeEnum, value)
 	}
-	if value, ok := _u.mutation.Result(); ok {
-		_spec.SetField(submission.FieldResult, field.TypeJSON, value)
+	if value, ok := _u.mutation.QueryResult(); ok {
+		_spec.SetField(submission.FieldQueryResult, field.TypeJSON, value)
+	}
+	if _u.mutation.QueryResultCleared() {
+		_spec.ClearField(submission.FieldQueryResult, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.Error(); ok {
+		_spec.SetField(submission.FieldError, field.TypeString, value)
+	}
+	if _u.mutation.ErrorCleared() {
+		_spec.ClearField(submission.FieldError, field.TypeString)
 	}
 	if value, ok := _u.mutation.SubmittedAt(); ok {
 		_spec.SetField(submission.FieldSubmittedAt, field.TypeTime, value)

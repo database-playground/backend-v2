@@ -136,7 +136,8 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "submitted_code", Type: field.TypeString},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "success", "failed"}},
-		{Name: "result", Type: field.TypeJSON},
+		{Name: "query_result", Type: field.TypeJSON, Nullable: true},
+		{Name: "error", Type: field.TypeString, Nullable: true},
 		{Name: "submitted_at", Type: field.TypeTime},
 		{Name: "question_submissions", Type: field.TypeInt},
 		{Name: "user_submissions", Type: field.TypeInt},
@@ -149,13 +150,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "submissions_questions_submissions",
-				Columns:    []*schema.Column{SubmissionsColumns[5]},
+				Columns:    []*schema.Column{SubmissionsColumns[6]},
 				RefColumns: []*schema.Column{QuestionsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "submissions_users_submissions",
-				Columns:    []*schema.Column{SubmissionsColumns[6]},
+				Columns:    []*schema.Column{SubmissionsColumns[7]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},

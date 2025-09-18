@@ -673,10 +673,15 @@ func (_q *SubmissionQuery) collectField(ctx context.Context, oneNode bool, opCtx
 				selectedFields = append(selectedFields, submission.FieldStatus)
 				fieldSeen[submission.FieldStatus] = struct{}{}
 			}
-		case "result":
-			if _, ok := fieldSeen[submission.FieldResult]; !ok {
-				selectedFields = append(selectedFields, submission.FieldResult)
-				fieldSeen[submission.FieldResult] = struct{}{}
+		case "queryResult":
+			if _, ok := fieldSeen[submission.FieldQueryResult]; !ok {
+				selectedFields = append(selectedFields, submission.FieldQueryResult)
+				fieldSeen[submission.FieldQueryResult] = struct{}{}
+			}
+		case "error":
+			if _, ok := fieldSeen[submission.FieldError]; !ok {
+				selectedFields = append(selectedFields, submission.FieldError)
+				fieldSeen[submission.FieldError] = struct{}{}
 			}
 		case "submittedAt":
 			if _, ok := fieldSeen[submission.FieldSubmittedAt]; !ok {

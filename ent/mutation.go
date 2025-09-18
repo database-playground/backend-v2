@@ -3714,7 +3714,8 @@ type SubmissionMutation struct {
 	id              *int
 	submitted_code  *string
 	status          *submission.Status
-	result          *models.SubmissionResult
+	query_result    **models.UserSQLExecutionResult
+	error           *string
 	submitted_at    *time.Time
 	clearedFields   map[string]struct{}
 	question        *int
@@ -3896,40 +3897,102 @@ func (m *SubmissionMutation) ResetStatus() {
 	m.status = nil
 }
 
-// SetResult sets the "result" field.
-func (m *SubmissionMutation) SetResult(mr models.SubmissionResult) {
-	m.result = &mr
+// SetQueryResult sets the "query_result" field.
+func (m *SubmissionMutation) SetQueryResult(mser *models.UserSQLExecutionResult) {
+	m.query_result = &mser
 }
 
-// Result returns the value of the "result" field in the mutation.
-func (m *SubmissionMutation) Result() (r models.SubmissionResult, exists bool) {
-	v := m.result
+// QueryResult returns the value of the "query_result" field in the mutation.
+func (m *SubmissionMutation) QueryResult() (r *models.UserSQLExecutionResult, exists bool) {
+	v := m.query_result
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldResult returns the old "result" field's value of the Submission entity.
+// OldQueryResult returns the old "query_result" field's value of the Submission entity.
 // If the Submission object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SubmissionMutation) OldResult(ctx context.Context) (v models.SubmissionResult, err error) {
+func (m *SubmissionMutation) OldQueryResult(ctx context.Context) (v *models.UserSQLExecutionResult, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldResult is only allowed on UpdateOne operations")
+		return v, errors.New("OldQueryResult is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldResult requires an ID field in the mutation")
+		return v, errors.New("OldQueryResult requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldResult: %w", err)
+		return v, fmt.Errorf("querying old value for OldQueryResult: %w", err)
 	}
-	return oldValue.Result, nil
+	return oldValue.QueryResult, nil
 }
 
-// ResetResult resets all changes to the "result" field.
-func (m *SubmissionMutation) ResetResult() {
-	m.result = nil
+// ClearQueryResult clears the value of the "query_result" field.
+func (m *SubmissionMutation) ClearQueryResult() {
+	m.query_result = nil
+	m.clearedFields[submission.FieldQueryResult] = struct{}{}
+}
+
+// QueryResultCleared returns if the "query_result" field was cleared in this mutation.
+func (m *SubmissionMutation) QueryResultCleared() bool {
+	_, ok := m.clearedFields[submission.FieldQueryResult]
+	return ok
+}
+
+// ResetQueryResult resets all changes to the "query_result" field.
+func (m *SubmissionMutation) ResetQueryResult() {
+	m.query_result = nil
+	delete(m.clearedFields, submission.FieldQueryResult)
+}
+
+// SetError sets the "error" field.
+func (m *SubmissionMutation) SetError(s string) {
+	m.error = &s
+}
+
+// Error returns the value of the "error" field in the mutation.
+func (m *SubmissionMutation) Error() (r string, exists bool) {
+	v := m.error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldError returns the old "error" field's value of the Submission entity.
+// If the Submission object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubmissionMutation) OldError(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldError: %w", err)
+	}
+	return oldValue.Error, nil
+}
+
+// ClearError clears the value of the "error" field.
+func (m *SubmissionMutation) ClearError() {
+	m.error = nil
+	m.clearedFields[submission.FieldError] = struct{}{}
+}
+
+// ErrorCleared returns if the "error" field was cleared in this mutation.
+func (m *SubmissionMutation) ErrorCleared() bool {
+	_, ok := m.clearedFields[submission.FieldError]
+	return ok
+}
+
+// ResetError resets all changes to the "error" field.
+func (m *SubmissionMutation) ResetError() {
+	m.error = nil
+	delete(m.clearedFields, submission.FieldError)
 }
 
 // SetSubmittedAt sets the "submitted_at" field.
@@ -4080,15 +4143,18 @@ func (m *SubmissionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SubmissionMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.submitted_code != nil {
 		fields = append(fields, submission.FieldSubmittedCode)
 	}
 	if m.status != nil {
 		fields = append(fields, submission.FieldStatus)
 	}
-	if m.result != nil {
-		fields = append(fields, submission.FieldResult)
+	if m.query_result != nil {
+		fields = append(fields, submission.FieldQueryResult)
+	}
+	if m.error != nil {
+		fields = append(fields, submission.FieldError)
 	}
 	if m.submitted_at != nil {
 		fields = append(fields, submission.FieldSubmittedAt)
@@ -4105,8 +4171,10 @@ func (m *SubmissionMutation) Field(name string) (ent.Value, bool) {
 		return m.SubmittedCode()
 	case submission.FieldStatus:
 		return m.Status()
-	case submission.FieldResult:
-		return m.Result()
+	case submission.FieldQueryResult:
+		return m.QueryResult()
+	case submission.FieldError:
+		return m.Error()
 	case submission.FieldSubmittedAt:
 		return m.SubmittedAt()
 	}
@@ -4122,8 +4190,10 @@ func (m *SubmissionMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldSubmittedCode(ctx)
 	case submission.FieldStatus:
 		return m.OldStatus(ctx)
-	case submission.FieldResult:
-		return m.OldResult(ctx)
+	case submission.FieldQueryResult:
+		return m.OldQueryResult(ctx)
+	case submission.FieldError:
+		return m.OldError(ctx)
 	case submission.FieldSubmittedAt:
 		return m.OldSubmittedAt(ctx)
 	}
@@ -4149,12 +4219,19 @@ func (m *SubmissionMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetStatus(v)
 		return nil
-	case submission.FieldResult:
-		v, ok := value.(models.SubmissionResult)
+	case submission.FieldQueryResult:
+		v, ok := value.(*models.UserSQLExecutionResult)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetResult(v)
+		m.SetQueryResult(v)
+		return nil
+	case submission.FieldError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetError(v)
 		return nil
 	case submission.FieldSubmittedAt:
 		v, ok := value.(time.Time)
@@ -4192,7 +4269,14 @@ func (m *SubmissionMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *SubmissionMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(submission.FieldQueryResult) {
+		fields = append(fields, submission.FieldQueryResult)
+	}
+	if m.FieldCleared(submission.FieldError) {
+		fields = append(fields, submission.FieldError)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -4205,6 +4289,14 @@ func (m *SubmissionMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *SubmissionMutation) ClearField(name string) error {
+	switch name {
+	case submission.FieldQueryResult:
+		m.ClearQueryResult()
+		return nil
+	case submission.FieldError:
+		m.ClearError()
+		return nil
+	}
 	return fmt.Errorf("unknown Submission nullable field %s", name)
 }
 
@@ -4218,8 +4310,11 @@ func (m *SubmissionMutation) ResetField(name string) error {
 	case submission.FieldStatus:
 		m.ResetStatus()
 		return nil
-	case submission.FieldResult:
-		m.ResetResult()
+	case submission.FieldQueryResult:
+		m.ResetQueryResult()
+		return nil
+	case submission.FieldError:
+		m.ResetError()
 		return nil
 	case submission.FieldSubmittedAt:
 		m.ResetSubmittedAt()

@@ -60,6 +60,11 @@ func SubmittedCode(v string) predicate.Submission {
 	return predicate.Submission(sql.FieldEQ(FieldSubmittedCode, v))
 }
 
+// Error applies equality check predicate on the "error" field. It's identical to ErrorEQ.
+func Error(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldEQ(FieldError, v))
+}
+
 // SubmittedAt applies equality check predicate on the "submitted_at" field. It's identical to SubmittedAtEQ.
 func SubmittedAt(v time.Time) predicate.Submission {
 	return predicate.Submission(sql.FieldEQ(FieldSubmittedAt, v))
@@ -148,6 +153,91 @@ func StatusIn(vs ...Status) predicate.Submission {
 // StatusNotIn applies the NotIn predicate on the "status" field.
 func StatusNotIn(vs ...Status) predicate.Submission {
 	return predicate.Submission(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// QueryResultIsNil applies the IsNil predicate on the "query_result" field.
+func QueryResultIsNil() predicate.Submission {
+	return predicate.Submission(sql.FieldIsNull(FieldQueryResult))
+}
+
+// QueryResultNotNil applies the NotNil predicate on the "query_result" field.
+func QueryResultNotNil() predicate.Submission {
+	return predicate.Submission(sql.FieldNotNull(FieldQueryResult))
+}
+
+// ErrorEQ applies the EQ predicate on the "error" field.
+func ErrorEQ(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldEQ(FieldError, v))
+}
+
+// ErrorNEQ applies the NEQ predicate on the "error" field.
+func ErrorNEQ(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldNEQ(FieldError, v))
+}
+
+// ErrorIn applies the In predicate on the "error" field.
+func ErrorIn(vs ...string) predicate.Submission {
+	return predicate.Submission(sql.FieldIn(FieldError, vs...))
+}
+
+// ErrorNotIn applies the NotIn predicate on the "error" field.
+func ErrorNotIn(vs ...string) predicate.Submission {
+	return predicate.Submission(sql.FieldNotIn(FieldError, vs...))
+}
+
+// ErrorGT applies the GT predicate on the "error" field.
+func ErrorGT(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldGT(FieldError, v))
+}
+
+// ErrorGTE applies the GTE predicate on the "error" field.
+func ErrorGTE(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldGTE(FieldError, v))
+}
+
+// ErrorLT applies the LT predicate on the "error" field.
+func ErrorLT(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldLT(FieldError, v))
+}
+
+// ErrorLTE applies the LTE predicate on the "error" field.
+func ErrorLTE(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldLTE(FieldError, v))
+}
+
+// ErrorContains applies the Contains predicate on the "error" field.
+func ErrorContains(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldContains(FieldError, v))
+}
+
+// ErrorHasPrefix applies the HasPrefix predicate on the "error" field.
+func ErrorHasPrefix(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldHasPrefix(FieldError, v))
+}
+
+// ErrorHasSuffix applies the HasSuffix predicate on the "error" field.
+func ErrorHasSuffix(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldHasSuffix(FieldError, v))
+}
+
+// ErrorIsNil applies the IsNil predicate on the "error" field.
+func ErrorIsNil() predicate.Submission {
+	return predicate.Submission(sql.FieldIsNull(FieldError))
+}
+
+// ErrorNotNil applies the NotNil predicate on the "error" field.
+func ErrorNotNil() predicate.Submission {
+	return predicate.Submission(sql.FieldNotNull(FieldError))
+}
+
+// ErrorEqualFold applies the EqualFold predicate on the "error" field.
+func ErrorEqualFold(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldEqualFold(FieldError, v))
+}
+
+// ErrorContainsFold applies the ContainsFold predicate on the "error" field.
+func ErrorContainsFold(v string) predicate.Submission {
+	return predicate.Submission(sql.FieldContainsFold(FieldError, v))
 }
 
 // SubmittedAtEQ applies the EQ predicate on the "submitted_at" field.

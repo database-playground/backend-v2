@@ -2,6 +2,10 @@
 
 package model
 
+import (
+	"github.com/database-playground/backend-v2/models"
+)
+
 // Filter for scope sets.
 //
 // The filters are mutually exclusive, only one of them can be provided.
@@ -12,7 +16,7 @@ type ScopeSetFilter struct {
 	Slug *string `json:"slug,omitempty"`
 }
 
-type SubmitAnswerInput struct {
-	QuestionID int    `json:"questionID"`
-	Answer     string `json:"answer"`
+type SubmissionResult struct {
+	Result *models.UserSQLExecutionResult `json:"result,omitempty"`
+	Error  *string                        `json:"error,omitempty"`
 }

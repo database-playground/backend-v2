@@ -25,8 +25,10 @@ type Submission struct {
 	SubmittedCode string `json:"submitted_code,omitempty"`
 	// Status holds the value of the "status" field.
 	Status submission.Status `json:"status,omitempty"`
-	// Result holds the value of the "result" field.
-	Result models.SubmissionResult `json:"result,omitempty"`
+	// QueryResult holds the value of the "query_result" field.
+	QueryResult *models.UserSQLExecutionResult `json:"query_result,omitempty"`
+	// Error holds the value of the "error" field.
+	Error *string `json:"error,omitempty"`
 	// SubmittedAt holds the value of the "submitted_at" field.
 	SubmittedAt time.Time `json:"submitted_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -77,11 +79,11 @@ func (*Submission) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case submission.FieldResult:
+		case submission.FieldQueryResult:
 			values[i] = new([]byte)
 		case submission.FieldID:
 			values[i] = new(sql.NullInt64)
-		case submission.FieldSubmittedCode, submission.FieldStatus:
+		case submission.FieldSubmittedCode, submission.FieldStatus, submission.FieldError:
 			values[i] = new(sql.NullString)
 		case submission.FieldSubmittedAt:
 			values[i] = new(sql.NullTime)
@@ -122,13 +124,20 @@ func (_m *Submission) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Status = submission.Status(value.String)
 			}
-		case submission.FieldResult:
+		case submission.FieldQueryResult:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field result", values[i])
+				return fmt.Errorf("unexpected type %T for field query_result", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.Result); err != nil {
-					return fmt.Errorf("unmarshal field result: %w", err)
+				if err := json.Unmarshal(*value, &_m.QueryResult); err != nil {
+					return fmt.Errorf("unmarshal field query_result: %w", err)
 				}
+			}
+		case submission.FieldError:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field error", values[i])
+			} else if value.Valid {
+				_m.Error = new(string)
+				*_m.Error = value.String
 			}
 		case submission.FieldSubmittedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -202,8 +211,13 @@ func (_m *Submission) String() string {
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Status))
 	builder.WriteString(", ")
-	builder.WriteString("result=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Result))
+	builder.WriteString("query_result=")
+	builder.WriteString(fmt.Sprintf("%v", _m.QueryResult))
+	builder.WriteString(", ")
+	if v := _m.Error; v != nil {
+		builder.WriteString("error=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("submitted_at=")
 	builder.WriteString(_m.SubmittedAt.Format(time.ANSIC))

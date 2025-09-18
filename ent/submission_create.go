@@ -35,9 +35,23 @@ func (_c *SubmissionCreate) SetStatus(v submission.Status) *SubmissionCreate {
 	return _c
 }
 
-// SetResult sets the "result" field.
-func (_c *SubmissionCreate) SetResult(v models.SubmissionResult) *SubmissionCreate {
-	_c.mutation.SetResult(v)
+// SetQueryResult sets the "query_result" field.
+func (_c *SubmissionCreate) SetQueryResult(v *models.UserSQLExecutionResult) *SubmissionCreate {
+	_c.mutation.SetQueryResult(v)
+	return _c
+}
+
+// SetError sets the "error" field.
+func (_c *SubmissionCreate) SetError(v string) *SubmissionCreate {
+	_c.mutation.SetError(v)
+	return _c
+}
+
+// SetNillableError sets the "error" field if the given value is not nil.
+func (_c *SubmissionCreate) SetNillableError(v *string) *SubmissionCreate {
+	if v != nil {
+		_c.SetError(*v)
+	}
 	return _c
 }
 
@@ -136,9 +150,6 @@ func (_c *SubmissionCreate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Submission.status": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.Result(); !ok {
-		return &ValidationError{Name: "result", err: errors.New(`ent: missing required field "Submission.result"`)}
-	}
 	if _, ok := _c.mutation.SubmittedAt(); !ok {
 		return &ValidationError{Name: "submitted_at", err: errors.New(`ent: missing required field "Submission.submitted_at"`)}
 	}
@@ -182,9 +193,13 @@ func (_c *SubmissionCreate) createSpec() (*Submission, *sqlgraph.CreateSpec) {
 		_spec.SetField(submission.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
 	}
-	if value, ok := _c.mutation.Result(); ok {
-		_spec.SetField(submission.FieldResult, field.TypeJSON, value)
-		_node.Result = value
+	if value, ok := _c.mutation.QueryResult(); ok {
+		_spec.SetField(submission.FieldQueryResult, field.TypeJSON, value)
+		_node.QueryResult = value
+	}
+	if value, ok := _c.mutation.Error(); ok {
+		_spec.SetField(submission.FieldError, field.TypeString, value)
+		_node.Error = &value
 	}
 	if value, ok := _c.mutation.SubmittedAt(); ok {
 		_spec.SetField(submission.FieldSubmittedAt, field.TypeTime, value)
