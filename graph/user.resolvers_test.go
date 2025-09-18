@@ -55,10 +55,12 @@ func NewTestResolver(t *testing.T, entClient *ent.Client, authStorage auth.Stora
 	t.Helper()
 
 	eventService := events.NewEventService(entClient)
-	submissionService := submission.NewSubmissionService(entClient, eventService)
+	sqlrunner := testhelper.NewSQLRunnerClient(t)
+
+	submissionService := submission.NewSubmissionService(entClient, eventService, sqlrunner)
 	useraccountCtx := useraccount.NewContext(entClient, authStorage, eventService)
 
-	return NewResolver(entClient, authStorage, nil, useraccountCtx, eventService, submissionService)
+	return NewResolver(entClient, authStorage, sqlrunner, useraccountCtx, eventService, submissionService)
 }
 
 func TestMutationResolver_LogoutAll(t *testing.T) {
