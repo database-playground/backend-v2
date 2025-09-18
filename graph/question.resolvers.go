@@ -8,7 +8,11 @@ import (
 	"context"
 	"errors"
 
+	"entgo.io/contrib/entgql"
+	"entgo.io/ent/dialect/sql"
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/ent/question"
+	entSubmission "github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/graph/model"
 	"github.com/database-playground/backend-v2/internal/auth"
@@ -154,6 +158,22 @@ func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Q
 		Columns: response.Columns,
 		Rows:    response.Rows,
 	}, nil
+}
+
+// SubmissionsOfQuestion is the resolver for the submissionsOfQuestion field.
+func (r *userResolver) SubmissionsOfQuestion(ctx context.Context, obj *ent.User, questionID int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *model.SubmissionsOfQuestionWhereInput) (*ent.SubmissionConnection, error) {
+	query := obj.QuerySubmissions()
+	query.Where(entSubmission.HasQuestionWith(question.ID(questionID)))
+
+	if where != nil {
+		if where.Status != nil {
+			query.Where(entSubmission.StatusEQ(*where.Status))
+		}
+	}
+
+	query.Order(entSubmission.BySubmittedAt(sql.OrderDesc()))
+
+	return query.Paginate(ctx, after, first, before, last)
 }
 
 // Mutation returns MutationResolver implementation.

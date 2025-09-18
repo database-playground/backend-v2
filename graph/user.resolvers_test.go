@@ -1386,3 +1386,389 @@ func TestMutationResolver_VerifyRegistration(t *testing.T) {
 		require.Contains(t, err.Error(), "get user")
 	})
 }
+
+func TestUserResolver_TotalPoints(t *testing.T) {
+	t.Run("user with no points", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user with no points
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Setup test resolver
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		gqlClient := client.New(srv)
+
+		// Execute query
+		var resp struct {
+			User struct {
+				TotalPoints int
+			}
+		}
+		err = gqlClient.Post(`query { user(id: `+strconv.Itoa(user.ID)+`) { totalPoints } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read"},
+			}))
+		})
+
+		// Verify response
+		require.NoError(t, err)
+		require.Equal(t, 0, resp.User.TotalPoints)
+	})
+
+	t.Run("user with single point record", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create a single point record for the user
+		_, err = entClient.Points.Create().
+			SetUser(user).
+			SetPoints(100).
+			SetDescription("Test points").
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Setup test resolver
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		gqlClient := client.New(srv)
+
+		// Execute query
+		var resp struct {
+			User struct {
+				TotalPoints int
+			}
+		}
+		err = gqlClient.Post(`query { user(id: `+strconv.Itoa(user.ID)+`) { totalPoints } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read"},
+			}))
+		})
+
+		// Verify response
+		require.NoError(t, err)
+		require.Equal(t, 100, resp.User.TotalPoints)
+	})
+
+	t.Run("user with multiple point records", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create multiple point records for the user
+		pointsData := []struct {
+			points      int
+			description string
+		}{
+			{50, "Daily login bonus"},
+			{100, "Weekly login bonus"},
+			{25, "Task completion"},
+			{200, "Achievement unlock"},
+		}
+
+		for _, data := range pointsData {
+			_, err = entClient.Points.Create().
+				SetUser(user).
+				SetPoints(data.points).
+				SetDescription(data.description).
+				Save(context.Background())
+			require.NoError(t, err)
+		}
+
+		// Setup test resolver
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		gqlClient := client.New(srv)
+
+		// Execute query
+		var resp struct {
+			User struct {
+				TotalPoints int
+			}
+		}
+		err = gqlClient.Post(`query { user(id: `+strconv.Itoa(user.ID)+`) { totalPoints } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read"},
+			}))
+		})
+
+		// Verify response - should sum to 375 (50 + 100 + 25 + 200)
+		require.NoError(t, err)
+		require.Equal(t, 375, resp.User.TotalPoints)
+	})
+
+	t.Run("user with mixed positive and negative points", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create point records with mixed positive and negative values
+		pointsData := []struct {
+			points      int
+			description string
+		}{
+			{100, "Login bonus"},
+			{-20, "Penalty for violation"},
+			{50, "Task completion"},
+			{-10, "Late submission penalty"},
+			{75, "Achievement"},
+		}
+
+		for _, data := range pointsData {
+			_, err = entClient.Points.Create().
+				SetUser(user).
+				SetPoints(data.points).
+				SetDescription(data.description).
+				Save(context.Background())
+			require.NoError(t, err)
+		}
+
+		// Setup test resolver
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		gqlClient := client.New(srv)
+
+		// Execute query
+		var resp struct {
+			User struct {
+				TotalPoints int
+			}
+		}
+		err = gqlClient.Post(`query { user(id: `+strconv.Itoa(user.ID)+`) { totalPoints } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read"},
+			}))
+		})
+
+		// Verify response - should sum to 195 (100 - 20 + 50 - 10 + 75)
+		require.NoError(t, err)
+		require.Equal(t, 195, resp.User.TotalPoints)
+	})
+
+	t.Run("user with zero point records", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create point records with zero values
+		pointsData := []struct {
+			points      int
+			description string
+		}{
+			{0, "No bonus this time"},
+			{0, "Free entry"},
+			{50, "Actual points"},
+			{0, "Another zero entry"},
+		}
+
+		for _, data := range pointsData {
+			_, err = entClient.Points.Create().
+				SetUser(user).
+				SetPoints(data.points).
+				SetDescription(data.description).
+				Save(context.Background())
+			require.NoError(t, err)
+		}
+
+		// Setup test resolver
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		gqlClient := client.New(srv)
+
+		// Execute query
+		var resp struct {
+			User struct {
+				TotalPoints int
+			}
+		}
+		err = gqlClient.Post(`query { user(id: `+strconv.Itoa(user.ID)+`) { totalPoints } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read"},
+			}))
+		})
+
+		// Verify response - should sum to 50 (0 + 0 + 50 + 0)
+		require.NoError(t, err)
+		require.Equal(t, 50, resp.User.TotalPoints)
+	})
+
+	t.Run("direct resolver method call", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create multiple point records
+		expectedTotal := 0
+		pointsValues := []int{10, 20, 30, -5, 100}
+		for i, points := range pointsValues {
+			_, err = entClient.Points.Create().
+				SetUser(user).
+				SetPoints(points).
+				SetDescription("Test points " + strconv.Itoa(i)).
+				Save(context.Background())
+			require.NoError(t, err)
+			expectedTotal += points
+		}
+
+		// Test the resolver method directly
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+		userResolver := &userResolver{resolver}
+
+		totalPoints, err := userResolver.TotalPoints(context.Background(), user)
+		require.NoError(t, err)
+		require.Equal(t, expectedTotal, totalPoints) // Should be 155 (10+20+30-5+100)
+	})
+
+	t.Run("user isolation - points don't leak between users", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create two test users
+		user1, err := entClient.User.Create().
+			SetName("user1").
+			SetEmail("user1@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		user2, err := entClient.User.Create().
+			SetName("user2").
+			SetEmail("user2@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create points for user1
+		_, err = entClient.Points.Create().
+			SetUser(user1).
+			SetPoints(100).
+			SetDescription("User 1 points").
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create different points for user2
+		_, err = entClient.Points.Create().
+			SetUser(user2).
+			SetPoints(200).
+			SetDescription("User 2 points").
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Test the resolver method directly for both users
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+		userResolver := &userResolver{resolver}
+
+		// Check user1 total
+		totalPoints1, err := userResolver.TotalPoints(context.Background(), user1)
+		require.NoError(t, err)
+		require.Equal(t, 100, totalPoints1)
+
+		// Check user2 total
+		totalPoints2, err := userResolver.TotalPoints(context.Background(), user2)
+		require.NoError(t, err)
+		require.Equal(t, 200, totalPoints2)
+	})
+}
