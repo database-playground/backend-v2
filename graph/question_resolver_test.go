@@ -11,6 +11,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/ent/submission"
+	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/graph/directive"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/setup"
@@ -60,6 +61,168 @@ func createTestSubmission(t *testing.T, entClient *ent.Client, user *ent.User, q
 		Save(context.Background())
 	require.NoError(t, err)
 	return submission
+}
+
+func TestQueryResolver_Submission(t *testing.T) {
+	entClient := testhelper.NewEntSqliteClient(t)
+	resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+	cfg := Config{
+		Resolvers:  resolver,
+		Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+	}
+	srv := handler.New(NewExecutableSchema(cfg))
+	srv.AddTransport(transport.POST{})
+	gqlClient := client.New(srv)
+
+	// Create test group and users
+	group, err := createTestGroup(t, entClient)
+	require.NoError(t, err)
+
+	ownerUser, err := entClient.User.Create().
+		SetName("owner").
+		SetEmail("owner@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	otherUser, err := entClient.User.Create().
+		SetName("other").
+		SetEmail("other@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	// Create test database and question
+	database, err := entClient.Database.Create().
+		SetSlug("test-db").
+		SetDescription("Test Database").
+		SetSchema("CREATE TABLE test (id INT, name VARCHAR(255));").
+		SetRelationFigure("test-relation-figure").
+		Save(context.Background())
+	require.NoError(t, err)
+
+	question, err := entClient.Question.Create().
+		SetCategory("test-query").
+		SetDifficulty("easy").
+		SetTitle("Test Query").
+		SetDescription("Write a SELECT query").
+		SetReferenceAnswer("SELECT * FROM test;").
+		SetDatabase(database).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	// Create test submission for ownerUser
+	submission, err := entClient.Submission.Create().
+		SetSubmittedCode("SELECT * FROM test;").
+		SetStatus("success").
+		SetSubmittedAt(time.Now()).
+		SetUser(ownerUser).
+		SetQuestion(question).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	t.Run("success - owner can access without scope", func(t *testing.T) {
+		var resp struct {
+			Submission struct {
+				ID            string
+				SubmittedCode string
+				Status        string
+			}
+		}
+		err := gqlClient.Post(`query { submission(id: `+strconv.Itoa(submission.ID)+`) { id submittedCode status } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: ownerUser.ID,
+				Scopes: []string{}, // No scopes
+			}))
+		})
+		require.NoError(t, err)
+		require.Equal(t, strconv.Itoa(submission.ID), resp.Submission.ID)
+		require.Equal(t, "SELECT * FROM test;", resp.Submission.SubmittedCode)
+		require.Equal(t, "success", resp.Submission.Status)
+	})
+
+	t.Run("success - user with submission:read scope can access", func(t *testing.T) {
+		var resp struct {
+			Submission struct {
+				ID            string
+				SubmittedCode string
+				Status        string
+			}
+		}
+		err := gqlClient.Post(`query { submission(id: `+strconv.Itoa(submission.ID)+`) { id submittedCode status } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: otherUser.ID, // Different user
+				Scopes: []string{"submission:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Equal(t, strconv.Itoa(submission.ID), resp.Submission.ID)
+		require.Equal(t, "SELECT * FROM test;", resp.Submission.SubmittedCode)
+		require.Equal(t, "success", resp.Submission.Status)
+	})
+
+	t.Run("success - user with wildcard scope can access", func(t *testing.T) {
+		var resp struct {
+			Submission struct {
+				ID            string
+				SubmittedCode string
+				Status        string
+			}
+		}
+		err := gqlClient.Post(`query { submission(id: `+strconv.Itoa(submission.ID)+`) { id submittedCode status } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: otherUser.ID, // Different user
+				Scopes: []string{"*"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Equal(t, strconv.Itoa(submission.ID), resp.Submission.ID)
+		require.Equal(t, "SELECT * FROM test;", resp.Submission.SubmittedCode)
+		require.Equal(t, "success", resp.Submission.Status)
+	})
+
+	t.Run("forbidden - other user without scope cannot access", func(t *testing.T) {
+		var resp struct {
+			Submission struct {
+				ID string
+			}
+		}
+		err := gqlClient.Post(`query { submission(id: `+strconv.Itoa(submission.ID)+`) { id } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: otherUser.ID,          // Different user
+				Scopes: []string{"user:read"}, // Wrong scope
+			}))
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.ErrForbidden.Error())
+	})
+
+	t.Run("not found - non-existent submission", func(t *testing.T) {
+		var resp struct {
+			Submission struct {
+				ID string
+			}
+		}
+		err := gqlClient.Post(`query { submission(id: 99999) { id } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: ownerUser.ID,
+				Scopes: []string{"submission:read"},
+			}))
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.ErrNotFound.Error())
+	})
+
+	t.Run("unauthorized - no authentication", func(t *testing.T) {
+		var resp struct {
+			Submission struct {
+				ID string
+			}
+		}
+		err := gqlClient.Post(`query { submission(id: `+strconv.Itoa(submission.ID)+`) { id } }`, &resp)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+	})
 }
 
 func TestUserResolver_SubmissionsOfQuestion(t *testing.T) {
@@ -158,12 +321,12 @@ func TestUserResolver_SubmissionsOfQuestion(t *testing.T) {
 		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 4)
 		require.Equal(t, 4, resp.Me.SubmissionsOfQuestion.TotalCount)
 
-		// Verify ordering (newest first)
+		// Verify ordering (by ID ascending - default order)
 		edges := resp.Me.SubmissionsOfQuestion.Edges
-		require.Equal(t, strconv.Itoa(submissions[3].ID), edges[0].Node.ID) // Most recent (pending)
-		require.Equal(t, strconv.Itoa(submissions[2].ID), edges[1].Node.ID) // Failed
-		require.Equal(t, strconv.Itoa(submissions[1].ID), edges[2].Node.ID) // Second success
-		require.Equal(t, strconv.Itoa(submissions[0].ID), edges[3].Node.ID) // First success
+		require.Equal(t, strconv.Itoa(submissions[0].ID), edges[0].Node.ID) // First submission (lowest ID)
+		require.Equal(t, strconv.Itoa(submissions[1].ID), edges[1].Node.ID) // Second submission
+		require.Equal(t, strconv.Itoa(submissions[2].ID), edges[2].Node.ID) // Third submission
+		require.Equal(t, strconv.Itoa(submissions[3].ID), edges[3].Node.ID) // Fourth submission (highest ID)
 	})
 
 	t.Run("success - filter by status", func(t *testing.T) {
@@ -459,6 +622,283 @@ func TestUserResolver_SubmissionsOfQuestion(t *testing.T) {
 		// Should not error - just return empty results since we're filtering by user and question
 		require.NoError(t, err)
 		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 0)
+	})
+
+	t.Run("success - default ordering (by ID ascending)", func(t *testing.T) {
+		var resp struct {
+			Me struct {
+				SubmissionsOfQuestion struct {
+					Edges []struct {
+						Node struct {
+							ID string
+						}
+					}
+					TotalCount int
+				}
+			}
+		}
+
+		query := `query {
+			me {
+				submissionsOfQuestion(questionID: ` + strconv.Itoa(question.ID) + `) {
+					edges {
+						node {
+							id
+						}
+					}
+					totalCount
+				}
+			}
+		}`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(
+				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+					UserID: user1.ID,
+					Scopes: []string{"me:read", "submission:read"},
+				}),
+			)
+		})
+
+		require.NoError(t, err)
+		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 4)
+		require.Equal(t, 4, resp.Me.SubmissionsOfQuestion.TotalCount)
+
+		// Verify ordering (by ID ascending - default order)
+		edges := resp.Me.SubmissionsOfQuestion.Edges
+		require.Equal(t, strconv.Itoa(submissions[0].ID), edges[0].Node.ID) // First submission (lowest ID)
+		require.Equal(t, strconv.Itoa(submissions[1].ID), edges[1].Node.ID) // Second submission
+		require.Equal(t, strconv.Itoa(submissions[2].ID), edges[2].Node.ID) // Third submission
+		require.Equal(t, strconv.Itoa(submissions[3].ID), edges[3].Node.ID) // Fourth submission (highest ID)
+	})
+
+	t.Run("success - order by submitted_at ascending (oldest first)", func(t *testing.T) {
+		var resp struct {
+			Me struct {
+				SubmissionsOfQuestion struct {
+					Edges []struct {
+						Node struct {
+							ID string
+						}
+					}
+					TotalCount int
+				}
+			}
+		}
+
+		query := `query {
+			me {
+				submissionsOfQuestion(
+					questionID: ` + strconv.Itoa(question.ID) + `, 
+					orderBy: { field: SUBMITTED_AT, direction: ASC }
+				) {
+					edges {
+						node {
+							id
+						}
+					}
+					totalCount
+				}
+			}
+		}`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(
+				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+					UserID: user1.ID,
+					Scopes: []string{"me:read", "submission:read"},
+				}),
+			)
+		})
+
+		require.NoError(t, err)
+		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 4)
+		require.Equal(t, 4, resp.Me.SubmissionsOfQuestion.TotalCount)
+
+		// Verify ordering (oldest first - by submitted_at ASC)
+		edges := resp.Me.SubmissionsOfQuestion.Edges
+		require.Equal(t, strconv.Itoa(submissions[0].ID), edges[0].Node.ID) // Oldest submission (-3h)
+		require.Equal(t, strconv.Itoa(submissions[1].ID), edges[1].Node.ID) // Second oldest (-2h)
+		require.Equal(t, strconv.Itoa(submissions[2].ID), edges[2].Node.ID) // Third oldest (-1h)
+		require.Equal(t, strconv.Itoa(submissions[3].ID), edges[3].Node.ID) // Newest submission (now)
+	})
+
+	t.Run("success - order by submitted_at descending (newest first)", func(t *testing.T) {
+		var resp struct {
+			Me struct {
+				SubmissionsOfQuestion struct {
+					Edges []struct {
+						Node struct {
+							ID string
+						}
+					}
+					TotalCount int
+				}
+			}
+		}
+
+		query := `query {
+			me {
+				submissionsOfQuestion(
+					questionID: ` + strconv.Itoa(question.ID) + `, 
+					orderBy: { field: SUBMITTED_AT, direction: DESC }
+				) {
+					edges {
+						node {
+							id
+						}
+					}
+					totalCount
+				}
+			}
+		}`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(
+				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+					UserID: user1.ID,
+					Scopes: []string{"me:read", "submission:read"},
+				}),
+			)
+		})
+
+		require.NoError(t, err)
+		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 4)
+		require.Equal(t, 4, resp.Me.SubmissionsOfQuestion.TotalCount)
+
+		// Verify ordering (newest first - by submitted_at DESC)
+		edges := resp.Me.SubmissionsOfQuestion.Edges
+		require.Equal(t, strconv.Itoa(submissions[3].ID), edges[0].Node.ID) // Newest submission (now)
+		require.Equal(t, strconv.Itoa(submissions[2].ID), edges[1].Node.ID) // Third oldest (-1h)
+		require.Equal(t, strconv.Itoa(submissions[1].ID), edges[2].Node.ID) // Second oldest (-2h)
+		require.Equal(t, strconv.Itoa(submissions[0].ID), edges[3].Node.ID) // Oldest submission (-3h)
+	})
+
+	t.Run("success - order by submitted_at ascending with pagination", func(t *testing.T) {
+		var resp struct {
+			Me struct {
+				SubmissionsOfQuestion struct {
+					Edges []struct {
+						Node struct {
+							ID string
+						}
+					}
+					PageInfo struct {
+						HasNextPage     bool
+						HasPreviousPage bool
+						StartCursor     string
+						EndCursor       string
+					}
+					TotalCount int
+				}
+			}
+		}
+
+		query := `query {
+			me {
+				submissionsOfQuestion(
+					questionID: ` + strconv.Itoa(question.ID) + `, 
+					first: 2,
+					orderBy: { field: SUBMITTED_AT, direction: ASC }
+				) {
+					edges {
+						node {
+							id
+						}
+					}
+					pageInfo {
+						hasNextPage
+						hasPreviousPage
+						startCursor
+						endCursor
+					}
+					totalCount
+				}
+			}
+		}`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(
+				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+					UserID: user1.ID,
+					Scopes: []string{"me:read", "submission:read"},
+				}),
+			)
+		})
+
+		require.NoError(t, err)
+		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 2)
+		require.Equal(t, 4, resp.Me.SubmissionsOfQuestion.TotalCount)
+		require.True(t, resp.Me.SubmissionsOfQuestion.PageInfo.HasNextPage)
+		require.False(t, resp.Me.SubmissionsOfQuestion.PageInfo.HasPreviousPage)
+
+		// Verify ordering with pagination (first 2, oldest first)
+		edges := resp.Me.SubmissionsOfQuestion.Edges
+		require.Equal(t, strconv.Itoa(submissions[0].ID), edges[0].Node.ID) // Oldest submission (-3h)
+		require.Equal(t, strconv.Itoa(submissions[1].ID), edges[1].Node.ID) // Second oldest (-2h)
+	})
+
+	t.Run("success - order by submitted_at descending with filter and pagination", func(t *testing.T) {
+		var resp struct {
+			Me struct {
+				SubmissionsOfQuestion struct {
+					Edges []struct {
+						Node struct {
+							ID     string
+							Status string
+						}
+					}
+					PageInfo struct {
+						HasNextPage     bool
+						HasPreviousPage bool
+					}
+					TotalCount int
+				}
+			}
+		}
+
+		query := `query {
+			me {
+				submissionsOfQuestion(
+					questionID: ` + strconv.Itoa(question.ID) + `, 
+					where: { status: success },
+					first: 1,
+					orderBy: { field: SUBMITTED_AT, direction: DESC }
+				) {
+					edges {
+						node {
+							id
+							status
+						}
+					}
+					pageInfo {
+						hasNextPage
+						hasPreviousPage
+					}
+					totalCount
+				}
+			}
+		}`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(
+				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+					UserID: user1.ID,
+					Scopes: []string{"me:read", "submission:read"},
+				}),
+			)
+		})
+
+		require.NoError(t, err)
+		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 1)
+		require.Equal(t, 2, resp.Me.SubmissionsOfQuestion.TotalCount) // Only 2 success submissions
+		require.True(t, resp.Me.SubmissionsOfQuestion.PageInfo.HasNextPage)
+		require.False(t, resp.Me.SubmissionsOfQuestion.PageInfo.HasPreviousPage)
+
+		// Verify ordering with filter and pagination (newest success first)
+		edge := resp.Me.SubmissionsOfQuestion.Edges[0]
+		require.Equal(t, strconv.Itoa(submissions[1].ID), edge.Node.ID) // Newer success submission (-2h)
+		require.Equal(t, "success", edge.Node.Status)
 	})
 
 	t.Run("success - user isolation (user2 doesn't see user1's submissions)", func(t *testing.T) {

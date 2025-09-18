@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/database-playground/backend-v2/ent/database"
-	"github.com/database-playground/backend-v2/ent/events"
+	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
-	"github.com/database-playground/backend-v2/ent/points"
+	"github.com/database-playground/backend-v2/ent/point"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/schema"
 	"github.com/database-playground/backend-v2/ent/scopeset"
@@ -34,16 +34,16 @@ func init() {
 	databaseDescRelationFigure := databaseFields[3].Descriptor()
 	// database.RelationFigureValidator is a validator for the "relation_figure" field. It is called by the builders before save.
 	database.RelationFigureValidator = databaseDescRelationFigure.Validators[0].(func(string) error)
-	eventsFields := schema.Events{}.Fields()
-	_ = eventsFields
-	// eventsDescType is the schema descriptor for type field.
-	eventsDescType := eventsFields[1].Descriptor()
-	// events.TypeValidator is a validator for the "type" field. It is called by the builders before save.
-	events.TypeValidator = eventsDescType.Validators[0].(func(string) error)
-	// eventsDescTriggeredAt is the schema descriptor for triggered_at field.
-	eventsDescTriggeredAt := eventsFields[2].Descriptor()
-	// events.DefaultTriggeredAt holds the default value on creation for the triggered_at field.
-	events.DefaultTriggeredAt = eventsDescTriggeredAt.Default.(func() time.Time)
+	eventFields := schema.Event{}.Fields()
+	_ = eventFields
+	// eventDescType is the schema descriptor for type field.
+	eventDescType := eventFields[1].Descriptor()
+	// event.TypeValidator is a validator for the "type" field. It is called by the builders before save.
+	event.TypeValidator = eventDescType.Validators[0].(func(string) error)
+	// eventDescTriggeredAt is the schema descriptor for triggered_at field.
+	eventDescTriggeredAt := eventFields[2].Descriptor()
+	// event.DefaultTriggeredAt holds the default value on creation for the triggered_at field.
+	event.DefaultTriggeredAt = eventDescTriggeredAt.Default.(func() time.Time)
 	groupMixin := schema.Group{}.Mixin()
 	groupMixinHooks0 := groupMixin[0].Hooks()
 	group.Hooks[0] = groupMixinHooks0[0]
@@ -67,16 +67,16 @@ func init() {
 	groupDescName := groupFields[0].Descriptor()
 	// group.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	group.NameValidator = groupDescName.Validators[0].(func(string) error)
-	pointsFields := schema.Points{}.Fields()
-	_ = pointsFields
-	// pointsDescPoints is the schema descriptor for points field.
-	pointsDescPoints := pointsFields[0].Descriptor()
-	// points.DefaultPoints holds the default value on creation for the points field.
-	points.DefaultPoints = pointsDescPoints.Default.(int)
-	// pointsDescGrantedAt is the schema descriptor for granted_at field.
-	pointsDescGrantedAt := pointsFields[1].Descriptor()
-	// points.DefaultGrantedAt holds the default value on creation for the granted_at field.
-	points.DefaultGrantedAt = pointsDescGrantedAt.Default.(func() time.Time)
+	pointFields := schema.Point{}.Fields()
+	_ = pointFields
+	// pointDescPoints is the schema descriptor for points field.
+	pointDescPoints := pointFields[0].Descriptor()
+	// point.DefaultPoints holds the default value on creation for the points field.
+	point.DefaultPoints = pointDescPoints.Default.(int)
+	// pointDescGrantedAt is the schema descriptor for granted_at field.
+	pointDescGrantedAt := pointFields[1].Descriptor()
+	// point.DefaultGrantedAt holds the default value on creation for the granted_at field.
+	point.DefaultGrantedAt = pointDescGrantedAt.Default.(func() time.Time)
 	questionFields := schema.Question{}.Fields()
 	_ = questionFields
 	// questionDescCategory is the schema descriptor for category field.

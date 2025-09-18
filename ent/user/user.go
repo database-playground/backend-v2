@@ -46,15 +46,15 @@ const (
 	GroupColumn = "user_group"
 	// PointsTable is the table that holds the points relation/edge.
 	PointsTable = "points"
-	// PointsInverseTable is the table name for the Points entity.
-	// It exists in this package in order to avoid circular dependency with the "points" package.
+	// PointsInverseTable is the table name for the Point entity.
+	// It exists in this package in order to avoid circular dependency with the "point" package.
 	PointsInverseTable = "points"
 	// PointsColumn is the table column denoting the points relation/edge.
 	PointsColumn = "user_points"
 	// EventsTable is the table that holds the events relation/edge.
 	EventsTable = "events"
-	// EventsInverseTable is the table name for the Events entity.
-	// It exists in this package in order to avoid circular dependency with the "events" package.
+	// EventsInverseTable is the table name for the Event entity.
+	// It exists in this package in order to avoid circular dependency with the "event" package.
 	EventsInverseTable = "events"
 	// EventsColumn is the table column denoting the events relation/edge.
 	EventsColumn = "user_id"

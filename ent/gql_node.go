@@ -10,10 +10,10 @@ import (
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/database-playground/backend-v2/ent/database"
-	"github.com/database-playground/backend-v2/ent/events"
+	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/internal"
-	"github.com/database-playground/backend-v2/ent/points"
+	"github.com/database-playground/backend-v2/ent/point"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/scopeset"
 	"github.com/database-playground/backend-v2/ent/submission"
@@ -31,20 +31,20 @@ var databaseImplementors = []string{"Database", "Node"}
 // IsNode implements the Node interface check for GQLGen.
 func (*Database) IsNode() {}
 
-var eventsImplementors = []string{"Events", "Node"}
+var eventImplementors = []string{"Event", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
-func (*Events) IsNode() {}
+func (*Event) IsNode() {}
 
 var groupImplementors = []string{"Group", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*Group) IsNode() {}
 
-var pointsImplementors = []string{"Points", "Node"}
+var pointImplementors = []string{"Point", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
-func (*Points) IsNode() {}
+func (*Point) IsNode() {}
 
 var questionImplementors = []string{"Question", "Node"}
 
@@ -152,11 +152,11 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			}
 		}
 		return query.Only(ctx)
-	case events.Table:
-		query := c.Events.Query().
-			Where(events.ID(id))
+	case event.Table:
+		query := c.Event.Query().
+			Where(event.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
-			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, eventsImplementors...); err != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, eventImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -170,11 +170,11 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			}
 		}
 		return query.Only(ctx)
-	case points.Table:
-		query := c.Points.Query().
-			Where(points.ID(id))
+	case point.Table:
+		query := c.Point.Query().
+			Where(point.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
-			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, pointsImplementors...); err != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, pointImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -304,10 +304,10 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 				*noder = node
 			}
 		}
-	case events.Table:
-		query := c.Events.Query().
-			Where(events.IDIn(ids...))
-		query, err := query.CollectFields(ctx, eventsImplementors...)
+	case event.Table:
+		query := c.Event.Query().
+			Where(event.IDIn(ids...))
+		query, err := query.CollectFields(ctx, eventImplementors...)
 		if err != nil {
 			return nil, err
 		}
@@ -336,10 +336,10 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 				*noder = node
 			}
 		}
-	case points.Table:
-		query := c.Points.Query().
-			Where(points.IDIn(ids...))
-		query, err := query.CollectFields(ctx, pointsImplementors...)
+	case point.Table:
+		query := c.Point.Query().
+			Where(point.IDIn(ids...))
+		query, err := query.CollectFields(ctx, pointImplementors...)
 		if err != nil {
 			return nil, err
 		}

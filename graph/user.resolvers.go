@@ -11,7 +11,7 @@ import (
 
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/ent/group"
-	"github.com/database-playground/backend-v2/ent/points"
+	"github.com/database-playground/backend-v2/ent/point"
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/scopeset"
 	"github.com/database-playground/backend-v2/ent/user"
@@ -335,7 +335,7 @@ func (r *userResolver) TotalPoints(ctx context.Context, obj *ent.User) (int, err
 		return 0, nil
 	}
 
-	totalPoints, err := obj.QueryPoints().Aggregate(ent.Sum(points.FieldPoints)).Int(ctx)
+	totalPoints, err := obj.QueryPoints().Aggregate(ent.Sum(point.FieldPoints)).Int(ctx)
 	if err != nil {
 		return 0, err
 	}

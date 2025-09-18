@@ -9,13 +9,13 @@ import (
 	"errors"
 
 	"entgo.io/contrib/entgql"
-	"entgo.io/ent/dialect/sql"
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/ent/question"
 	entSubmission "github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/graph/model"
 	"github.com/database-playground/backend-v2/internal/auth"
+	"github.com/database-playground/backend-v2/internal/scope"
 	"github.com/database-playground/backend-v2/internal/submission"
 	"github.com/database-playground/backend-v2/models"
 )
@@ -142,6 +142,40 @@ func (r *queryResolver) Database(ctx context.Context, id int) (*ent.Database, er
 	return database, nil
 }
 
+// Submission is the resolver for the submission field.
+func (r *queryResolver) Submission(ctx context.Context, id int) (*ent.Submission, error) {
+	entClient := r.EntClient(ctx)
+
+	tokenInfo, ok := auth.GetUser(ctx)
+	if !ok {
+		return nil, defs.ErrUnauthorized
+	}
+
+	submission, err := entClient.Submission.Get(ctx, id)
+	if ent.IsNotFound(err) {
+		return nil, defs.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the user has the "submission:read" scope
+	// If no, check if the submission is owned by the user
+	if !scope.ShouldAllow("submission:read", tokenInfo.Scopes) {
+		user, err := submission.User(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if user.ID != tokenInfo.UserID {
+			return nil, defs.ErrForbidden
+		}
+
+		return submission, nil
+	}
+
+	return submission, nil
+}
+
 // ReferenceAnswerResult is the resolver for the referenceAnswerResult field.
 func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Question) (*models.SQLExecutionResult, error) {
 	database, err := obj.QueryDatabase().Only(ctx)
@@ -161,7 +195,7 @@ func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Q
 }
 
 // SubmissionsOfQuestion is the resolver for the submissionsOfQuestion field.
-func (r *userResolver) SubmissionsOfQuestion(ctx context.Context, obj *ent.User, questionID int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *model.SubmissionsOfQuestionWhereInput) (*ent.SubmissionConnection, error) {
+func (r *userResolver) SubmissionsOfQuestion(ctx context.Context, obj *ent.User, questionID int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *model.SubmissionsOfQuestionWhereInput, orderBy *ent.SubmissionOrder) (*ent.SubmissionConnection, error) {
 	query := obj.QuerySubmissions()
 	query.Where(entSubmission.HasQuestionWith(question.ID(questionID)))
 
@@ -171,9 +205,7 @@ func (r *userResolver) SubmissionsOfQuestion(ctx context.Context, obj *ent.User,
 		}
 	}
 
-	query.Order(entSubmission.BySubmittedAt(sql.OrderDesc()))
-
-	return query.Paginate(ctx, after, first, before, last)
+	return query.Paginate(ctx, after, first, before, last, ent.WithSubmissionOrder(orderBy))
 }
 
 // Mutation returns MutationResolver implementation.

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/database-playground/backend-v2/ent"
-	"github.com/database-playground/backend-v2/ent/points"
+	"github.com/database-playground/backend-v2/ent/point"
 	"github.com/database-playground/backend-v2/ent/user"
 	"github.com/database-playground/backend-v2/internal/events"
 	"github.com/database-playground/backend-v2/internal/setup"
@@ -43,7 +43,7 @@ func createLoginEvent(t *testing.T, client *ent.Client, userID int, triggeredAt 
 
 	ctx := context.Background()
 
-	_, err := client.Events.Create().
+	_, err := client.Event.Create().
 		SetUserID(userID).
 		SetType(string(events.EventTypeLogin)).
 		SetTriggeredAt(triggeredAt).
@@ -58,7 +58,7 @@ func createPointsRecord(t *testing.T, client *ent.Client, userID int, descriptio
 	ctx := context.Background()
 
 	// Create the points record with specified created_at time
-	_, err := client.Points.Create().
+	_, err := client.Point.Create().
 		SetUserID(userID).
 		SetDescription(description).
 		SetPoints(pointsValue).
@@ -84,9 +84,9 @@ func TestGrantDailyLoginPoints_Success(t *testing.T) {
 	require.True(t, granted)
 
 	// Verify points were created
-	pointsRecords, err := client.Points.Query().
-		Where(points.HasUserWith(user.IDEQ(userID))).
-		Where(points.DescriptionEQ(events.PointDescriptionDailyLogin)).
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		Where(point.DescriptionEQ(events.PointDescriptionDailyLogin)).
 		All(ctx)
 	require.NoError(t, err)
 	require.Len(t, pointsRecords, 1)
@@ -113,9 +113,9 @@ func TestGrantDailyLoginPoints_AlreadyGrantedToday(t *testing.T) {
 	require.False(t, granted)
 
 	// Verify only one points record exists
-	pointsRecords, err := client.Points.Query().
-		Where(points.HasUserWith(user.IDEQ(userID))).
-		Where(points.DescriptionEQ(events.PointDescriptionDailyLogin)).
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		Where(point.DescriptionEQ(events.PointDescriptionDailyLogin)).
 		All(ctx)
 	require.NoError(t, err)
 	require.Len(t, pointsRecords, 1)
@@ -138,9 +138,9 @@ func TestGrantDailyLoginPoints_NoLoginToday(t *testing.T) {
 	require.False(t, granted)
 
 	// Verify no points record was created
-	pointsRecords, err := client.Points.Query().
-		Where(points.HasUserWith(user.IDEQ(userID))).
-		Where(points.DescriptionEQ(events.PointDescriptionDailyLogin)).
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		Where(point.DescriptionEQ(events.PointDescriptionDailyLogin)).
 		All(ctx)
 	require.NoError(t, err)
 	require.Len(t, pointsRecords, 0)
@@ -167,9 +167,9 @@ func TestGrantDailyLoginPoints_OldPointsRecordExists(t *testing.T) {
 	require.True(t, granted)
 
 	// Verify two points records exist now
-	pointsRecords, err := client.Points.Query().
-		Where(points.HasUserWith(user.IDEQ(userID))).
-		Where(points.DescriptionEQ(events.PointDescriptionDailyLogin)).
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		Where(point.DescriptionEQ(events.PointDescriptionDailyLogin)).
 		All(ctx)
 	require.NoError(t, err)
 	require.Len(t, pointsRecords, 2)
@@ -195,9 +195,9 @@ func TestGrantWeeklyLoginPoints_Success(t *testing.T) {
 	require.True(t, granted)
 
 	// Verify points were created
-	pointsRecords, err := client.Points.Query().
-		Where(points.HasUserWith(user.IDEQ(userID))).
-		Where(points.DescriptionEQ(events.PointDescriptionWeeklyLogin)).
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		Where(point.DescriptionEQ(events.PointDescriptionWeeklyLogin)).
 		All(ctx)
 	require.NoError(t, err)
 	require.Len(t, pointsRecords, 1)
@@ -227,9 +227,9 @@ func TestGrantWeeklyLoginPoints_AlreadyGrantedThisWeek(t *testing.T) {
 	require.False(t, granted)
 
 	// Verify only one points record exists
-	pointsRecords, err := client.Points.Query().
-		Where(points.HasUserWith(user.IDEQ(userID))).
-		Where(points.DescriptionEQ(events.PointDescriptionWeeklyLogin)).
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		Where(point.DescriptionEQ(events.PointDescriptionWeeklyLogin)).
 		All(ctx)
 	require.NoError(t, err)
 	require.Len(t, pointsRecords, 1)
@@ -255,9 +255,9 @@ func TestGrantWeeklyLoginPoints_InsufficientLoginDays(t *testing.T) {
 	require.False(t, granted)
 
 	// Verify no points record was created
-	pointsRecords, err := client.Points.Query().
-		Where(points.HasUserWith(user.IDEQ(userID))).
-		Where(points.DescriptionEQ(events.PointDescriptionWeeklyLogin)).
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		Where(point.DescriptionEQ(events.PointDescriptionWeeklyLogin)).
 		All(ctx)
 	require.NoError(t, err)
 	require.Len(t, pointsRecords, 0)
@@ -278,9 +278,9 @@ func TestGrantWeeklyLoginPoints_NoLoginEvents(t *testing.T) {
 	require.False(t, granted)
 
 	// Verify no points record was created
-	pointsRecords, err := client.Points.Query().
-		Where(points.HasUserWith(user.IDEQ(userID))).
-		Where(points.DescriptionEQ(events.PointDescriptionWeeklyLogin)).
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		Where(point.DescriptionEQ(events.PointDescriptionWeeklyLogin)).
 		All(ctx)
 	require.NoError(t, err)
 	require.Len(t, pointsRecords, 0)
@@ -332,9 +332,9 @@ func TestGrantWeeklyLoginPoints_MultipleLoginsPerDay(t *testing.T) {
 			require.Equal(t, tc.shouldGrant, granted)
 
 			// Verify points were created or not created based on expectation
-			pointsRecords, err := client.Points.Query().
-				Where(points.HasUserWith(user.IDEQ(userID))).
-				Where(points.DescriptionEQ(events.PointDescriptionWeeklyLogin)).
+			pointsRecords, err := client.Point.Query().
+				Where(point.HasUserWith(user.IDEQ(userID))).
+				Where(point.DescriptionEQ(events.PointDescriptionWeeklyLogin)).
 				All(ctx)
 			require.NoError(t, err)
 
@@ -372,9 +372,9 @@ func TestGrantWeeklyLoginPoints_OldWeeklyPointsRecordExists(t *testing.T) {
 	require.True(t, granted)
 
 	// Verify two points records exist now
-	pointsRecords, err := client.Points.Query().
-		Where(points.HasUserWith(user.IDEQ(userID))).
-		Where(points.DescriptionEQ(events.PointDescriptionWeeklyLogin)).
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		Where(point.DescriptionEQ(events.PointDescriptionWeeklyLogin)).
 		All(ctx)
 	require.NoError(t, err)
 	require.Len(t, pointsRecords, 2)

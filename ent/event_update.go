@@ -11,32 +11,32 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/database-playground/backend-v2/ent/events"
+	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
-// EventsUpdate is the builder for updating Events entities.
-type EventsUpdate struct {
+// EventUpdate is the builder for updating Event entities.
+type EventUpdate struct {
 	config
 	hooks    []Hook
-	mutation *EventsMutation
+	mutation *EventMutation
 }
 
-// Where appends a list predicates to the EventsUpdate builder.
-func (_u *EventsUpdate) Where(ps ...predicate.Events) *EventsUpdate {
+// Where appends a list predicates to the EventUpdate builder.
+func (_u *EventUpdate) Where(ps ...predicate.Event) *EventUpdate {
 	_u.mutation.Where(ps...)
 	return _u
 }
 
 // SetUserID sets the "user_id" field.
-func (_u *EventsUpdate) SetUserID(v int) *EventsUpdate {
+func (_u *EventUpdate) SetUserID(v int) *EventUpdate {
 	_u.mutation.SetUserID(v)
 	return _u
 }
 
 // SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (_u *EventsUpdate) SetNillableUserID(v *int) *EventsUpdate {
+func (_u *EventUpdate) SetNillableUserID(v *int) *EventUpdate {
 	if v != nil {
 		_u.SetUserID(*v)
 	}
@@ -44,13 +44,13 @@ func (_u *EventsUpdate) SetNillableUserID(v *int) *EventsUpdate {
 }
 
 // SetType sets the "type" field.
-func (_u *EventsUpdate) SetType(v string) *EventsUpdate {
+func (_u *EventUpdate) SetType(v string) *EventUpdate {
 	_u.mutation.SetType(v)
 	return _u
 }
 
 // SetNillableType sets the "type" field if the given value is not nil.
-func (_u *EventsUpdate) SetNillableType(v *string) *EventsUpdate {
+func (_u *EventUpdate) SetNillableType(v *string) *EventUpdate {
 	if v != nil {
 		_u.SetType(*v)
 	}
@@ -58,13 +58,13 @@ func (_u *EventsUpdate) SetNillableType(v *string) *EventsUpdate {
 }
 
 // SetTriggeredAt sets the "triggered_at" field.
-func (_u *EventsUpdate) SetTriggeredAt(v time.Time) *EventsUpdate {
+func (_u *EventUpdate) SetTriggeredAt(v time.Time) *EventUpdate {
 	_u.mutation.SetTriggeredAt(v)
 	return _u
 }
 
 // SetNillableTriggeredAt sets the "triggered_at" field if the given value is not nil.
-func (_u *EventsUpdate) SetNillableTriggeredAt(v *time.Time) *EventsUpdate {
+func (_u *EventUpdate) SetNillableTriggeredAt(v *time.Time) *EventUpdate {
 	if v != nil {
 		_u.SetTriggeredAt(*v)
 	}
@@ -72,40 +72,40 @@ func (_u *EventsUpdate) SetNillableTriggeredAt(v *time.Time) *EventsUpdate {
 }
 
 // SetPayload sets the "payload" field.
-func (_u *EventsUpdate) SetPayload(v map[string]interface{}) *EventsUpdate {
+func (_u *EventUpdate) SetPayload(v map[string]interface{}) *EventUpdate {
 	_u.mutation.SetPayload(v)
 	return _u
 }
 
 // ClearPayload clears the value of the "payload" field.
-func (_u *EventsUpdate) ClearPayload() *EventsUpdate {
+func (_u *EventUpdate) ClearPayload() *EventUpdate {
 	_u.mutation.ClearPayload()
 	return _u
 }
 
 // SetUser sets the "user" edge to the User entity.
-func (_u *EventsUpdate) SetUser(v *User) *EventsUpdate {
+func (_u *EventUpdate) SetUser(v *User) *EventUpdate {
 	return _u.SetUserID(v.ID)
 }
 
-// Mutation returns the EventsMutation object of the builder.
-func (_u *EventsUpdate) Mutation() *EventsMutation {
+// Mutation returns the EventMutation object of the builder.
+func (_u *EventUpdate) Mutation() *EventMutation {
 	return _u.mutation
 }
 
 // ClearUser clears the "user" edge to the User entity.
-func (_u *EventsUpdate) ClearUser() *EventsUpdate {
+func (_u *EventUpdate) ClearUser() *EventUpdate {
 	_u.mutation.ClearUser()
 	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (_u *EventsUpdate) Save(ctx context.Context) (int, error) {
+func (_u *EventUpdate) Save(ctx context.Context) (int, error) {
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *EventsUpdate) SaveX(ctx context.Context) int {
+func (_u *EventUpdate) SaveX(ctx context.Context) int {
 	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -114,36 +114,36 @@ func (_u *EventsUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (_u *EventsUpdate) Exec(ctx context.Context) error {
+func (_u *EventUpdate) Exec(ctx context.Context) error {
 	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *EventsUpdate) ExecX(ctx context.Context) {
+func (_u *EventUpdate) ExecX(ctx context.Context) {
 	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *EventsUpdate) check() error {
+func (_u *EventUpdate) check() error {
 	if v, ok := _u.mutation.GetType(); ok {
-		if err := events.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Events.type": %w`, err)}
+		if err := event.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Event.type": %w`, err)}
 		}
 	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Events.user"`)
+		return errors.New(`ent: clearing a required unique edge "Event.user"`)
 	}
 	return nil
 }
 
-func (_u *EventsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+func (_u *EventUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(events.Table, events.Columns, sqlgraph.NewFieldSpec(events.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(event.Table, event.Columns, sqlgraph.NewFieldSpec(event.FieldID, field.TypeInt))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -152,23 +152,23 @@ func (_u *EventsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 	}
 	if value, ok := _u.mutation.GetType(); ok {
-		_spec.SetField(events.FieldType, field.TypeString, value)
+		_spec.SetField(event.FieldType, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.TriggeredAt(); ok {
-		_spec.SetField(events.FieldTriggeredAt, field.TypeTime, value)
+		_spec.SetField(event.FieldTriggeredAt, field.TypeTime, value)
 	}
 	if value, ok := _u.mutation.Payload(); ok {
-		_spec.SetField(events.FieldPayload, field.TypeJSON, value)
+		_spec.SetField(event.FieldPayload, field.TypeJSON, value)
 	}
 	if _u.mutation.PayloadCleared() {
-		_spec.ClearField(events.FieldPayload, field.TypeJSON)
+		_spec.ClearField(event.FieldPayload, field.TypeJSON)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   events.UserTable,
-			Columns: []string{events.UserColumn},
+			Table:   event.UserTable,
+			Columns: []string{event.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
@@ -180,8 +180,8 @@ func (_u *EventsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   events.UserTable,
-			Columns: []string{events.UserColumn},
+			Table:   event.UserTable,
+			Columns: []string{event.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
@@ -194,7 +194,7 @@ func (_u *EventsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
-			err = &NotFoundError{events.Label}
+			err = &NotFoundError{event.Label}
 		} else if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -204,22 +204,22 @@ func (_u *EventsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	return _node, nil
 }
 
-// EventsUpdateOne is the builder for updating a single Events entity.
-type EventsUpdateOne struct {
+// EventUpdateOne is the builder for updating a single Event entity.
+type EventUpdateOne struct {
 	config
 	fields   []string
 	hooks    []Hook
-	mutation *EventsMutation
+	mutation *EventMutation
 }
 
 // SetUserID sets the "user_id" field.
-func (_u *EventsUpdateOne) SetUserID(v int) *EventsUpdateOne {
+func (_u *EventUpdateOne) SetUserID(v int) *EventUpdateOne {
 	_u.mutation.SetUserID(v)
 	return _u
 }
 
 // SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (_u *EventsUpdateOne) SetNillableUserID(v *int) *EventsUpdateOne {
+func (_u *EventUpdateOne) SetNillableUserID(v *int) *EventUpdateOne {
 	if v != nil {
 		_u.SetUserID(*v)
 	}
@@ -227,13 +227,13 @@ func (_u *EventsUpdateOne) SetNillableUserID(v *int) *EventsUpdateOne {
 }
 
 // SetType sets the "type" field.
-func (_u *EventsUpdateOne) SetType(v string) *EventsUpdateOne {
+func (_u *EventUpdateOne) SetType(v string) *EventUpdateOne {
 	_u.mutation.SetType(v)
 	return _u
 }
 
 // SetNillableType sets the "type" field if the given value is not nil.
-func (_u *EventsUpdateOne) SetNillableType(v *string) *EventsUpdateOne {
+func (_u *EventUpdateOne) SetNillableType(v *string) *EventUpdateOne {
 	if v != nil {
 		_u.SetType(*v)
 	}
@@ -241,13 +241,13 @@ func (_u *EventsUpdateOne) SetNillableType(v *string) *EventsUpdateOne {
 }
 
 // SetTriggeredAt sets the "triggered_at" field.
-func (_u *EventsUpdateOne) SetTriggeredAt(v time.Time) *EventsUpdateOne {
+func (_u *EventUpdateOne) SetTriggeredAt(v time.Time) *EventUpdateOne {
 	_u.mutation.SetTriggeredAt(v)
 	return _u
 }
 
 // SetNillableTriggeredAt sets the "triggered_at" field if the given value is not nil.
-func (_u *EventsUpdateOne) SetNillableTriggeredAt(v *time.Time) *EventsUpdateOne {
+func (_u *EventUpdateOne) SetNillableTriggeredAt(v *time.Time) *EventUpdateOne {
 	if v != nil {
 		_u.SetTriggeredAt(*v)
 	}
@@ -255,53 +255,53 @@ func (_u *EventsUpdateOne) SetNillableTriggeredAt(v *time.Time) *EventsUpdateOne
 }
 
 // SetPayload sets the "payload" field.
-func (_u *EventsUpdateOne) SetPayload(v map[string]interface{}) *EventsUpdateOne {
+func (_u *EventUpdateOne) SetPayload(v map[string]interface{}) *EventUpdateOne {
 	_u.mutation.SetPayload(v)
 	return _u
 }
 
 // ClearPayload clears the value of the "payload" field.
-func (_u *EventsUpdateOne) ClearPayload() *EventsUpdateOne {
+func (_u *EventUpdateOne) ClearPayload() *EventUpdateOne {
 	_u.mutation.ClearPayload()
 	return _u
 }
 
 // SetUser sets the "user" edge to the User entity.
-func (_u *EventsUpdateOne) SetUser(v *User) *EventsUpdateOne {
+func (_u *EventUpdateOne) SetUser(v *User) *EventUpdateOne {
 	return _u.SetUserID(v.ID)
 }
 
-// Mutation returns the EventsMutation object of the builder.
-func (_u *EventsUpdateOne) Mutation() *EventsMutation {
+// Mutation returns the EventMutation object of the builder.
+func (_u *EventUpdateOne) Mutation() *EventMutation {
 	return _u.mutation
 }
 
 // ClearUser clears the "user" edge to the User entity.
-func (_u *EventsUpdateOne) ClearUser() *EventsUpdateOne {
+func (_u *EventUpdateOne) ClearUser() *EventUpdateOne {
 	_u.mutation.ClearUser()
 	return _u
 }
 
-// Where appends a list predicates to the EventsUpdate builder.
-func (_u *EventsUpdateOne) Where(ps ...predicate.Events) *EventsUpdateOne {
+// Where appends a list predicates to the EventUpdate builder.
+func (_u *EventUpdateOne) Where(ps ...predicate.Event) *EventUpdateOne {
 	_u.mutation.Where(ps...)
 	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (_u *EventsUpdateOne) Select(field string, fields ...string) *EventsUpdateOne {
+func (_u *EventUpdateOne) Select(field string, fields ...string) *EventUpdateOne {
 	_u.fields = append([]string{field}, fields...)
 	return _u
 }
 
-// Save executes the query and returns the updated Events entity.
-func (_u *EventsUpdateOne) Save(ctx context.Context) (*Events, error) {
+// Save executes the query and returns the updated Event entity.
+func (_u *EventUpdateOne) Save(ctx context.Context) (*Event, error) {
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *EventsUpdateOne) SaveX(ctx context.Context) *Events {
+func (_u *EventUpdateOne) SaveX(ctx context.Context) *Event {
 	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -310,49 +310,49 @@ func (_u *EventsUpdateOne) SaveX(ctx context.Context) *Events {
 }
 
 // Exec executes the query on the entity.
-func (_u *EventsUpdateOne) Exec(ctx context.Context) error {
+func (_u *EventUpdateOne) Exec(ctx context.Context) error {
 	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *EventsUpdateOne) ExecX(ctx context.Context) {
+func (_u *EventUpdateOne) ExecX(ctx context.Context) {
 	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *EventsUpdateOne) check() error {
+func (_u *EventUpdateOne) check() error {
 	if v, ok := _u.mutation.GetType(); ok {
-		if err := events.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Events.type": %w`, err)}
+		if err := event.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Event.type": %w`, err)}
 		}
 	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Events.user"`)
+		return errors.New(`ent: clearing a required unique edge "Event.user"`)
 	}
 	return nil
 }
 
-func (_u *EventsUpdateOne) sqlSave(ctx context.Context) (_node *Events, err error) {
+func (_u *EventUpdateOne) sqlSave(ctx context.Context) (_node *Event, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(events.Table, events.Columns, sqlgraph.NewFieldSpec(events.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(event.Table, event.Columns, sqlgraph.NewFieldSpec(event.FieldID, field.TypeInt))
 	id, ok := _u.mutation.ID()
 	if !ok {
-		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Events.id" for update`)}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Event.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
 	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, events.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, event.FieldID)
 		for _, f := range fields {
-			if !events.ValidColumn(f) {
+			if !event.ValidColumn(f) {
 				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 			}
-			if f != events.FieldID {
+			if f != event.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, f)
 			}
 		}
@@ -365,23 +365,23 @@ func (_u *EventsUpdateOne) sqlSave(ctx context.Context) (_node *Events, err erro
 		}
 	}
 	if value, ok := _u.mutation.GetType(); ok {
-		_spec.SetField(events.FieldType, field.TypeString, value)
+		_spec.SetField(event.FieldType, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.TriggeredAt(); ok {
-		_spec.SetField(events.FieldTriggeredAt, field.TypeTime, value)
+		_spec.SetField(event.FieldTriggeredAt, field.TypeTime, value)
 	}
 	if value, ok := _u.mutation.Payload(); ok {
-		_spec.SetField(events.FieldPayload, field.TypeJSON, value)
+		_spec.SetField(event.FieldPayload, field.TypeJSON, value)
 	}
 	if _u.mutation.PayloadCleared() {
-		_spec.ClearField(events.FieldPayload, field.TypeJSON)
+		_spec.ClearField(event.FieldPayload, field.TypeJSON)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   events.UserTable,
-			Columns: []string{events.UserColumn},
+			Table:   event.UserTable,
+			Columns: []string{event.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
@@ -393,8 +393,8 @@ func (_u *EventsUpdateOne) sqlSave(ctx context.Context) (_node *Events, err erro
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   events.UserTable,
-			Columns: []string{events.UserColumn},
+			Table:   event.UserTable,
+			Columns: []string{event.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
@@ -405,12 +405,12 @@ func (_u *EventsUpdateOne) sqlSave(ctx context.Context) (_node *Events, err erro
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &Events{config: _u.config}
+	_node = &Event{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
-			err = &NotFoundError{events.Label}
+			err = &NotFoundError{event.Label}
 		} else if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}

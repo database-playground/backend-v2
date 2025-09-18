@@ -8,30 +8,30 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/database-playground/backend-v2/ent/points"
+	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/predicate"
 )
 
-// PointsDelete is the builder for deleting a Points entity.
-type PointsDelete struct {
+// EventDelete is the builder for deleting a Event entity.
+type EventDelete struct {
 	config
 	hooks    []Hook
-	mutation *PointsMutation
+	mutation *EventMutation
 }
 
-// Where appends a list predicates to the PointsDelete builder.
-func (_d *PointsDelete) Where(ps ...predicate.Points) *PointsDelete {
+// Where appends a list predicates to the EventDelete builder.
+func (_d *EventDelete) Where(ps ...predicate.Event) *EventDelete {
 	_d.mutation.Where(ps...)
 	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (_d *PointsDelete) Exec(ctx context.Context) (int, error) {
+func (_d *EventDelete) Exec(ctx context.Context) (int, error) {
 	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_d *PointsDelete) ExecX(ctx context.Context) int {
+func (_d *EventDelete) ExecX(ctx context.Context) int {
 	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
@@ -39,8 +39,8 @@ func (_d *PointsDelete) ExecX(ctx context.Context) int {
 	return n
 }
 
-func (_d *PointsDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(points.Table, sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt))
+func (_d *EventDelete) sqlExec(ctx context.Context) (int, error) {
+	_spec := sqlgraph.NewDeleteSpec(event.Table, sqlgraph.NewFieldSpec(event.FieldID, field.TypeInt))
 	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -56,32 +56,32 @@ func (_d *PointsDelete) sqlExec(ctx context.Context) (int, error) {
 	return affected, err
 }
 
-// PointsDeleteOne is the builder for deleting a single Points entity.
-type PointsDeleteOne struct {
-	_d *PointsDelete
+// EventDeleteOne is the builder for deleting a single Event entity.
+type EventDeleteOne struct {
+	_d *EventDelete
 }
 
-// Where appends a list predicates to the PointsDelete builder.
-func (_d *PointsDeleteOne) Where(ps ...predicate.Points) *PointsDeleteOne {
+// Where appends a list predicates to the EventDelete builder.
+func (_d *EventDeleteOne) Where(ps ...predicate.Event) *EventDeleteOne {
 	_d._d.mutation.Where(ps...)
 	return _d
 }
 
 // Exec executes the deletion query.
-func (_d *PointsDeleteOne) Exec(ctx context.Context) error {
+func (_d *EventDeleteOne) Exec(ctx context.Context) error {
 	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
 	case n == 0:
-		return &NotFoundError{points.Label}
+		return &NotFoundError{event.Label}
 	default:
 		return nil
 	}
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_d *PointsDeleteOne) ExecX(ctx context.Context) {
+func (_d *EventDeleteOne) ExecX(ctx context.Context) {
 	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}

@@ -6,7 +6,6 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"entgo.io/contrib/entgql"
 	"github.com/database-playground/backend-v2/ent"
@@ -34,11 +33,11 @@ func (r *queryResolver) Databases(ctx context.Context) ([]*ent.Database, error) 
 	return entClient.Database.Query().All(ctx)
 }
 
-// EventsSlice is the resolver for the eventsSlice field.
-func (r *queryResolver) EventsSlice(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.EventsWhereInput) (*ent.EventsConnection, error) {
+// Events is the resolver for the events field.
+func (r *queryResolver) Events(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventOrder, where *ent.EventWhereInput) (*ent.EventConnection, error) {
 	entClient := r.EntClient(ctx)
 
-	return entClient.Events.Query().Paginate(ctx, after, first, before, last, ent.WithEventsFilter(where.Filter))
+	return entClient.Event.Query().Paginate(ctx, after, first, before, last, ent.WithEventOrder(orderBy), ent.WithEventFilter(where.Filter))
 }
 
 // Groups is the resolver for the groups field.
@@ -48,11 +47,11 @@ func (r *queryResolver) Groups(ctx context.Context) ([]*ent.Group, error) {
 	return entClient.Group.Query().All(ctx)
 }
 
-// PointsSlice is the resolver for the pointsSlice field.
-func (r *queryResolver) PointsSlice(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.PointsWhereInput) (*ent.PointsConnection, error) {
+// Points is the resolver for the points field.
+func (r *queryResolver) Points(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PointOrder, where *ent.PointWhereInput) (*ent.PointConnection, error) {
 	entClient := r.EntClient(ctx)
 
-	return entClient.Points.Query().Paginate(ctx, after, first, before, last, ent.WithPointsFilter(where.Filter))
+	return entClient.Point.Query().Paginate(ctx, after, first, before, last, ent.WithPointOrder(orderBy), ent.WithPointFilter(where.Filter))
 }
 
 // Questions is the resolver for the questions field.
@@ -70,8 +69,10 @@ func (r *queryResolver) ScopeSets(ctx context.Context) ([]*ent.ScopeSet, error) 
 }
 
 // Submissions is the resolver for the submissions field.
-func (r *queryResolver) Submissions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.SubmissionWhereInput) (*ent.SubmissionConnection, error) {
-	panic(fmt.Errorf("not implemented: Submissions - submissions"))
+func (r *queryResolver) Submissions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.SubmissionOrder, where *ent.SubmissionWhereInput) (*ent.SubmissionConnection, error) {
+	entClient := r.EntClient(ctx)
+
+	return entClient.Submission.Query().Paginate(ctx, after, first, before, last, ent.WithSubmissionOrder(orderBy), ent.WithSubmissionFilter(where.Filter))
 }
 
 // Users is the resolver for the users field.

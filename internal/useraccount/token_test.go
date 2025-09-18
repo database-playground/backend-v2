@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/database-playground/backend-v2/ent/events"
+	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/internal/auth"
 	events_pkg "github.com/database-playground/backend-v2/internal/events"
@@ -286,9 +286,9 @@ func TestGrantToken_LoginEventTriggered(t *testing.T) {
 	require.NotEmpty(t, token)
 
 	// Verify login event was created in database
-	loginEvents, err := client.Events.Query().
-		Where(events.UserIDEQ(user.ID)).
-		Where(events.TypeEQ(string(events_pkg.EventTypeLogin))).
+	loginEvents, err := client.Event.Query().
+		Where(event.UserIDEQ(user.ID)).
+		Where(event.TypeEQ(string(events_pkg.EventTypeLogin))).
 		All(context)
 	require.NoError(t, err)
 	require.Len(t, loginEvents, 1)
@@ -338,9 +338,9 @@ func TestGrantToken_ImpersonationEventTriggered(t *testing.T) {
 	require.NotEmpty(t, token)
 
 	// Verify impersonation event was created in database
-	impersonationEvents, err := client.Events.Query().
-		Where(events.UserIDEQ(user.ID)).
-		Where(events.TypeEQ(string(events_pkg.EventTypeImpersonated))).
+	impersonationEvents, err := client.Event.Query().
+		Where(event.UserIDEQ(user.ID)).
+		Where(event.TypeEQ(string(events_pkg.EventTypeImpersonated))).
 		All(context)
 	require.NoError(t, err)
 	require.Len(t, impersonationEvents, 1)
@@ -358,9 +358,9 @@ func TestGrantToken_ImpersonationEventTriggered(t *testing.T) {
 	assert.NotZero(t, impersonationEvent.TriggeredAt)
 
 	// Verify no login event was created (impersonation takes precedence)
-	loginEvents, err := client.Events.Query().
-		Where(events.UserIDEQ(user.ID)).
-		Where(events.TypeEQ(string(events_pkg.EventTypeLogin))).
+	loginEvents, err := client.Event.Query().
+		Where(event.UserIDEQ(user.ID)).
+		Where(event.TypeEQ(string(events_pkg.EventTypeLogin))).
 		All(context)
 	require.NoError(t, err)
 	require.Len(t, loginEvents, 0)
@@ -414,9 +414,9 @@ func TestGrantToken_MultipleTokensCreateMultipleEvents(t *testing.T) {
 	require.NotEmpty(t, token3)
 
 	// Verify three login events were created
-	loginEvents, err := client.Events.Query().
-		Where(events.UserIDEQ(user.ID)).
-		Where(events.TypeEQ(string(events_pkg.EventTypeLogin))).
+	loginEvents, err := client.Event.Query().
+		Where(event.UserIDEQ(user.ID)).
+		Where(event.TypeEQ(string(events_pkg.EventTypeLogin))).
 		All(context)
 	require.NoError(t, err)
 	require.Len(t, loginEvents, 3)

@@ -16,9 +16,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/database-playground/backend-v2/ent/database"
-	"github.com/database-playground/backend-v2/ent/events"
+	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
-	"github.com/database-playground/backend-v2/ent/points"
+	"github.com/database-playground/backend-v2/ent/point"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/scopeset"
 	"github.com/database-playground/backend-v2/ent/submission"
@@ -32,12 +32,12 @@ type Client struct {
 	Schema *migrate.Schema
 	// Database is the client for interacting with the Database builders.
 	Database *DatabaseClient
-	// Events is the client for interacting with the Events builders.
-	Events *EventsClient
+	// Event is the client for interacting with the Event builders.
+	Event *EventClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
-	// Points is the client for interacting with the Points builders.
-	Points *PointsClient
+	// Point is the client for interacting with the Point builders.
+	Point *PointClient
 	// Question is the client for interacting with the Question builders.
 	Question *QuestionClient
 	// ScopeSet is the client for interacting with the ScopeSet builders.
@@ -58,9 +58,9 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Database = NewDatabaseClient(c.config)
-	c.Events = NewEventsClient(c.config)
+	c.Event = NewEventClient(c.config)
 	c.Group = NewGroupClient(c.config)
-	c.Points = NewPointsClient(c.config)
+	c.Point = NewPointClient(c.config)
 	c.Question = NewQuestionClient(c.config)
 	c.ScopeSet = NewScopeSetClient(c.config)
 	c.Submission = NewSubmissionClient(c.config)
@@ -158,9 +158,9 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:        ctx,
 		config:     cfg,
 		Database:   NewDatabaseClient(cfg),
-		Events:     NewEventsClient(cfg),
+		Event:      NewEventClient(cfg),
 		Group:      NewGroupClient(cfg),
-		Points:     NewPointsClient(cfg),
+		Point:      NewPointClient(cfg),
 		Question:   NewQuestionClient(cfg),
 		ScopeSet:   NewScopeSetClient(cfg),
 		Submission: NewSubmissionClient(cfg),
@@ -185,9 +185,9 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:        ctx,
 		config:     cfg,
 		Database:   NewDatabaseClient(cfg),
-		Events:     NewEventsClient(cfg),
+		Event:      NewEventClient(cfg),
 		Group:      NewGroupClient(cfg),
-		Points:     NewPointsClient(cfg),
+		Point:      NewPointClient(cfg),
 		Question:   NewQuestionClient(cfg),
 		ScopeSet:   NewScopeSetClient(cfg),
 		Submission: NewSubmissionClient(cfg),
@@ -221,7 +221,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Database, c.Events, c.Group, c.Points, c.Question, c.ScopeSet, c.Submission,
+		c.Database, c.Event, c.Group, c.Point, c.Question, c.ScopeSet, c.Submission,
 		c.User,
 	} {
 		n.Use(hooks...)
@@ -232,7 +232,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Database, c.Events, c.Group, c.Points, c.Question, c.ScopeSet, c.Submission,
+		c.Database, c.Event, c.Group, c.Point, c.Question, c.ScopeSet, c.Submission,
 		c.User,
 	} {
 		n.Intercept(interceptors...)
@@ -244,12 +244,12 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *DatabaseMutation:
 		return c.Database.mutate(ctx, m)
-	case *EventsMutation:
-		return c.Events.mutate(ctx, m)
+	case *EventMutation:
+		return c.Event.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
-	case *PointsMutation:
-		return c.Points.mutate(ctx, m)
+	case *PointMutation:
+		return c.Point.mutate(ctx, m)
 	case *QuestionMutation:
 		return c.Question.mutate(ctx, m)
 	case *ScopeSetMutation:
@@ -412,107 +412,107 @@ func (c *DatabaseClient) mutate(ctx context.Context, m *DatabaseMutation) (Value
 	}
 }
 
-// EventsClient is a client for the Events schema.
-type EventsClient struct {
+// EventClient is a client for the Event schema.
+type EventClient struct {
 	config
 }
 
-// NewEventsClient returns a client for the Events from the given config.
-func NewEventsClient(c config) *EventsClient {
-	return &EventsClient{config: c}
+// NewEventClient returns a client for the Event from the given config.
+func NewEventClient(c config) *EventClient {
+	return &EventClient{config: c}
 }
 
 // Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `events.Hooks(f(g(h())))`.
-func (c *EventsClient) Use(hooks ...Hook) {
-	c.hooks.Events = append(c.hooks.Events, hooks...)
+// A call to `Use(f, g, h)` equals to `event.Hooks(f(g(h())))`.
+func (c *EventClient) Use(hooks ...Hook) {
+	c.hooks.Event = append(c.hooks.Event, hooks...)
 }
 
 // Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `events.Intercept(f(g(h())))`.
-func (c *EventsClient) Intercept(interceptors ...Interceptor) {
-	c.inters.Events = append(c.inters.Events, interceptors...)
+// A call to `Intercept(f, g, h)` equals to `event.Intercept(f(g(h())))`.
+func (c *EventClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Event = append(c.inters.Event, interceptors...)
 }
 
-// Create returns a builder for creating a Events entity.
-func (c *EventsClient) Create() *EventsCreate {
-	mutation := newEventsMutation(c.config, OpCreate)
-	return &EventsCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Create returns a builder for creating a Event entity.
+func (c *EventClient) Create() *EventCreate {
+	mutation := newEventMutation(c.config, OpCreate)
+	return &EventCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// CreateBulk returns a builder for creating a bulk of Events entities.
-func (c *EventsClient) CreateBulk(builders ...*EventsCreate) *EventsCreateBulk {
-	return &EventsCreateBulk{config: c.config, builders: builders}
+// CreateBulk returns a builder for creating a bulk of Event entities.
+func (c *EventClient) CreateBulk(builders ...*EventCreate) *EventCreateBulk {
+	return &EventCreateBulk{config: c.config, builders: builders}
 }
 
 // MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
 // a builder and applies setFunc on it.
-func (c *EventsClient) MapCreateBulk(slice any, setFunc func(*EventsCreate, int)) *EventsCreateBulk {
+func (c *EventClient) MapCreateBulk(slice any, setFunc func(*EventCreate, int)) *EventCreateBulk {
 	rv := reflect.ValueOf(slice)
 	if rv.Kind() != reflect.Slice {
-		return &EventsCreateBulk{err: fmt.Errorf("calling to EventsClient.MapCreateBulk with wrong type %T, need slice", slice)}
+		return &EventCreateBulk{err: fmt.Errorf("calling to EventClient.MapCreateBulk with wrong type %T, need slice", slice)}
 	}
-	builders := make([]*EventsCreate, rv.Len())
+	builders := make([]*EventCreate, rv.Len())
 	for i := 0; i < rv.Len(); i++ {
 		builders[i] = c.Create()
 		setFunc(builders[i], i)
 	}
-	return &EventsCreateBulk{config: c.config, builders: builders}
+	return &EventCreateBulk{config: c.config, builders: builders}
 }
 
-// Update returns an update builder for Events.
-func (c *EventsClient) Update() *EventsUpdate {
-	mutation := newEventsMutation(c.config, OpUpdate)
-	return &EventsUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Update returns an update builder for Event.
+func (c *EventClient) Update() *EventUpdate {
+	mutation := newEventMutation(c.config, OpUpdate)
+	return &EventUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *EventsClient) UpdateOne(_m *Events) *EventsUpdateOne {
-	mutation := newEventsMutation(c.config, OpUpdateOne, withEvents(_m))
-	return &EventsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *EventClient) UpdateOne(_m *Event) *EventUpdateOne {
+	mutation := newEventMutation(c.config, OpUpdateOne, withEvent(_m))
+	return &EventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *EventsClient) UpdateOneID(id int) *EventsUpdateOne {
-	mutation := newEventsMutation(c.config, OpUpdateOne, withEventsID(id))
-	return &EventsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *EventClient) UpdateOneID(id int) *EventUpdateOne {
+	mutation := newEventMutation(c.config, OpUpdateOne, withEventID(id))
+	return &EventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// Delete returns a delete builder for Events.
-func (c *EventsClient) Delete() *EventsDelete {
-	mutation := newEventsMutation(c.config, OpDelete)
-	return &EventsDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Delete returns a delete builder for Event.
+func (c *EventClient) Delete() *EventDelete {
+	mutation := newEventMutation(c.config, OpDelete)
+	return &EventDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *EventsClient) DeleteOne(_m *Events) *EventsDeleteOne {
+func (c *EventClient) DeleteOne(_m *Event) *EventDeleteOne {
 	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *EventsClient) DeleteOneID(id int) *EventsDeleteOne {
-	builder := c.Delete().Where(events.ID(id))
+func (c *EventClient) DeleteOneID(id int) *EventDeleteOne {
+	builder := c.Delete().Where(event.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
-	return &EventsDeleteOne{builder}
+	return &EventDeleteOne{builder}
 }
 
-// Query returns a query builder for Events.
-func (c *EventsClient) Query() *EventsQuery {
-	return &EventsQuery{
+// Query returns a query builder for Event.
+func (c *EventClient) Query() *EventQuery {
+	return &EventQuery{
 		config: c.config,
-		ctx:    &QueryContext{Type: TypeEvents},
+		ctx:    &QueryContext{Type: TypeEvent},
 		inters: c.Interceptors(),
 	}
 }
 
-// Get returns a Events entity by its id.
-func (c *EventsClient) Get(ctx context.Context, id int) (*Events, error) {
-	return c.Query().Where(events.ID(id)).Only(ctx)
+// Get returns a Event entity by its id.
+func (c *EventClient) Get(ctx context.Context, id int) (*Event, error) {
+	return c.Query().Where(event.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *EventsClient) GetX(ctx context.Context, id int) *Events {
+func (c *EventClient) GetX(ctx context.Context, id int) *Event {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -520,15 +520,15 @@ func (c *EventsClient) GetX(ctx context.Context, id int) *Events {
 	return obj
 }
 
-// QueryUser queries the user edge of a Events.
-func (c *EventsClient) QueryUser(_m *Events) *UserQuery {
+// QueryUser queries the user edge of a Event.
+func (c *EventClient) QueryUser(_m *Event) *UserQuery {
 	query := (&UserClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
-			sqlgraph.From(events.Table, events.FieldID, id),
+			sqlgraph.From(event.Table, event.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, events.UserTable, events.UserColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, event.UserTable, event.UserColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -537,27 +537,27 @@ func (c *EventsClient) QueryUser(_m *Events) *UserQuery {
 }
 
 // Hooks returns the client hooks.
-func (c *EventsClient) Hooks() []Hook {
-	return c.hooks.Events
+func (c *EventClient) Hooks() []Hook {
+	return c.hooks.Event
 }
 
 // Interceptors returns the client interceptors.
-func (c *EventsClient) Interceptors() []Interceptor {
-	return c.inters.Events
+func (c *EventClient) Interceptors() []Interceptor {
+	return c.inters.Event
 }
 
-func (c *EventsClient) mutate(ctx context.Context, m *EventsMutation) (Value, error) {
+func (c *EventClient) mutate(ctx context.Context, m *EventMutation) (Value, error) {
 	switch m.Op() {
 	case OpCreate:
-		return (&EventsCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&EventCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdate:
-		return (&EventsUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&EventUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdateOne:
-		return (&EventsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&EventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpDelete, OpDeleteOne:
-		return (&EventsDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+		return (&EventDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
-		return nil, fmt.Errorf("ent: unknown Events mutation op: %q", m.Op())
+		return nil, fmt.Errorf("ent: unknown Event mutation op: %q", m.Op())
 	}
 }
 
@@ -712,107 +712,107 @@ func (c *GroupClient) mutate(ctx context.Context, m *GroupMutation) (Value, erro
 	}
 }
 
-// PointsClient is a client for the Points schema.
-type PointsClient struct {
+// PointClient is a client for the Point schema.
+type PointClient struct {
 	config
 }
 
-// NewPointsClient returns a client for the Points from the given config.
-func NewPointsClient(c config) *PointsClient {
-	return &PointsClient{config: c}
+// NewPointClient returns a client for the Point from the given config.
+func NewPointClient(c config) *PointClient {
+	return &PointClient{config: c}
 }
 
 // Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `points.Hooks(f(g(h())))`.
-func (c *PointsClient) Use(hooks ...Hook) {
-	c.hooks.Points = append(c.hooks.Points, hooks...)
+// A call to `Use(f, g, h)` equals to `point.Hooks(f(g(h())))`.
+func (c *PointClient) Use(hooks ...Hook) {
+	c.hooks.Point = append(c.hooks.Point, hooks...)
 }
 
 // Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `points.Intercept(f(g(h())))`.
-func (c *PointsClient) Intercept(interceptors ...Interceptor) {
-	c.inters.Points = append(c.inters.Points, interceptors...)
+// A call to `Intercept(f, g, h)` equals to `point.Intercept(f(g(h())))`.
+func (c *PointClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Point = append(c.inters.Point, interceptors...)
 }
 
-// Create returns a builder for creating a Points entity.
-func (c *PointsClient) Create() *PointsCreate {
-	mutation := newPointsMutation(c.config, OpCreate)
-	return &PointsCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Create returns a builder for creating a Point entity.
+func (c *PointClient) Create() *PointCreate {
+	mutation := newPointMutation(c.config, OpCreate)
+	return &PointCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// CreateBulk returns a builder for creating a bulk of Points entities.
-func (c *PointsClient) CreateBulk(builders ...*PointsCreate) *PointsCreateBulk {
-	return &PointsCreateBulk{config: c.config, builders: builders}
+// CreateBulk returns a builder for creating a bulk of Point entities.
+func (c *PointClient) CreateBulk(builders ...*PointCreate) *PointCreateBulk {
+	return &PointCreateBulk{config: c.config, builders: builders}
 }
 
 // MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
 // a builder and applies setFunc on it.
-func (c *PointsClient) MapCreateBulk(slice any, setFunc func(*PointsCreate, int)) *PointsCreateBulk {
+func (c *PointClient) MapCreateBulk(slice any, setFunc func(*PointCreate, int)) *PointCreateBulk {
 	rv := reflect.ValueOf(slice)
 	if rv.Kind() != reflect.Slice {
-		return &PointsCreateBulk{err: fmt.Errorf("calling to PointsClient.MapCreateBulk with wrong type %T, need slice", slice)}
+		return &PointCreateBulk{err: fmt.Errorf("calling to PointClient.MapCreateBulk with wrong type %T, need slice", slice)}
 	}
-	builders := make([]*PointsCreate, rv.Len())
+	builders := make([]*PointCreate, rv.Len())
 	for i := 0; i < rv.Len(); i++ {
 		builders[i] = c.Create()
 		setFunc(builders[i], i)
 	}
-	return &PointsCreateBulk{config: c.config, builders: builders}
+	return &PointCreateBulk{config: c.config, builders: builders}
 }
 
-// Update returns an update builder for Points.
-func (c *PointsClient) Update() *PointsUpdate {
-	mutation := newPointsMutation(c.config, OpUpdate)
-	return &PointsUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Update returns an update builder for Point.
+func (c *PointClient) Update() *PointUpdate {
+	mutation := newPointMutation(c.config, OpUpdate)
+	return &PointUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *PointsClient) UpdateOne(_m *Points) *PointsUpdateOne {
-	mutation := newPointsMutation(c.config, OpUpdateOne, withPoints(_m))
-	return &PointsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *PointClient) UpdateOne(_m *Point) *PointUpdateOne {
+	mutation := newPointMutation(c.config, OpUpdateOne, withPoint(_m))
+	return &PointUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *PointsClient) UpdateOneID(id int) *PointsUpdateOne {
-	mutation := newPointsMutation(c.config, OpUpdateOne, withPointsID(id))
-	return &PointsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *PointClient) UpdateOneID(id int) *PointUpdateOne {
+	mutation := newPointMutation(c.config, OpUpdateOne, withPointID(id))
+	return &PointUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// Delete returns a delete builder for Points.
-func (c *PointsClient) Delete() *PointsDelete {
-	mutation := newPointsMutation(c.config, OpDelete)
-	return &PointsDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Delete returns a delete builder for Point.
+func (c *PointClient) Delete() *PointDelete {
+	mutation := newPointMutation(c.config, OpDelete)
+	return &PointDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *PointsClient) DeleteOne(_m *Points) *PointsDeleteOne {
+func (c *PointClient) DeleteOne(_m *Point) *PointDeleteOne {
 	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *PointsClient) DeleteOneID(id int) *PointsDeleteOne {
-	builder := c.Delete().Where(points.ID(id))
+func (c *PointClient) DeleteOneID(id int) *PointDeleteOne {
+	builder := c.Delete().Where(point.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
-	return &PointsDeleteOne{builder}
+	return &PointDeleteOne{builder}
 }
 
-// Query returns a query builder for Points.
-func (c *PointsClient) Query() *PointsQuery {
-	return &PointsQuery{
+// Query returns a query builder for Point.
+func (c *PointClient) Query() *PointQuery {
+	return &PointQuery{
 		config: c.config,
-		ctx:    &QueryContext{Type: TypePoints},
+		ctx:    &QueryContext{Type: TypePoint},
 		inters: c.Interceptors(),
 	}
 }
 
-// Get returns a Points entity by its id.
-func (c *PointsClient) Get(ctx context.Context, id int) (*Points, error) {
-	return c.Query().Where(points.ID(id)).Only(ctx)
+// Get returns a Point entity by its id.
+func (c *PointClient) Get(ctx context.Context, id int) (*Point, error) {
+	return c.Query().Where(point.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *PointsClient) GetX(ctx context.Context, id int) *Points {
+func (c *PointClient) GetX(ctx context.Context, id int) *Point {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -820,15 +820,15 @@ func (c *PointsClient) GetX(ctx context.Context, id int) *Points {
 	return obj
 }
 
-// QueryUser queries the user edge of a Points.
-func (c *PointsClient) QueryUser(_m *Points) *UserQuery {
+// QueryUser queries the user edge of a Point.
+func (c *PointClient) QueryUser(_m *Point) *UserQuery {
 	query := (&UserClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
-			sqlgraph.From(points.Table, points.FieldID, id),
+			sqlgraph.From(point.Table, point.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, points.UserTable, points.UserColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, point.UserTable, point.UserColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -837,27 +837,27 @@ func (c *PointsClient) QueryUser(_m *Points) *UserQuery {
 }
 
 // Hooks returns the client hooks.
-func (c *PointsClient) Hooks() []Hook {
-	return c.hooks.Points
+func (c *PointClient) Hooks() []Hook {
+	return c.hooks.Point
 }
 
 // Interceptors returns the client interceptors.
-func (c *PointsClient) Interceptors() []Interceptor {
-	return c.inters.Points
+func (c *PointClient) Interceptors() []Interceptor {
+	return c.inters.Point
 }
 
-func (c *PointsClient) mutate(ctx context.Context, m *PointsMutation) (Value, error) {
+func (c *PointClient) mutate(ctx context.Context, m *PointMutation) (Value, error) {
 	switch m.Op() {
 	case OpCreate:
-		return (&PointsCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&PointCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdate:
-		return (&PointsUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&PointUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdateOne:
-		return (&PointsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&PointUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpDelete, OpDeleteOne:
-		return (&PointsDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+		return (&PointDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
-		return nil, fmt.Errorf("ent: unknown Points mutation op: %q", m.Op())
+		return nil, fmt.Errorf("ent: unknown Point mutation op: %q", m.Op())
 	}
 }
 
@@ -1465,13 +1465,13 @@ func (c *UserClient) QueryGroup(_m *User) *GroupQuery {
 }
 
 // QueryPoints queries the points edge of a User.
-func (c *UserClient) QueryPoints(_m *User) *PointsQuery {
-	query := (&PointsClient{config: c.config}).Query()
+func (c *UserClient) QueryPoints(_m *User) *PointQuery {
+	query := (&PointClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(points.Table, points.FieldID),
+			sqlgraph.To(point.Table, point.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.PointsTable, user.PointsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
@@ -1481,13 +1481,13 @@ func (c *UserClient) QueryPoints(_m *User) *PointsQuery {
 }
 
 // QueryEvents queries the events edge of a User.
-func (c *UserClient) QueryEvents(_m *User) *EventsQuery {
-	query := (&EventsClient{config: c.config}).Query()
+func (c *UserClient) QueryEvents(_m *User) *EventQuery {
+	query := (&EventClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(events.Table, events.FieldID),
+			sqlgraph.To(event.Table, event.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.EventsTable, user.EventsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
@@ -1542,10 +1542,10 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Database, Events, Group, Points, Question, ScopeSet, Submission, User []ent.Hook
+		Database, Event, Group, Point, Question, ScopeSet, Submission, User []ent.Hook
 	}
 	inters struct {
-		Database, Events, Group, Points, Question, ScopeSet, Submission,
+		Database, Event, Group, Point, Question, ScopeSet, Submission,
 		User []ent.Interceptor
 	}
 )

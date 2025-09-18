@@ -10,9 +10,9 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/database-playground/backend-v2/ent/events"
+	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
-	"github.com/database-playground/backend-v2/ent/points"
+	"github.com/database-playground/backend-v2/ent/point"
 	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
 )
@@ -103,14 +103,14 @@ func (_c *UserCreate) SetGroup(v *Group) *UserCreate {
 	return _c.SetGroupID(v.ID)
 }
 
-// AddPointIDs adds the "points" edge to the Points entity by IDs.
+// AddPointIDs adds the "points" edge to the Point entity by IDs.
 func (_c *UserCreate) AddPointIDs(ids ...int) *UserCreate {
 	_c.mutation.AddPointIDs(ids...)
 	return _c
 }
 
-// AddPoints adds the "points" edges to the Points entity.
-func (_c *UserCreate) AddPoints(v ...*Points) *UserCreate {
+// AddPoints adds the "points" edges to the Point entity.
+func (_c *UserCreate) AddPoints(v ...*Point) *UserCreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -118,14 +118,14 @@ func (_c *UserCreate) AddPoints(v ...*Points) *UserCreate {
 	return _c.AddPointIDs(ids...)
 }
 
-// AddEventIDs adds the "events" edge to the Events entity by IDs.
+// AddEventIDs adds the "events" edge to the Event entity by IDs.
 func (_c *UserCreate) AddEventIDs(ids ...int) *UserCreate {
 	_c.mutation.AddEventIDs(ids...)
 	return _c
 }
 
-// AddEvents adds the "events" edges to the Events entity.
-func (_c *UserCreate) AddEvents(v ...*Events) *UserCreate {
+// AddEvents adds the "events" edges to the Event entity.
+func (_c *UserCreate) AddEvents(v ...*Event) *UserCreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -304,7 +304,7 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.PointsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(point.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -320,7 +320,7 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.EventsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(events.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(event.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

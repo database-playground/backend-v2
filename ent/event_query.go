@@ -11,60 +11,59 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/database-playground/backend-v2/ent/points"
+	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
-// PointsQuery is the builder for querying Points entities.
-type PointsQuery struct {
+// EventQuery is the builder for querying Event entities.
+type EventQuery struct {
 	config
 	ctx        *QueryContext
-	order      []points.OrderOption
+	order      []event.OrderOption
 	inters     []Interceptor
-	predicates []predicate.Points
+	predicates []predicate.Event
 	withUser   *UserQuery
-	withFKs    bool
 	modifiers  []func(*sql.Selector)
-	loadTotal  []func(context.Context, []*Points) error
+	loadTotal  []func(context.Context, []*Event) error
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the PointsQuery builder.
-func (_q *PointsQuery) Where(ps ...predicate.Points) *PointsQuery {
+// Where adds a new predicate for the EventQuery builder.
+func (_q *EventQuery) Where(ps ...predicate.Event) *EventQuery {
 	_q.predicates = append(_q.predicates, ps...)
 	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *PointsQuery) Limit(limit int) *PointsQuery {
+func (_q *EventQuery) Limit(limit int) *EventQuery {
 	_q.ctx.Limit = &limit
 	return _q
 }
 
 // Offset to start from.
-func (_q *PointsQuery) Offset(offset int) *PointsQuery {
+func (_q *EventQuery) Offset(offset int) *EventQuery {
 	_q.ctx.Offset = &offset
 	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *PointsQuery) Unique(unique bool) *PointsQuery {
+func (_q *EventQuery) Unique(unique bool) *EventQuery {
 	_q.ctx.Unique = &unique
 	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (_q *PointsQuery) Order(o ...points.OrderOption) *PointsQuery {
+func (_q *EventQuery) Order(o ...event.OrderOption) *EventQuery {
 	_q.order = append(_q.order, o...)
 	return _q
 }
 
 // QueryUser chains the current query on the "user" edge.
-func (_q *PointsQuery) QueryUser() *UserQuery {
+func (_q *EventQuery) QueryUser() *UserQuery {
 	query := (&UserClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -75,9 +74,9 @@ func (_q *PointsQuery) QueryUser() *UserQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(points.Table, points.FieldID, selector),
+			sqlgraph.From(event.Table, event.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, points.UserTable, points.UserColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, event.UserTable, event.UserColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -85,21 +84,21 @@ func (_q *PointsQuery) QueryUser() *UserQuery {
 	return query
 }
 
-// First returns the first Points entity from the query.
-// Returns a *NotFoundError when no Points was found.
-func (_q *PointsQuery) First(ctx context.Context) (*Points, error) {
+// First returns the first Event entity from the query.
+// Returns a *NotFoundError when no Event was found.
+func (_q *EventQuery) First(ctx context.Context) (*Event, error) {
 	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{points.Label}
+		return nil, &NotFoundError{event.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *PointsQuery) FirstX(ctx context.Context) *Points {
+func (_q *EventQuery) FirstX(ctx context.Context) *Event {
 	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -107,22 +106,22 @@ func (_q *PointsQuery) FirstX(ctx context.Context) *Points {
 	return node
 }
 
-// FirstID returns the first Points ID from the query.
-// Returns a *NotFoundError when no Points ID was found.
-func (_q *PointsQuery) FirstID(ctx context.Context) (id int, err error) {
+// FirstID returns the first Event ID from the query.
+// Returns a *NotFoundError when no Event ID was found.
+func (_q *EventQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{points.Label}
+		err = &NotFoundError{event.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *PointsQuery) FirstIDX(ctx context.Context) int {
+func (_q *EventQuery) FirstIDX(ctx context.Context) int {
 	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -130,10 +129,10 @@ func (_q *PointsQuery) FirstIDX(ctx context.Context) int {
 	return id
 }
 
-// Only returns a single Points entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one Points entity is found.
-// Returns a *NotFoundError when no Points entities are found.
-func (_q *PointsQuery) Only(ctx context.Context) (*Points, error) {
+// Only returns a single Event entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one Event entity is found.
+// Returns a *NotFoundError when no Event entities are found.
+func (_q *EventQuery) Only(ctx context.Context) (*Event, error) {
 	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -142,14 +141,14 @@ func (_q *PointsQuery) Only(ctx context.Context) (*Points, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{points.Label}
+		return nil, &NotFoundError{event.Label}
 	default:
-		return nil, &NotSingularError{points.Label}
+		return nil, &NotSingularError{event.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *PointsQuery) OnlyX(ctx context.Context) *Points {
+func (_q *EventQuery) OnlyX(ctx context.Context) *Event {
 	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -157,10 +156,10 @@ func (_q *PointsQuery) OnlyX(ctx context.Context) *Points {
 	return node
 }
 
-// OnlyID is like Only, but returns the only Points ID in the query.
-// Returns a *NotSingularError when more than one Points ID is found.
+// OnlyID is like Only, but returns the only Event ID in the query.
+// Returns a *NotSingularError when more than one Event ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *PointsQuery) OnlyID(ctx context.Context) (id int, err error) {
+func (_q *EventQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
@@ -169,15 +168,15 @@ func (_q *PointsQuery) OnlyID(ctx context.Context) (id int, err error) {
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{points.Label}
+		err = &NotFoundError{event.Label}
 	default:
-		err = &NotSingularError{points.Label}
+		err = &NotSingularError{event.Label}
 	}
 	return
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *PointsQuery) OnlyIDX(ctx context.Context) int {
+func (_q *EventQuery) OnlyIDX(ctx context.Context) int {
 	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -185,18 +184,18 @@ func (_q *PointsQuery) OnlyIDX(ctx context.Context) int {
 	return id
 }
 
-// All executes the query and returns a list of PointsSlice.
-func (_q *PointsQuery) All(ctx context.Context) ([]*Points, error) {
+// All executes the query and returns a list of Events.
+func (_q *EventQuery) All(ctx context.Context) ([]*Event, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*Points, *PointsQuery]()
-	return withInterceptors[[]*Points](ctx, _q, qr, _q.inters)
+	qr := querierAll[[]*Event, *EventQuery]()
+	return withInterceptors[[]*Event](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *PointsQuery) AllX(ctx context.Context) []*Points {
+func (_q *EventQuery) AllX(ctx context.Context) []*Event {
 	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
@@ -204,20 +203,20 @@ func (_q *PointsQuery) AllX(ctx context.Context) []*Points {
 	return nodes
 }
 
-// IDs executes the query and returns a list of Points IDs.
-func (_q *PointsQuery) IDs(ctx context.Context) (ids []int, err error) {
+// IDs executes the query and returns a list of Event IDs.
+func (_q *EventQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(points.FieldID).Scan(ctx, &ids); err != nil {
+	if err = _q.Select(event.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (_q *PointsQuery) IDsX(ctx context.Context) []int {
+func (_q *EventQuery) IDsX(ctx context.Context) []int {
 	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -226,16 +225,16 @@ func (_q *PointsQuery) IDsX(ctx context.Context) []int {
 }
 
 // Count returns the count of the given query.
-func (_q *PointsQuery) Count(ctx context.Context) (int, error) {
+func (_q *EventQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*PointsQuery](), _q.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*EventQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *PointsQuery) CountX(ctx context.Context) int {
+func (_q *EventQuery) CountX(ctx context.Context) int {
 	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -244,7 +243,7 @@ func (_q *PointsQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *PointsQuery) Exist(ctx context.Context) (bool, error) {
+func (_q *EventQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
 	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
@@ -257,7 +256,7 @@ func (_q *PointsQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *PointsQuery) ExistX(ctx context.Context) bool {
+func (_q *EventQuery) ExistX(ctx context.Context) bool {
 	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -265,18 +264,18 @@ func (_q *PointsQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the PointsQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the EventQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *PointsQuery) Clone() *PointsQuery {
+func (_q *EventQuery) Clone() *EventQuery {
 	if _q == nil {
 		return nil
 	}
-	return &PointsQuery{
+	return &EventQuery{
 		config:     _q.config,
 		ctx:        _q.ctx.Clone(),
-		order:      append([]points.OrderOption{}, _q.order...),
+		order:      append([]event.OrderOption{}, _q.order...),
 		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.Points{}, _q.predicates...),
+		predicates: append([]predicate.Event{}, _q.predicates...),
 		withUser:   _q.withUser.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -286,7 +285,7 @@ func (_q *PointsQuery) Clone() *PointsQuery {
 
 // WithUser tells the query-builder to eager-load the nodes that are connected to
 // the "user" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *PointsQuery) WithUser(opts ...func(*UserQuery)) *PointsQuery {
+func (_q *EventQuery) WithUser(opts ...func(*UserQuery)) *EventQuery {
 	query := (&UserClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -301,19 +300,19 @@ func (_q *PointsQuery) WithUser(opts ...func(*UserQuery)) *PointsQuery {
 // Example:
 //
 //	var v []struct {
-//		Points int `json:"points,omitempty"`
+//		UserID int `json:"user_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.Points.Query().
-//		GroupBy(points.FieldPoints).
+//	client.Event.Query().
+//		GroupBy(event.FieldUserID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *PointsQuery) GroupBy(field string, fields ...string) *PointsGroupBy {
+func (_q *EventQuery) GroupBy(field string, fields ...string) *EventGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &PointsGroupBy{build: _q}
+	grbuild := &EventGroupBy{build: _q}
 	grbuild.flds = &_q.ctx.Fields
-	grbuild.label = points.Label
+	grbuild.label = event.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -324,26 +323,26 @@ func (_q *PointsQuery) GroupBy(field string, fields ...string) *PointsGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Points int `json:"points,omitempty"`
+//		UserID int `json:"user_id,omitempty"`
 //	}
 //
-//	client.Points.Query().
-//		Select(points.FieldPoints).
+//	client.Event.Query().
+//		Select(event.FieldUserID).
 //		Scan(ctx, &v)
-func (_q *PointsQuery) Select(fields ...string) *PointsSelect {
+func (_q *EventQuery) Select(fields ...string) *EventSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &PointsSelect{PointsQuery: _q}
-	sbuild.label = points.Label
+	sbuild := &EventSelect{EventQuery: _q}
+	sbuild.label = event.Label
 	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a PointsSelect configured with the given aggregations.
-func (_q *PointsQuery) Aggregate(fns ...AggregateFunc) *PointsSelect {
+// Aggregate returns a EventSelect configured with the given aggregations.
+func (_q *EventQuery) Aggregate(fns ...AggregateFunc) *EventSelect {
 	return _q.Select().Aggregate(fns...)
 }
 
-func (_q *PointsQuery) prepareQuery(ctx context.Context) error {
+func (_q *EventQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -355,7 +354,7 @@ func (_q *PointsQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range _q.ctx.Fields {
-		if !points.ValidColumn(f) {
+		if !event.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -369,26 +368,19 @@ func (_q *PointsQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (_q *PointsQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Points, error) {
+func (_q *EventQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Event, error) {
 	var (
-		nodes       = []*Points{}
-		withFKs     = _q.withFKs
+		nodes       = []*Event{}
 		_spec       = _q.querySpec()
 		loadedTypes = [1]bool{
 			_q.withUser != nil,
 		}
 	)
-	if _q.withUser != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, points.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*Points).scanValues(nil, columns)
+		return (*Event).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Points{config: _q.config}
+		node := &Event{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -407,7 +399,7 @@ func (_q *PointsQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Point
 	}
 	if query := _q.withUser; query != nil {
 		if err := _q.loadUser(ctx, query, nodes, nil,
-			func(n *Points, e *User) { n.Edges.User = e }); err != nil {
+			func(n *Event, e *User) { n.Edges.User = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -419,14 +411,11 @@ func (_q *PointsQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Point
 	return nodes, nil
 }
 
-func (_q *PointsQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Points, init func(*Points), assign func(*Points, *User)) error {
+func (_q *EventQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Event, init func(*Event), assign func(*Event, *User)) error {
 	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*Points)
+	nodeids := make(map[int][]*Event)
 	for i := range nodes {
-		if nodes[i].user_points == nil {
-			continue
-		}
-		fk := *nodes[i].user_points
+		fk := nodes[i].UserID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -443,7 +432,7 @@ func (_q *PointsQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_points" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -452,7 +441,7 @@ func (_q *PointsQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*
 	return nil
 }
 
-func (_q *PointsQuery) sqlCount(ctx context.Context) (int, error) {
+func (_q *EventQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
 	if len(_q.modifiers) > 0 {
 		_spec.Modifiers = _q.modifiers
@@ -464,8 +453,8 @@ func (_q *PointsQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (_q *PointsQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(points.Table, points.Columns, sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt))
+func (_q *EventQuery) querySpec() *sqlgraph.QuerySpec {
+	_spec := sqlgraph.NewQuerySpec(event.Table, event.Columns, sqlgraph.NewFieldSpec(event.FieldID, field.TypeInt))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -474,11 +463,14 @@ func (_q *PointsQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, points.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, event.FieldID)
 		for i := range fields {
-			if fields[i] != points.FieldID {
+			if fields[i] != event.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if _q.withUser != nil {
+			_spec.Node.AddColumnOnce(event.FieldUserID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {
@@ -504,12 +496,12 @@ func (_q *PointsQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *PointsQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (_q *EventQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(_q.driver.Dialect())
-	t1 := builder.Table(points.Table)
+	t1 := builder.Table(event.Table)
 	columns := _q.ctx.Fields
 	if len(columns) == 0 {
-		columns = points.Columns
+		columns = event.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if _q.sql != nil {
@@ -536,28 +528,28 @@ func (_q *PointsQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// PointsGroupBy is the group-by builder for Points entities.
-type PointsGroupBy struct {
+// EventGroupBy is the group-by builder for Event entities.
+type EventGroupBy struct {
 	selector
-	build *PointsQuery
+	build *EventQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (_g *PointsGroupBy) Aggregate(fns ...AggregateFunc) *PointsGroupBy {
+func (_g *EventGroupBy) Aggregate(fns ...AggregateFunc) *EventGroupBy {
 	_g.fns = append(_g.fns, fns...)
 	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_g *PointsGroupBy) Scan(ctx context.Context, v any) error {
+func (_g *EventGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
 	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*PointsQuery, *PointsGroupBy](ctx, _g.build, _g, _g.build.inters, v)
+	return scanWithInterceptors[*EventQuery, *EventGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (_g *PointsGroupBy) sqlScan(ctx context.Context, root *PointsQuery, v any) error {
+func (_g *EventGroupBy) sqlScan(ctx context.Context, root *EventQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(_g.fns))
 	for _, fn := range _g.fns {
@@ -584,28 +576,28 @@ func (_g *PointsGroupBy) sqlScan(ctx context.Context, root *PointsQuery, v any) 
 	return sql.ScanSlice(rows, v)
 }
 
-// PointsSelect is the builder for selecting fields of Points entities.
-type PointsSelect struct {
-	*PointsQuery
+// EventSelect is the builder for selecting fields of Event entities.
+type EventSelect struct {
+	*EventQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (_s *PointsSelect) Aggregate(fns ...AggregateFunc) *PointsSelect {
+func (_s *EventSelect) Aggregate(fns ...AggregateFunc) *EventSelect {
 	_s.fns = append(_s.fns, fns...)
 	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_s *PointsSelect) Scan(ctx context.Context, v any) error {
+func (_s *EventSelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
 	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*PointsQuery, *PointsSelect](ctx, _s.PointsQuery, _s, _s.inters, v)
+	return scanWithInterceptors[*EventQuery, *EventSelect](ctx, _s.EventQuery, _s, _s.inters, v)
 }
 
-func (_s *PointsSelect) sqlScan(ctx context.Context, root *PointsQuery, v any) error {
+func (_s *EventSelect) sqlScan(ctx context.Context, root *EventQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(_s.fns))
 	for _, fn := range _s.fns {

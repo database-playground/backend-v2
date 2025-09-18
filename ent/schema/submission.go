@@ -22,7 +22,9 @@ func (Submission) Fields() []ent.Field {
 			Values("pending", "success", "failed"), // Status of the submission
 		field.JSON("query_result", &models.UserSQLExecutionResult{}).Optional(), // The SQL query result of the submission
 		field.String("error").Optional().Nillable(),                             // Error of the submission
-		field.Time("submitted_at").Default(time.Now),                            // Time the submission was made
+		field.Time("submitted_at").
+			Default(time.Now).
+			Annotations(entgql.OrderField("SUBMITTED_AT")), // Time the submission was made
 	}
 }
 

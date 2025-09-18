@@ -10,29 +10,30 @@ import (
 	"entgo.io/ent/schema/field"
 )
 
-// Points is the schema for the points (users' scores) resource.
-type Points struct {
+// Point is the schema for the points (users' scores) resource.
+type Point struct {
 	ent.Schema
 }
 
-func (Points) Fields() []ent.Field {
+func (Point) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int("points").
 			Default(0),
 		field.Time("granted_at").
-			Default(time.Now),
+			Default(time.Now).
+			Annotations(entgql.OrderField("GRANTED_AT")),
 		field.String("description").
 			Optional(),
 	}
 }
 
-func (Points) Edges() []ent.Edge {
+func (Point) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("user", User.Type).Ref("points").Unique().Required(),
 	}
 }
 
-func (Points) Annotations() []schema.Annotation {
+func (Point) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entgql.QueryField().Directives(
 			ScopeDirective("user:read"),

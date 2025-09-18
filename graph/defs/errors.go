@@ -34,6 +34,12 @@ var ErrUnauthorized = GqlError{
 	Code:    CodeUnauthorized,
 }
 
+// ErrForbidden is the error for "no access to this resource".
+var ErrForbidden = GqlError{
+	Message: "no access to this resource",
+	Code:    CodeForbidden,
+}
+
 // ErrVerified is the error for "user already verified".
 var ErrVerified = GqlError{
 	Message: "user already verified",

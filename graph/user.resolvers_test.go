@@ -1449,7 +1449,7 @@ func TestUserResolver_TotalPoints(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create a single point record for the user
-		_, err = entClient.Points.Create().
+		_, err = entClient.Point.Create().
 			SetUser(user).
 			SetPoints(100).
 			SetDescription("Test points").
@@ -1513,7 +1513,7 @@ func TestUserResolver_TotalPoints(t *testing.T) {
 		}
 
 		for _, data := range pointsData {
-			_, err = entClient.Points.Create().
+			_, err = entClient.Point.Create().
 				SetUser(user).
 				SetPoints(data.points).
 				SetDescription(data.description).
@@ -1579,7 +1579,7 @@ func TestUserResolver_TotalPoints(t *testing.T) {
 		}
 
 		for _, data := range pointsData {
-			_, err = entClient.Points.Create().
+			_, err = entClient.Point.Create().
 				SetUser(user).
 				SetPoints(data.points).
 				SetDescription(data.description).
@@ -1644,7 +1644,7 @@ func TestUserResolver_TotalPoints(t *testing.T) {
 		}
 
 		for _, data := range pointsData {
-			_, err = entClient.Points.Create().
+			_, err = entClient.Point.Create().
 				SetUser(user).
 				SetPoints(data.points).
 				SetDescription(data.description).
@@ -1701,7 +1701,7 @@ func TestUserResolver_TotalPoints(t *testing.T) {
 		expectedTotal := 0
 		pointsValues := []int{10, 20, 30, -5, 100}
 		for i, points := range pointsValues {
-			_, err = entClient.Points.Create().
+			_, err = entClient.Point.Create().
 				SetUser(user).
 				SetPoints(points).
 				SetDescription("Test points " + strconv.Itoa(i)).
@@ -1742,7 +1742,7 @@ func TestUserResolver_TotalPoints(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create points for user1
-		_, err = entClient.Points.Create().
+		_, err = entClient.Point.Create().
 			SetUser(user1).
 			SetPoints(100).
 			SetDescription("User 1 points").
@@ -1750,7 +1750,7 @@ func TestUserResolver_TotalPoints(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create different points for user2
-		_, err = entClient.Points.Create().
+		_, err = entClient.Point.Create().
 			SetUser(user2).
 			SetPoints(200).
 			SetDescription("User 2 points").

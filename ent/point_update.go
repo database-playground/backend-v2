@@ -11,33 +11,33 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/database-playground/backend-v2/ent/points"
+	"github.com/database-playground/backend-v2/ent/point"
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
-// PointsUpdate is the builder for updating Points entities.
-type PointsUpdate struct {
+// PointUpdate is the builder for updating Point entities.
+type PointUpdate struct {
 	config
 	hooks    []Hook
-	mutation *PointsMutation
+	mutation *PointMutation
 }
 
-// Where appends a list predicates to the PointsUpdate builder.
-func (_u *PointsUpdate) Where(ps ...predicate.Points) *PointsUpdate {
+// Where appends a list predicates to the PointUpdate builder.
+func (_u *PointUpdate) Where(ps ...predicate.Point) *PointUpdate {
 	_u.mutation.Where(ps...)
 	return _u
 }
 
 // SetPoints sets the "points" field.
-func (_u *PointsUpdate) SetPoints(v int) *PointsUpdate {
+func (_u *PointUpdate) SetPoints(v int) *PointUpdate {
 	_u.mutation.ResetPoints()
 	_u.mutation.SetPoints(v)
 	return _u
 }
 
 // SetNillablePoints sets the "points" field if the given value is not nil.
-func (_u *PointsUpdate) SetNillablePoints(v *int) *PointsUpdate {
+func (_u *PointUpdate) SetNillablePoints(v *int) *PointUpdate {
 	if v != nil {
 		_u.SetPoints(*v)
 	}
@@ -45,19 +45,19 @@ func (_u *PointsUpdate) SetNillablePoints(v *int) *PointsUpdate {
 }
 
 // AddPoints adds value to the "points" field.
-func (_u *PointsUpdate) AddPoints(v int) *PointsUpdate {
+func (_u *PointUpdate) AddPoints(v int) *PointUpdate {
 	_u.mutation.AddPoints(v)
 	return _u
 }
 
 // SetGrantedAt sets the "granted_at" field.
-func (_u *PointsUpdate) SetGrantedAt(v time.Time) *PointsUpdate {
+func (_u *PointUpdate) SetGrantedAt(v time.Time) *PointUpdate {
 	_u.mutation.SetGrantedAt(v)
 	return _u
 }
 
 // SetNillableGrantedAt sets the "granted_at" field if the given value is not nil.
-func (_u *PointsUpdate) SetNillableGrantedAt(v *time.Time) *PointsUpdate {
+func (_u *PointUpdate) SetNillableGrantedAt(v *time.Time) *PointUpdate {
 	if v != nil {
 		_u.SetGrantedAt(*v)
 	}
@@ -65,13 +65,13 @@ func (_u *PointsUpdate) SetNillableGrantedAt(v *time.Time) *PointsUpdate {
 }
 
 // SetDescription sets the "description" field.
-func (_u *PointsUpdate) SetDescription(v string) *PointsUpdate {
+func (_u *PointUpdate) SetDescription(v string) *PointUpdate {
 	_u.mutation.SetDescription(v)
 	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (_u *PointsUpdate) SetNillableDescription(v *string) *PointsUpdate {
+func (_u *PointUpdate) SetNillableDescription(v *string) *PointUpdate {
 	if v != nil {
 		_u.SetDescription(*v)
 	}
@@ -79,40 +79,40 @@ func (_u *PointsUpdate) SetNillableDescription(v *string) *PointsUpdate {
 }
 
 // ClearDescription clears the value of the "description" field.
-func (_u *PointsUpdate) ClearDescription() *PointsUpdate {
+func (_u *PointUpdate) ClearDescription() *PointUpdate {
 	_u.mutation.ClearDescription()
 	return _u
 }
 
 // SetUserID sets the "user" edge to the User entity by ID.
-func (_u *PointsUpdate) SetUserID(id int) *PointsUpdate {
+func (_u *PointUpdate) SetUserID(id int) *PointUpdate {
 	_u.mutation.SetUserID(id)
 	return _u
 }
 
 // SetUser sets the "user" edge to the User entity.
-func (_u *PointsUpdate) SetUser(v *User) *PointsUpdate {
+func (_u *PointUpdate) SetUser(v *User) *PointUpdate {
 	return _u.SetUserID(v.ID)
 }
 
-// Mutation returns the PointsMutation object of the builder.
-func (_u *PointsUpdate) Mutation() *PointsMutation {
+// Mutation returns the PointMutation object of the builder.
+func (_u *PointUpdate) Mutation() *PointMutation {
 	return _u.mutation
 }
 
 // ClearUser clears the "user" edge to the User entity.
-func (_u *PointsUpdate) ClearUser() *PointsUpdate {
+func (_u *PointUpdate) ClearUser() *PointUpdate {
 	_u.mutation.ClearUser()
 	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (_u *PointsUpdate) Save(ctx context.Context) (int, error) {
+func (_u *PointUpdate) Save(ctx context.Context) (int, error) {
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *PointsUpdate) SaveX(ctx context.Context) int {
+func (_u *PointUpdate) SaveX(ctx context.Context) int {
 	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -121,31 +121,31 @@ func (_u *PointsUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (_u *PointsUpdate) Exec(ctx context.Context) error {
+func (_u *PointUpdate) Exec(ctx context.Context) error {
 	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *PointsUpdate) ExecX(ctx context.Context) {
+func (_u *PointUpdate) ExecX(ctx context.Context) {
 	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *PointsUpdate) check() error {
+func (_u *PointUpdate) check() error {
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Points.user"`)
+		return errors.New(`ent: clearing a required unique edge "Point.user"`)
 	}
 	return nil
 }
 
-func (_u *PointsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+func (_u *PointUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(points.Table, points.Columns, sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(point.Table, point.Columns, sqlgraph.NewFieldSpec(point.FieldID, field.TypeInt))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -154,26 +154,26 @@ func (_u *PointsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 	}
 	if value, ok := _u.mutation.Points(); ok {
-		_spec.SetField(points.FieldPoints, field.TypeInt, value)
+		_spec.SetField(point.FieldPoints, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.AddedPoints(); ok {
-		_spec.AddField(points.FieldPoints, field.TypeInt, value)
+		_spec.AddField(point.FieldPoints, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.GrantedAt(); ok {
-		_spec.SetField(points.FieldGrantedAt, field.TypeTime, value)
+		_spec.SetField(point.FieldGrantedAt, field.TypeTime, value)
 	}
 	if value, ok := _u.mutation.Description(); ok {
-		_spec.SetField(points.FieldDescription, field.TypeString, value)
+		_spec.SetField(point.FieldDescription, field.TypeString, value)
 	}
 	if _u.mutation.DescriptionCleared() {
-		_spec.ClearField(points.FieldDescription, field.TypeString)
+		_spec.ClearField(point.FieldDescription, field.TypeString)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   points.UserTable,
-			Columns: []string{points.UserColumn},
+			Table:   point.UserTable,
+			Columns: []string{point.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
@@ -185,8 +185,8 @@ func (_u *PointsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   points.UserTable,
-			Columns: []string{points.UserColumn},
+			Table:   point.UserTable,
+			Columns: []string{point.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
@@ -199,7 +199,7 @@ func (_u *PointsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
-			err = &NotFoundError{points.Label}
+			err = &NotFoundError{point.Label}
 		} else if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -209,23 +209,23 @@ func (_u *PointsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	return _node, nil
 }
 
-// PointsUpdateOne is the builder for updating a single Points entity.
-type PointsUpdateOne struct {
+// PointUpdateOne is the builder for updating a single Point entity.
+type PointUpdateOne struct {
 	config
 	fields   []string
 	hooks    []Hook
-	mutation *PointsMutation
+	mutation *PointMutation
 }
 
 // SetPoints sets the "points" field.
-func (_u *PointsUpdateOne) SetPoints(v int) *PointsUpdateOne {
+func (_u *PointUpdateOne) SetPoints(v int) *PointUpdateOne {
 	_u.mutation.ResetPoints()
 	_u.mutation.SetPoints(v)
 	return _u
 }
 
 // SetNillablePoints sets the "points" field if the given value is not nil.
-func (_u *PointsUpdateOne) SetNillablePoints(v *int) *PointsUpdateOne {
+func (_u *PointUpdateOne) SetNillablePoints(v *int) *PointUpdateOne {
 	if v != nil {
 		_u.SetPoints(*v)
 	}
@@ -233,19 +233,19 @@ func (_u *PointsUpdateOne) SetNillablePoints(v *int) *PointsUpdateOne {
 }
 
 // AddPoints adds value to the "points" field.
-func (_u *PointsUpdateOne) AddPoints(v int) *PointsUpdateOne {
+func (_u *PointUpdateOne) AddPoints(v int) *PointUpdateOne {
 	_u.mutation.AddPoints(v)
 	return _u
 }
 
 // SetGrantedAt sets the "granted_at" field.
-func (_u *PointsUpdateOne) SetGrantedAt(v time.Time) *PointsUpdateOne {
+func (_u *PointUpdateOne) SetGrantedAt(v time.Time) *PointUpdateOne {
 	_u.mutation.SetGrantedAt(v)
 	return _u
 }
 
 // SetNillableGrantedAt sets the "granted_at" field if the given value is not nil.
-func (_u *PointsUpdateOne) SetNillableGrantedAt(v *time.Time) *PointsUpdateOne {
+func (_u *PointUpdateOne) SetNillableGrantedAt(v *time.Time) *PointUpdateOne {
 	if v != nil {
 		_u.SetGrantedAt(*v)
 	}
@@ -253,13 +253,13 @@ func (_u *PointsUpdateOne) SetNillableGrantedAt(v *time.Time) *PointsUpdateOne {
 }
 
 // SetDescription sets the "description" field.
-func (_u *PointsUpdateOne) SetDescription(v string) *PointsUpdateOne {
+func (_u *PointUpdateOne) SetDescription(v string) *PointUpdateOne {
 	_u.mutation.SetDescription(v)
 	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (_u *PointsUpdateOne) SetNillableDescription(v *string) *PointsUpdateOne {
+func (_u *PointUpdateOne) SetNillableDescription(v *string) *PointUpdateOne {
 	if v != nil {
 		_u.SetDescription(*v)
 	}
@@ -267,53 +267,53 @@ func (_u *PointsUpdateOne) SetNillableDescription(v *string) *PointsUpdateOne {
 }
 
 // ClearDescription clears the value of the "description" field.
-func (_u *PointsUpdateOne) ClearDescription() *PointsUpdateOne {
+func (_u *PointUpdateOne) ClearDescription() *PointUpdateOne {
 	_u.mutation.ClearDescription()
 	return _u
 }
 
 // SetUserID sets the "user" edge to the User entity by ID.
-func (_u *PointsUpdateOne) SetUserID(id int) *PointsUpdateOne {
+func (_u *PointUpdateOne) SetUserID(id int) *PointUpdateOne {
 	_u.mutation.SetUserID(id)
 	return _u
 }
 
 // SetUser sets the "user" edge to the User entity.
-func (_u *PointsUpdateOne) SetUser(v *User) *PointsUpdateOne {
+func (_u *PointUpdateOne) SetUser(v *User) *PointUpdateOne {
 	return _u.SetUserID(v.ID)
 }
 
-// Mutation returns the PointsMutation object of the builder.
-func (_u *PointsUpdateOne) Mutation() *PointsMutation {
+// Mutation returns the PointMutation object of the builder.
+func (_u *PointUpdateOne) Mutation() *PointMutation {
 	return _u.mutation
 }
 
 // ClearUser clears the "user" edge to the User entity.
-func (_u *PointsUpdateOne) ClearUser() *PointsUpdateOne {
+func (_u *PointUpdateOne) ClearUser() *PointUpdateOne {
 	_u.mutation.ClearUser()
 	return _u
 }
 
-// Where appends a list predicates to the PointsUpdate builder.
-func (_u *PointsUpdateOne) Where(ps ...predicate.Points) *PointsUpdateOne {
+// Where appends a list predicates to the PointUpdate builder.
+func (_u *PointUpdateOne) Where(ps ...predicate.Point) *PointUpdateOne {
 	_u.mutation.Where(ps...)
 	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (_u *PointsUpdateOne) Select(field string, fields ...string) *PointsUpdateOne {
+func (_u *PointUpdateOne) Select(field string, fields ...string) *PointUpdateOne {
 	_u.fields = append([]string{field}, fields...)
 	return _u
 }
 
-// Save executes the query and returns the updated Points entity.
-func (_u *PointsUpdateOne) Save(ctx context.Context) (*Points, error) {
+// Save executes the query and returns the updated Point entity.
+func (_u *PointUpdateOne) Save(ctx context.Context) (*Point, error) {
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *PointsUpdateOne) SaveX(ctx context.Context) *Points {
+func (_u *PointUpdateOne) SaveX(ctx context.Context) *Point {
 	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -322,44 +322,44 @@ func (_u *PointsUpdateOne) SaveX(ctx context.Context) *Points {
 }
 
 // Exec executes the query on the entity.
-func (_u *PointsUpdateOne) Exec(ctx context.Context) error {
+func (_u *PointUpdateOne) Exec(ctx context.Context) error {
 	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *PointsUpdateOne) ExecX(ctx context.Context) {
+func (_u *PointUpdateOne) ExecX(ctx context.Context) {
 	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *PointsUpdateOne) check() error {
+func (_u *PointUpdateOne) check() error {
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Points.user"`)
+		return errors.New(`ent: clearing a required unique edge "Point.user"`)
 	}
 	return nil
 }
 
-func (_u *PointsUpdateOne) sqlSave(ctx context.Context) (_node *Points, err error) {
+func (_u *PointUpdateOne) sqlSave(ctx context.Context) (_node *Point, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(points.Table, points.Columns, sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(point.Table, point.Columns, sqlgraph.NewFieldSpec(point.FieldID, field.TypeInt))
 	id, ok := _u.mutation.ID()
 	if !ok {
-		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Points.id" for update`)}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Point.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
 	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, points.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, point.FieldID)
 		for _, f := range fields {
-			if !points.ValidColumn(f) {
+			if !point.ValidColumn(f) {
 				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 			}
-			if f != points.FieldID {
+			if f != point.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, f)
 			}
 		}
@@ -372,26 +372,26 @@ func (_u *PointsUpdateOne) sqlSave(ctx context.Context) (_node *Points, err erro
 		}
 	}
 	if value, ok := _u.mutation.Points(); ok {
-		_spec.SetField(points.FieldPoints, field.TypeInt, value)
+		_spec.SetField(point.FieldPoints, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.AddedPoints(); ok {
-		_spec.AddField(points.FieldPoints, field.TypeInt, value)
+		_spec.AddField(point.FieldPoints, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.GrantedAt(); ok {
-		_spec.SetField(points.FieldGrantedAt, field.TypeTime, value)
+		_spec.SetField(point.FieldGrantedAt, field.TypeTime, value)
 	}
 	if value, ok := _u.mutation.Description(); ok {
-		_spec.SetField(points.FieldDescription, field.TypeString, value)
+		_spec.SetField(point.FieldDescription, field.TypeString, value)
 	}
 	if _u.mutation.DescriptionCleared() {
-		_spec.ClearField(points.FieldDescription, field.TypeString)
+		_spec.ClearField(point.FieldDescription, field.TypeString)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   points.UserTable,
-			Columns: []string{points.UserColumn},
+			Table:   point.UserTable,
+			Columns: []string{point.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
@@ -403,8 +403,8 @@ func (_u *PointsUpdateOne) sqlSave(ctx context.Context) (_node *Points, err erro
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   points.UserTable,
-			Columns: []string{points.UserColumn},
+			Table:   point.UserTable,
+			Columns: []string{point.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
@@ -415,12 +415,12 @@ func (_u *PointsUpdateOne) sqlSave(ctx context.Context) (_node *Points, err erro
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &Points{config: _u.config}
+	_node = &Point{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
-			err = &NotFoundError{points.Label}
+			err = &NotFoundError{point.Label}
 		} else if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
