@@ -30,9 +30,12 @@ func (User) Fields() []ent.Field {
 func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("group", Group.Type).Unique().Required(),
-		edge.To("points", Points.Type),
-		edge.To("events", Events.Type),
-		edge.To("submissions", Submission.Type),
+		edge.To("points", Points.Type).
+			Annotations(entgql.RelayConnection()),
+		edge.To("events", Events.Type).
+			Annotations(entgql.RelayConnection()),
+		edge.To("submissions", Submission.Type).
+			Annotations(entgql.RelayConnection()),
 	}
 }
 
