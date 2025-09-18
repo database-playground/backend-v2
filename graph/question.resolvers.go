@@ -7,7 +7,6 @@ package graph
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"entgo.io/contrib/entgql"
 	"github.com/database-playground/backend-v2/ent"
@@ -16,6 +15,7 @@ import (
 	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/graph/model"
 	"github.com/database-playground/backend-v2/internal/auth"
+	"github.com/database-playground/backend-v2/internal/scope"
 	"github.com/database-playground/backend-v2/internal/submission"
 	"github.com/database-playground/backend-v2/models"
 )
@@ -144,7 +144,36 @@ func (r *queryResolver) Database(ctx context.Context, id int) (*ent.Database, er
 
 // Submission is the resolver for the submission field.
 func (r *queryResolver) Submission(ctx context.Context, id int) (*ent.Submission, error) {
-	panic(fmt.Errorf("not implemented: Submission - submission"))
+	entClient := r.EntClient(ctx)
+
+	tokenInfo, ok := auth.GetUser(ctx)
+	if !ok {
+		return nil, defs.ErrUnauthorized
+	}
+
+	submission, err := entClient.Submission.Get(ctx, id)
+	if ent.IsNotFound(err) {
+		return nil, defs.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the user has the "submission:read" scope
+	// If no, check if the submission is owned by the user
+	if !scope.ShouldAllow("submission:read", tokenInfo.Scopes) {
+		user, err := submission.User(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if user.ID != tokenInfo.UserID {
+			return nil, defs.ErrForbidden
+		}
+
+		return submission, nil
+	}
+
+	return submission, nil
 }
 
 // ReferenceAnswerResult is the resolver for the referenceAnswerResult field.

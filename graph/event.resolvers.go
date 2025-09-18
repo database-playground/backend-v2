@@ -6,17 +6,75 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/ent/event"
+	"github.com/database-playground/backend-v2/ent/point"
+	"github.com/database-playground/backend-v2/graph/defs"
+	"github.com/database-playground/backend-v2/internal/auth"
+	"github.com/database-playground/backend-v2/internal/scope"
 )
 
 // Event is the resolver for the event field.
 func (r *queryResolver) Event(ctx context.Context, id int) (*ent.Event, error) {
-	panic(fmt.Errorf("not implemented: Event - event"))
+	entClient := r.EntClient(ctx)
+
+	tokenInfo, ok := auth.GetUser(ctx)
+	if !ok {
+		return nil, defs.ErrUnauthorized
+	}
+
+	event, err := entClient.Event.Query().
+		Where(event.ID(id)).
+		Only(ctx)
+	if ent.IsNotFound(err) {
+		return nil, defs.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the user has the "event:read" scope
+	// If no, check if the event is owned by the user
+	if !scope.ShouldAllow("event:read", tokenInfo.Scopes) && event.UserID != tokenInfo.UserID {
+		return nil, defs.ErrForbidden
+	}
+
+	return event, nil
 }
 
 // PointGrant is the resolver for the pointGrant field.
 func (r *queryResolver) PointGrant(ctx context.Context, id int) (*ent.Point, error) {
-	panic(fmt.Errorf("not implemented: PointGrant - pointGrant"))
+	entClient := r.EntClient(ctx)
+
+	tokenInfo, ok := auth.GetUser(ctx)
+	if !ok {
+		return nil, defs.ErrUnauthorized
+	}
+
+	point, err := entClient.Point.Query().
+		Where(point.ID(id)).
+		Only(ctx)
+	if ent.IsNotFound(err) {
+		return nil, defs.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the user has the "point:read" scope
+	// If no, check if the point is owned by the user
+	if !scope.ShouldAllow("point:read", tokenInfo.Scopes) {
+		user, err := point.User(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if user.ID != tokenInfo.UserID {
+			return nil, defs.ErrForbidden
+		}
+
+		return point, nil
+	}
+
+	return point, nil
 }
