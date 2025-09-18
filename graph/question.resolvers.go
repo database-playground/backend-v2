@@ -89,7 +89,7 @@ func (r *mutationResolver) DeleteDatabase(ctx context.Context, id int) (bool, er
 }
 
 // SubmitAnswer is the resolver for the submitAnswer field.
-func (r *mutationResolver) SubmitAnswer(ctx context.Context, id int, input model.SubmitAnswerInput) (*models.SubmissionResult, error) {
+func (r *mutationResolver) SubmitAnswer(ctx context.Context, id int, answer string) (*model.SubmissionResult, error) {
 	user, ok := auth.GetUser(ctx)
 	if !ok {
 		return nil, defs.ErrUnauthorized
@@ -98,7 +98,7 @@ func (r *mutationResolver) SubmitAnswer(ctx context.Context, id int, input model
 	submissionResult, err := r.submissionService.SubmitAnswer(ctx, submission.SubmitAnswerInput{
 		SubmitterID: user.UserID,
 		QuestionID:  id,
-		Answer:      input.Answer,
+		Answer:      answer,
 	})
 	if err != nil {
 		if errors.Is(err, submission.ErrQuestionNotFound) {
@@ -108,7 +108,10 @@ func (r *mutationResolver) SubmitAnswer(ctx context.Context, id int, input model
 		return nil, err
 	}
 
-	return &submissionResult, nil
+	return &model.SubmissionResult{
+		Result: submissionResult.QueryResult,
+		Error:  submissionResult.Error,
+	}, nil
 }
 
 // Question is the resolver for the question field.
@@ -136,7 +139,7 @@ func (r *queryResolver) Database(ctx context.Context, id int) (*ent.Database, er
 }
 
 // ReferenceAnswerResult is the resolver for the referenceAnswerResult field.
-func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Question) (*models.SqlResponse, error) {
+func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Question) (*models.SQLExecutionResult, error) {
 	database, err := obj.QueryDatabase().Only(ctx)
 	if err != nil {
 		return nil, err
@@ -147,7 +150,7 @@ func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Q
 		return nil, err
 	}
 
-	return &models.SqlResponse{
+	return &models.SQLExecutionResult{
 		Columns: response.Columns,
 		Rows:    response.Rows,
 	}, nil

@@ -20,8 +20,9 @@ func (Submission) Fields() []ent.Field {
 		field.String("submitted_code").NotEmpty(), // SQL code submitted by the user
 		field.Enum("status").
 			Values("pending", "success", "failed"), // Status of the submission
-		field.JSON("result", models.SubmissionResult{}), // Result of the submission
-		field.Time("submitted_at").Default(time.Now),    // Time the submission was made
+		field.JSON("query_result", &models.UserSQLExecutionResult{}).Optional(), // The SQL query result of the submission
+		field.String("error").Optional().Nillable(),                             // Error of the submission
+		field.Time("submitted_at").Default(time.Now),                            // Time the submission was made
 	}
 }
 
