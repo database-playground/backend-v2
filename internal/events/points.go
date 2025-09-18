@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/database-playground/backend-v2/ent"
-	"github.com/database-playground/backend-v2/ent/events"
-	"github.com/database-playground/backend-v2/ent/points"
+	"github.com/database-playground/backend-v2/ent/event"
+	"github.com/database-playground/backend-v2/ent/point"
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
@@ -34,7 +34,7 @@ func NewPointsGranter(entClient *ent.Client) *PointsGranter {
 }
 
 // HandleEvent handles the event creation.
-func (d *PointsGranter) HandleEvent(ctx context.Context, event *ent.Events) error {
+func (d *PointsGranter) HandleEvent(ctx context.Context, event *ent.Event) error {
 	switch event.Type {
 	case string(EventTypeLogin):
 		ok, err := d.GrantDailyLoginPoints(ctx, event.UserID)
@@ -49,10 +49,10 @@ func (d *PointsGranter) HandleEvent(ctx context.Context, event *ent.Events) erro
 // GrantDailyLoginPoints grants the "daily login" points to a user.
 func (d *PointsGranter) GrantDailyLoginPoints(ctx context.Context, userID int) (bool, error) {
 	// Check if we have granted the "daily login" points for this user today.
-	hasPointsRecord, err := d.entClient.Points.Query().
-		Where(points.HasUserWith(user.ID(userID))).
-		Where(points.DescriptionEQ(PointDescriptionDailyLogin)).
-		Where(points.GrantedAtGTE(time.Now().AddDate(0, 0, -1))).Exist(ctx)
+	hasPointsRecord, err := d.entClient.Point.Query().
+		Where(point.HasUserWith(user.ID(userID))).
+		Where(point.DescriptionEQ(PointDescriptionDailyLogin)).
+		Where(point.GrantedAtGTE(time.Now().AddDate(0, 0, -1))).Exist(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -61,10 +61,10 @@ func (d *PointsGranter) GrantDailyLoginPoints(ctx context.Context, userID int) (
 	}
 
 	// Check if the user has logged in today.
-	hasTodayLoginRecord, err := d.entClient.Events.Query().
-		Where(events.Type(string(EventTypeLogin))).
-		Where(events.UserID(userID)).
-		Where(events.TriggeredAtGTE(time.Now().AddDate(0, 0, -1))).
+	hasTodayLoginRecord, err := d.entClient.Event.Query().
+		Where(event.Type(string(EventTypeLogin))).
+		Where(event.UserID(userID)).
+		Where(event.TriggeredAtGTE(time.Now().AddDate(0, 0, -1))).
 		Exist(ctx)
 	if err != nil {
 		return false, err
@@ -74,7 +74,7 @@ func (d *PointsGranter) GrantDailyLoginPoints(ctx context.Context, userID int) (
 	}
 
 	// Grant the "daily login" points to the user.
-	err = d.entClient.Points.Create().
+	err = d.entClient.Point.Create().
 		SetUserID(userID).
 		SetDescription(PointDescriptionDailyLogin).
 		SetPoints(PointValueDailyLogin).
@@ -89,10 +89,10 @@ func (d *PointsGranter) GrantDailyLoginPoints(ctx context.Context, userID int) (
 // GrantWeeklyLoginPoints grants the "weekly login" points to a user.
 func (d *PointsGranter) GrantWeeklyLoginPoints(ctx context.Context, userID int) (bool, error) {
 	// Check if we have granted the "weekly login" points for this user this week.
-	hasPointsRecord, err := d.entClient.Points.Query().
-		Where(points.HasUserWith(user.ID(userID))).
-		Where(points.DescriptionEQ(PointDescriptionWeeklyLogin)).
-		Where(points.GrantedAtGTE(time.Now().AddDate(0, 0, -7))).Exist(ctx)
+	hasPointsRecord, err := d.entClient.Point.Query().
+		Where(point.HasUserWith(user.ID(userID))).
+		Where(point.DescriptionEQ(PointDescriptionWeeklyLogin)).
+		Where(point.GrantedAtGTE(time.Now().AddDate(0, 0, -7))).Exist(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -101,10 +101,10 @@ func (d *PointsGranter) GrantWeeklyLoginPoints(ctx context.Context, userID int) 
 	}
 
 	// Check if the user has logged in every day this week.
-	weekLoginRecords, err := d.entClient.Events.Query().
-		Where(events.Type(string(EventTypeLogin))).
-		Where(events.UserID(userID)).
-		Where(events.TriggeredAtGTE(time.Now().AddDate(0, 0, -7))).
+	weekLoginRecords, err := d.entClient.Event.Query().
+		Where(event.Type(string(EventTypeLogin))).
+		Where(event.UserID(userID)).
+		Where(event.TriggeredAtGTE(time.Now().AddDate(0, 0, -7))).
 		All(ctx)
 	if err != nil {
 		return false, err
@@ -121,7 +121,7 @@ func (d *PointsGranter) GrantWeeklyLoginPoints(ctx context.Context, userID int) 
 	}
 
 	// Grant the "weekly login" points to the user.
-	err = d.entClient.Points.Create().
+	err = d.entClient.Point.Create().
 		SetUserID(userID).
 		SetDescription(PointDescriptionWeeklyLogin).
 		SetPoints(PointValueWeeklyLogin).

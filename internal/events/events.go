@@ -34,7 +34,7 @@ type Event struct {
 //
 // You can think it as the callback of the event.
 type EventHandler interface {
-	HandleEvent(ctx context.Context, event *ent.Events) error
+	HandleEvent(ctx context.Context, event *ent.Event) error
 }
 
 // TriggerEvent triggers an event.
@@ -47,7 +47,7 @@ func (s *EventService) TriggerEvent(ctx context.Context, event Event) {
 
 // triggerEvent triggers an event synchronously.
 func (s *EventService) triggerEvent(ctx context.Context, event Event) error {
-	eventEntity, err := s.entClient.Events.Create().
+	eventEntity, err := s.entClient.Event.Create().
 		SetType(string(event.Type)).
 		SetPayload(event.Payload).
 		SetUserID(event.UserID).

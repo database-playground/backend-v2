@@ -11,9 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/database-playground/backend-v2/ent/database"
-	"github.com/database-playground/backend-v2/ent/events"
+	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
-	"github.com/database-playground/backend-v2/ent/points"
+	"github.com/database-playground/backend-v2/ent/point"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/scopeset"
 	"github.com/database-playground/backend-v2/ent/submission"
@@ -116,7 +116,7 @@ func newDatabasePaginateArgs(rv map[string]any) *databasePaginateArgs {
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (_q *EventsQuery) CollectFields(ctx context.Context, satisfies ...string) (*EventsQuery, error) {
+func (_q *EventQuery) CollectFields(ctx context.Context, satisfies ...string) (*EventQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
 		return _q, nil
@@ -127,12 +127,12 @@ func (_q *EventsQuery) CollectFields(ctx context.Context, satisfies ...string) (
 	return _q, nil
 }
 
-func (_q *EventsQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+func (_q *EventQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
 	var (
 		unknownSeen    bool
-		fieldSeen      = make(map[string]struct{}, len(events.Columns))
-		selectedFields = []string{events.FieldID}
+		fieldSeen      = make(map[string]struct{}, len(event.Columns))
+		selectedFields = []string{event.FieldID}
 	)
 	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
@@ -147,29 +147,29 @@ func (_q *EventsQuery) collectField(ctx context.Context, oneNode bool, opCtx *gr
 				return err
 			}
 			_q.withUser = query
-			if _, ok := fieldSeen[events.FieldUserID]; !ok {
-				selectedFields = append(selectedFields, events.FieldUserID)
-				fieldSeen[events.FieldUserID] = struct{}{}
+			if _, ok := fieldSeen[event.FieldUserID]; !ok {
+				selectedFields = append(selectedFields, event.FieldUserID)
+				fieldSeen[event.FieldUserID] = struct{}{}
 			}
 		case "userID":
-			if _, ok := fieldSeen[events.FieldUserID]; !ok {
-				selectedFields = append(selectedFields, events.FieldUserID)
-				fieldSeen[events.FieldUserID] = struct{}{}
+			if _, ok := fieldSeen[event.FieldUserID]; !ok {
+				selectedFields = append(selectedFields, event.FieldUserID)
+				fieldSeen[event.FieldUserID] = struct{}{}
 			}
 		case "type":
-			if _, ok := fieldSeen[events.FieldType]; !ok {
-				selectedFields = append(selectedFields, events.FieldType)
-				fieldSeen[events.FieldType] = struct{}{}
+			if _, ok := fieldSeen[event.FieldType]; !ok {
+				selectedFields = append(selectedFields, event.FieldType)
+				fieldSeen[event.FieldType] = struct{}{}
 			}
 		case "triggeredAt":
-			if _, ok := fieldSeen[events.FieldTriggeredAt]; !ok {
-				selectedFields = append(selectedFields, events.FieldTriggeredAt)
-				fieldSeen[events.FieldTriggeredAt] = struct{}{}
+			if _, ok := fieldSeen[event.FieldTriggeredAt]; !ok {
+				selectedFields = append(selectedFields, event.FieldTriggeredAt)
+				fieldSeen[event.FieldTriggeredAt] = struct{}{}
 			}
 		case "payload":
-			if _, ok := fieldSeen[events.FieldPayload]; !ok {
-				selectedFields = append(selectedFields, events.FieldPayload)
-				fieldSeen[events.FieldPayload] = struct{}{}
+			if _, ok := fieldSeen[event.FieldPayload]; !ok {
+				selectedFields = append(selectedFields, event.FieldPayload)
+				fieldSeen[event.FieldPayload] = struct{}{}
 			}
 		case "id":
 		case "__typename":
@@ -183,14 +183,14 @@ func (_q *EventsQuery) collectField(ctx context.Context, oneNode bool, opCtx *gr
 	return nil
 }
 
-type eventsPaginateArgs struct {
+type eventPaginateArgs struct {
 	first, last   *int
 	after, before *Cursor
-	opts          []EventsPaginateOption
+	opts          []EventPaginateOption
 }
 
-func newEventsPaginateArgs(rv map[string]any) *eventsPaginateArgs {
-	args := &eventsPaginateArgs{}
+func newEventPaginateArgs(rv map[string]any) *eventPaginateArgs {
+	args := &eventPaginateArgs{}
 	if rv == nil {
 		return args
 	}
@@ -211,7 +211,7 @@ func newEventsPaginateArgs(rv map[string]any) *eventsPaginateArgs {
 		case map[string]any:
 			var (
 				err1, err2 error
-				order      = &EventsOrder{Field: &EventsOrderField{}, Direction: entgql.OrderDirectionAsc}
+				order      = &EventOrder{Field: &EventOrderField{}, Direction: entgql.OrderDirectionAsc}
 			)
 			if d, ok := v[directionField]; ok {
 				err1 = order.Direction.UnmarshalGQL(d)
@@ -220,16 +220,16 @@ func newEventsPaginateArgs(rv map[string]any) *eventsPaginateArgs {
 				err2 = order.Field.UnmarshalGQL(f)
 			}
 			if err1 == nil && err2 == nil {
-				args.opts = append(args.opts, WithEventsOrder(order))
+				args.opts = append(args.opts, WithEventOrder(order))
 			}
-		case *EventsOrder:
+		case *EventOrder:
 			if v != nil {
-				args.opts = append(args.opts, WithEventsOrder(v))
+				args.opts = append(args.opts, WithEventOrder(v))
 			}
 		}
 	}
-	if v, ok := rv[whereField].(*EventsWhereInput); ok {
-		args.opts = append(args.opts, WithEventsFilter(v.Filter))
+	if v, ok := rv[whereField].(*EventWhereInput); ok {
+		args.opts = append(args.opts, WithEventFilter(v.Filter))
 	}
 	return args
 }
@@ -335,7 +335,7 @@ func newGroupPaginateArgs(rv map[string]any) *groupPaginateArgs {
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (_q *PointsQuery) CollectFields(ctx context.Context, satisfies ...string) (*PointsQuery, error) {
+func (_q *PointQuery) CollectFields(ctx context.Context, satisfies ...string) (*PointQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
 		return _q, nil
@@ -346,12 +346,12 @@ func (_q *PointsQuery) CollectFields(ctx context.Context, satisfies ...string) (
 	return _q, nil
 }
 
-func (_q *PointsQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+func (_q *PointQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
 	var (
 		unknownSeen    bool
-		fieldSeen      = make(map[string]struct{}, len(points.Columns))
-		selectedFields = []string{points.FieldID}
+		fieldSeen      = make(map[string]struct{}, len(point.Columns))
+		selectedFields = []string{point.FieldID}
 	)
 	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
@@ -367,19 +367,19 @@ func (_q *PointsQuery) collectField(ctx context.Context, oneNode bool, opCtx *gr
 			}
 			_q.withUser = query
 		case "points":
-			if _, ok := fieldSeen[points.FieldPoints]; !ok {
-				selectedFields = append(selectedFields, points.FieldPoints)
-				fieldSeen[points.FieldPoints] = struct{}{}
+			if _, ok := fieldSeen[point.FieldPoints]; !ok {
+				selectedFields = append(selectedFields, point.FieldPoints)
+				fieldSeen[point.FieldPoints] = struct{}{}
 			}
 		case "grantedAt":
-			if _, ok := fieldSeen[points.FieldGrantedAt]; !ok {
-				selectedFields = append(selectedFields, points.FieldGrantedAt)
-				fieldSeen[points.FieldGrantedAt] = struct{}{}
+			if _, ok := fieldSeen[point.FieldGrantedAt]; !ok {
+				selectedFields = append(selectedFields, point.FieldGrantedAt)
+				fieldSeen[point.FieldGrantedAt] = struct{}{}
 			}
 		case "description":
-			if _, ok := fieldSeen[points.FieldDescription]; !ok {
-				selectedFields = append(selectedFields, points.FieldDescription)
-				fieldSeen[points.FieldDescription] = struct{}{}
+			if _, ok := fieldSeen[point.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, point.FieldDescription)
+				fieldSeen[point.FieldDescription] = struct{}{}
 			}
 		case "id":
 		case "__typename":
@@ -393,14 +393,14 @@ func (_q *PointsQuery) collectField(ctx context.Context, oneNode bool, opCtx *gr
 	return nil
 }
 
-type pointsPaginateArgs struct {
+type pointPaginateArgs struct {
 	first, last   *int
 	after, before *Cursor
-	opts          []PointsPaginateOption
+	opts          []PointPaginateOption
 }
 
-func newPointsPaginateArgs(rv map[string]any) *pointsPaginateArgs {
-	args := &pointsPaginateArgs{}
+func newPointPaginateArgs(rv map[string]any) *pointPaginateArgs {
+	args := &pointPaginateArgs{}
 	if rv == nil {
 		return args
 	}
@@ -421,7 +421,7 @@ func newPointsPaginateArgs(rv map[string]any) *pointsPaginateArgs {
 		case map[string]any:
 			var (
 				err1, err2 error
-				order      = &PointsOrder{Field: &PointsOrderField{}, Direction: entgql.OrderDirectionAsc}
+				order      = &PointOrder{Field: &PointOrderField{}, Direction: entgql.OrderDirectionAsc}
 			)
 			if d, ok := v[directionField]; ok {
 				err1 = order.Direction.UnmarshalGQL(d)
@@ -430,16 +430,16 @@ func newPointsPaginateArgs(rv map[string]any) *pointsPaginateArgs {
 				err2 = order.Field.UnmarshalGQL(f)
 			}
 			if err1 == nil && err2 == nil {
-				args.opts = append(args.opts, WithPointsOrder(order))
+				args.opts = append(args.opts, WithPointOrder(order))
 			}
-		case *PointsOrder:
+		case *PointOrder:
 			if v != nil {
-				args.opts = append(args.opts, WithPointsOrder(v))
+				args.opts = append(args.opts, WithPointOrder(v))
 			}
 		}
 	}
-	if v, ok := rv[whereField].(*PointsWhereInput); ok {
-		args.opts = append(args.opts, WithPointsFilter(v.Filter))
+	if v, ok := rv[whereField].(*PointWhereInput); ok {
+		args.opts = append(args.opts, WithPointFilter(v.Filter))
 	}
 	return args
 }
@@ -835,13 +835,13 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = (&PointsClient{config: _q.config}).Query()
+				query = (&PointClient{config: _q.config}).Query()
 			)
-			args := newPointsPaginateArgs(fieldArgs(ctx, new(PointsWhereInput), path...))
+			args := newPointPaginateArgs(fieldArgs(ctx, new(PointWhereInput), path...))
 			if err := validateFirstLast(args.first, args.last); err != nil {
 				return fmt.Errorf("validate first and last in path %q: %w", path, err)
 			}
-			pager, err := newPointsPager(args.opts, args.last != nil)
+			pager, err := newPointPager(args.opts, args.last != nil)
 			if err != nil {
 				return fmt.Errorf("create new pager in path %q: %w", path, err)
 			}
@@ -902,7 +902,7 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 			}
 			path = append(path, edgesField, nodeField)
 			if field := collectedField(ctx, path...); field != nil {
-				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, pointsImplementors)...); err != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, pointImplementors)...); err != nil {
 					return err
 				}
 			}
@@ -916,7 +916,7 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 			} else {
 				query = pager.applyOrder(query)
 			}
-			_q.WithNamedPoints(alias, func(wq *PointsQuery) {
+			_q.WithNamedPoints(alias, func(wq *PointQuery) {
 				*wq = *query
 			})
 
@@ -924,13 +924,13 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = (&EventsClient{config: _q.config}).Query()
+				query = (&EventClient{config: _q.config}).Query()
 			)
-			args := newEventsPaginateArgs(fieldArgs(ctx, new(EventsWhereInput), path...))
+			args := newEventPaginateArgs(fieldArgs(ctx, new(EventWhereInput), path...))
 			if err := validateFirstLast(args.first, args.last); err != nil {
 				return fmt.Errorf("validate first and last in path %q: %w", path, err)
 			}
-			pager, err := newEventsPager(args.opts, args.last != nil)
+			pager, err := newEventPager(args.opts, args.last != nil)
 			if err != nil {
 				return fmt.Errorf("create new pager in path %q: %w", path, err)
 			}
@@ -991,7 +991,7 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 			}
 			path = append(path, edgesField, nodeField)
 			if field := collectedField(ctx, path...); field != nil {
-				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, eventsImplementors)...); err != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, eventImplementors)...); err != nil {
 					return err
 				}
 			}
@@ -1005,7 +1005,7 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 			} else {
 				query = pager.applyOrder(query)
 			}
-			_q.WithNamedEvents(alias, func(wq *EventsQuery) {
+			_q.WithNamedEvents(alias, func(wq *EventQuery) {
 				*wq = *query
 			})
 

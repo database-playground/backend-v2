@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/database-playground/backend-v2/ent"
-	"github.com/database-playground/backend-v2/ent/events"
+	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
@@ -96,9 +96,9 @@ func TestSubmitAnswer_Success_MatchingAnswer(t *testing.T) {
 
 	// Verify event was triggered
 	ctx := context.Background()
-	events, err := client.Events.Query().
-		Where(events.UserIDEQ(userID)).
-		Where(events.TypeEQ(string(eventsService.EventTypeSubmitAnswer))).
+	events, err := client.Event.Query().
+		Where(event.UserIDEQ(userID)).
+		Where(event.TypeEQ(string(eventsService.EventTypeSubmitAnswer))).
 		All(ctx)
 	require.NoError(t, err)
 	require.Len(t, events, 1)
@@ -384,9 +384,9 @@ func TestSubmitAnswer_Integration_MultipleSubmissions(t *testing.T) {
 	require.Len(t, submissions, 3)
 
 	// Verify all events were triggered
-	eventRecords, err := client.Events.Query().
-		Where(events.UserIDEQ(testUser.ID)).
-		Where(events.TypeEQ(string(eventsService.EventTypeSubmitAnswer))).
+	eventRecords, err := client.Event.Query().
+		Where(event.UserIDEQ(testUser.ID)).
+		Where(event.TypeEQ(string(eventsService.EventTypeSubmitAnswer))).
 		All(ctx)
 	require.NoError(t, err)
 	require.Len(t, eventRecords, 3)
@@ -431,9 +431,9 @@ func TestSubmitAnswer_EventAndSubmissionRecordGeneration(t *testing.T) {
 		require.NotZero(t, submissionRecord.SubmittedAt)
 
 		// Verify event was created with correct data
-		eventRecords, err := client.Events.Query().
-			Where(events.UserIDEQ(userID)).
-			Where(events.TypeEQ(string(eventsService.EventTypeSubmitAnswer))).
+		eventRecords, err := client.Event.Query().
+			Where(event.UserIDEQ(userID)).
+			Where(event.TypeEQ(string(eventsService.EventTypeSubmitAnswer))).
 			All(ctx)
 		require.NoError(t, err)
 		require.Len(t, eventRecords, 1)
@@ -475,9 +475,9 @@ func TestSubmitAnswer_EventAndSubmissionRecordGeneration(t *testing.T) {
 		require.NotZero(t, failedSubmission.SubmittedAt)
 
 		// Verify event count increased (should now have 2 events total)
-		allEventRecords, err := client.Events.Query().
-			Where(events.UserIDEQ(userID)).
-			Where(events.TypeEQ(string(eventsService.EventTypeSubmitAnswer))).
+		allEventRecords, err := client.Event.Query().
+			Where(event.UserIDEQ(userID)).
+			Where(event.TypeEQ(string(eventsService.EventTypeSubmitAnswer))).
 			All(ctx)
 		require.NoError(t, err)
 		require.Len(t, allEventRecords, 2) // One from successful, one from failed
@@ -490,9 +490,9 @@ func TestSubmitAnswer_EventAndSubmissionRecordGeneration(t *testing.T) {
 			Count(ctx)
 		require.NoError(t, err)
 
-		initialEventCount, err := client.Events.Query().
-			Where(events.UserIDEQ(userID)).
-			Where(events.TypeEQ(string(eventsService.EventTypeSubmitAnswer))).
+		initialEventCount, err := client.Event.Query().
+			Where(event.UserIDEQ(userID)).
+			Where(event.TypeEQ(string(eventsService.EventTypeSubmitAnswer))).
 			Count(ctx)
 		require.NoError(t, err)
 
@@ -517,9 +517,9 @@ func TestSubmitAnswer_EventAndSubmissionRecordGeneration(t *testing.T) {
 		require.Equal(t, initialSubmissionCount+3, finalSubmissionCount)
 
 		// Verify event count increased by 3
-		finalEventCount, err := client.Events.Query().
-			Where(events.UserIDEQ(userID)).
-			Where(events.TypeEQ(string(eventsService.EventTypeSubmitAnswer))).
+		finalEventCount, err := client.Event.Query().
+			Where(event.UserIDEQ(userID)).
+			Where(event.TypeEQ(string(eventsService.EventTypeSubmitAnswer))).
 			Count(ctx)
 		require.NoError(t, err)
 		require.Equal(t, initialEventCount+3, finalEventCount)

@@ -46,12 +46,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "events_type",
+				Name:    "event_type",
 				Unique:  false,
 				Columns: []*schema.Column{EventsColumns[1]},
 			},
 			{
-				Name:    "events_type_user_id",
+				Name:    "event_type_user_id",
 				Unique:  false,
 				Columns: []*schema.Column{EventsColumns[1], EventsColumns[4]},
 			},

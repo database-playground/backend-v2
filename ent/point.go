@@ -9,12 +9,12 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/database-playground/backend-v2/ent/points"
+	"github.com/database-playground/backend-v2/ent/point"
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
-// Points is the model entity for the Points schema.
-type Points struct {
+// Point is the model entity for the Point schema.
+type Point struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
@@ -25,14 +25,14 @@ type Points struct {
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the PointsQuery when eager-loading is set.
-	Edges        PointsEdges `json:"edges"`
+	// The values are being populated by the PointQuery when eager-loading is set.
+	Edges        PointEdges `json:"edges"`
 	user_points  *int
 	selectValues sql.SelectValues
 }
 
-// PointsEdges holds the relations/edges for other nodes in the graph.
-type PointsEdges struct {
+// PointEdges holds the relations/edges for other nodes in the graph.
+type PointEdges struct {
 	// User holds the value of the user edge.
 	User *User `json:"user,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -44,7 +44,7 @@ type PointsEdges struct {
 
 // UserOrErr returns the User value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e PointsEdges) UserOrErr() (*User, error) {
+func (e PointEdges) UserOrErr() (*User, error) {
 	if e.User != nil {
 		return e.User, nil
 	} else if e.loadedTypes[0] {
@@ -54,17 +54,17 @@ func (e PointsEdges) UserOrErr() (*User, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*Points) scanValues(columns []string) ([]any, error) {
+func (*Point) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case points.FieldID, points.FieldPoints:
+		case point.FieldID, point.FieldPoints:
 			values[i] = new(sql.NullInt64)
-		case points.FieldDescription:
+		case point.FieldDescription:
 			values[i] = new(sql.NullString)
-		case points.FieldGrantedAt:
+		case point.FieldGrantedAt:
 			values[i] = new(sql.NullTime)
-		case points.ForeignKeys[0]: // user_points
+		case point.ForeignKeys[0]: // user_points
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -74,38 +74,38 @@ func (*Points) scanValues(columns []string) ([]any, error) {
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the Points fields.
-func (_m *Points) assignValues(columns []string, values []any) error {
+// to the Point fields.
+func (_m *Point) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
 	for i := range columns {
 		switch columns[i] {
-		case points.FieldID:
+		case point.FieldID:
 			value, ok := values[i].(*sql.NullInt64)
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			_m.ID = int(value.Int64)
-		case points.FieldPoints:
+		case point.FieldPoints:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field points", values[i])
 			} else if value.Valid {
 				_m.Points = int(value.Int64)
 			}
-		case points.FieldGrantedAt:
+		case point.FieldGrantedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field granted_at", values[i])
 			} else if value.Valid {
 				_m.GrantedAt = value.Time
 			}
-		case points.FieldDescription:
+		case point.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
 				_m.Description = value.String
 			}
-		case points.ForeignKeys[0]:
+		case point.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field user_points", value)
 			} else if value.Valid {
@@ -119,39 +119,39 @@ func (_m *Points) assignValues(columns []string, values []any) error {
 	return nil
 }
 
-// Value returns the ent.Value that was dynamically selected and assigned to the Points.
+// Value returns the ent.Value that was dynamically selected and assigned to the Point.
 // This includes values selected through modifiers, order, etc.
-func (_m *Points) Value(name string) (ent.Value, error) {
+func (_m *Point) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
 }
 
-// QueryUser queries the "user" edge of the Points entity.
-func (_m *Points) QueryUser() *UserQuery {
-	return NewPointsClient(_m.config).QueryUser(_m)
+// QueryUser queries the "user" edge of the Point entity.
+func (_m *Point) QueryUser() *UserQuery {
+	return NewPointClient(_m.config).QueryUser(_m)
 }
 
-// Update returns a builder for updating this Points.
-// Note that you need to call Points.Unwrap() before calling this method if this Points
+// Update returns a builder for updating this Point.
+// Note that you need to call Point.Unwrap() before calling this method if this Point
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (_m *Points) Update() *PointsUpdateOne {
-	return NewPointsClient(_m.config).UpdateOne(_m)
+func (_m *Point) Update() *PointUpdateOne {
+	return NewPointClient(_m.config).UpdateOne(_m)
 }
 
-// Unwrap unwraps the Points entity that was returned from a transaction after it was closed,
+// Unwrap unwraps the Point entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (_m *Points) Unwrap() *Points {
+func (_m *Point) Unwrap() *Point {
 	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: Points is not a transactional entity")
+		panic("ent: Point is not a transactional entity")
 	}
 	_m.config.driver = _tx.drv
 	return _m
 }
 
 // String implements the fmt.Stringer.
-func (_m *Points) String() string {
+func (_m *Point) String() string {
 	var builder strings.Builder
-	builder.WriteString("Points(")
+	builder.WriteString("Point(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("points=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Points))
@@ -165,5 +165,5 @@ func (_m *Points) String() string {
 	return builder.String()
 }
 
-// PointsSlice is a parsable slice of Points.
-type PointsSlice []*Points
+// Points is a parsable slice of Point.
+type Points []*Point

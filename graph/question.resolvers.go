@@ -7,6 +7,7 @@ package graph
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"entgo.io/contrib/entgql"
 	"github.com/database-playground/backend-v2/ent"
@@ -139,6 +140,11 @@ func (r *queryResolver) Database(ctx context.Context, id int) (*ent.Database, er
 	}
 
 	return database, nil
+}
+
+// Submission is the resolver for the submission field.
+func (r *queryResolver) Submission(ctx context.Context, id int) (*ent.Submission, error) {
+	panic(fmt.Errorf("not implemented: Submission - submission"))
 }
 
 // ReferenceAnswerResult is the resolver for the referenceAnswerResult field.

@@ -21,16 +21,16 @@ func (f DatabaseFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DatabaseMutation", m)
 }
 
-// The EventsFunc type is an adapter to allow the use of ordinary
-// function as Events mutator.
-type EventsFunc func(context.Context, *ent.EventsMutation) (ent.Value, error)
+// The EventFunc type is an adapter to allow the use of ordinary
+// function as Event mutator.
+type EventFunc func(context.Context, *ent.EventMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
-func (f EventsFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.EventsMutation); ok {
+func (f EventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.EventMutation); ok {
 		return f(ctx, mv)
 	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EventsMutation", m)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EventMutation", m)
 }
 
 // The GroupFunc type is an adapter to allow the use of ordinary
@@ -45,16 +45,16 @@ func (f GroupFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMutation", m)
 }
 
-// The PointsFunc type is an adapter to allow the use of ordinary
-// function as Points mutator.
-type PointsFunc func(context.Context, *ent.PointsMutation) (ent.Value, error)
+// The PointFunc type is an adapter to allow the use of ordinary
+// function as Point mutator.
+type PointFunc func(context.Context, *ent.PointMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
-func (f PointsFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.PointsMutation); ok {
+func (f PointFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PointMutation); ok {
 		return f(ctx, mv)
 	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PointsMutation", m)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PointMutation", m)
 }
 
 // The QuestionFunc type is an adapter to allow the use of ordinary

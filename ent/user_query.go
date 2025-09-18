@@ -12,9 +12,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/database-playground/backend-v2/ent/events"
+	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
-	"github.com/database-playground/backend-v2/ent/points"
+	"github.com/database-playground/backend-v2/ent/point"
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
@@ -28,14 +28,14 @@ type UserQuery struct {
 	inters               []Interceptor
 	predicates           []predicate.User
 	withGroup            *GroupQuery
-	withPoints           *PointsQuery
-	withEvents           *EventsQuery
+	withPoints           *PointQuery
+	withEvents           *EventQuery
 	withSubmissions      *SubmissionQuery
 	withFKs              bool
 	modifiers            []func(*sql.Selector)
 	loadTotal            []func(context.Context, []*User) error
-	withNamedPoints      map[string]*PointsQuery
-	withNamedEvents      map[string]*EventsQuery
+	withNamedPoints      map[string]*PointQuery
+	withNamedEvents      map[string]*EventQuery
 	withNamedSubmissions map[string]*SubmissionQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -96,8 +96,8 @@ func (_q *UserQuery) QueryGroup() *GroupQuery {
 }
 
 // QueryPoints chains the current query on the "points" edge.
-func (_q *UserQuery) QueryPoints() *PointsQuery {
-	query := (&PointsClient{config: _q.config}).Query()
+func (_q *UserQuery) QueryPoints() *PointQuery {
+	query := (&PointClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -108,7 +108,7 @@ func (_q *UserQuery) QueryPoints() *PointsQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, selector),
-			sqlgraph.To(points.Table, points.FieldID),
+			sqlgraph.To(point.Table, point.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.PointsTable, user.PointsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
@@ -118,8 +118,8 @@ func (_q *UserQuery) QueryPoints() *PointsQuery {
 }
 
 // QueryEvents chains the current query on the "events" edge.
-func (_q *UserQuery) QueryEvents() *EventsQuery {
-	query := (&EventsClient{config: _q.config}).Query()
+func (_q *UserQuery) QueryEvents() *EventQuery {
+	query := (&EventClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -130,7 +130,7 @@ func (_q *UserQuery) QueryEvents() *EventsQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, selector),
-			sqlgraph.To(events.Table, events.FieldID),
+			sqlgraph.To(event.Table, event.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.EventsTable, user.EventsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
@@ -376,8 +376,8 @@ func (_q *UserQuery) WithGroup(opts ...func(*GroupQuery)) *UserQuery {
 
 // WithPoints tells the query-builder to eager-load the nodes that are connected to
 // the "points" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *UserQuery) WithPoints(opts ...func(*PointsQuery)) *UserQuery {
-	query := (&PointsClient{config: _q.config}).Query()
+func (_q *UserQuery) WithPoints(opts ...func(*PointQuery)) *UserQuery {
+	query := (&PointClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -387,8 +387,8 @@ func (_q *UserQuery) WithPoints(opts ...func(*PointsQuery)) *UserQuery {
 
 // WithEvents tells the query-builder to eager-load the nodes that are connected to
 // the "events" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *UserQuery) WithEvents(opts ...func(*EventsQuery)) *UserQuery {
-	query := (&EventsClient{config: _q.config}).Query()
+func (_q *UserQuery) WithEvents(opts ...func(*EventQuery)) *UserQuery {
+	query := (&EventClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -528,15 +528,15 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	}
 	if query := _q.withPoints; query != nil {
 		if err := _q.loadPoints(ctx, query, nodes,
-			func(n *User) { n.Edges.Points = []*Points{} },
-			func(n *User, e *Points) { n.Edges.Points = append(n.Edges.Points, e) }); err != nil {
+			func(n *User) { n.Edges.Points = []*Point{} },
+			func(n *User, e *Point) { n.Edges.Points = append(n.Edges.Points, e) }); err != nil {
 			return nil, err
 		}
 	}
 	if query := _q.withEvents; query != nil {
 		if err := _q.loadEvents(ctx, query, nodes,
-			func(n *User) { n.Edges.Events = []*Events{} },
-			func(n *User, e *Events) { n.Edges.Events = append(n.Edges.Events, e) }); err != nil {
+			func(n *User) { n.Edges.Events = []*Event{} },
+			func(n *User, e *Event) { n.Edges.Events = append(n.Edges.Events, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -550,14 +550,14 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	for name, query := range _q.withNamedPoints {
 		if err := _q.loadPoints(ctx, query, nodes,
 			func(n *User) { n.appendNamedPoints(name) },
-			func(n *User, e *Points) { n.appendNamedPoints(name, e) }); err != nil {
+			func(n *User, e *Point) { n.appendNamedPoints(name, e) }); err != nil {
 			return nil, err
 		}
 	}
 	for name, query := range _q.withNamedEvents {
 		if err := _q.loadEvents(ctx, query, nodes,
 			func(n *User) { n.appendNamedEvents(name) },
-			func(n *User, e *Events) { n.appendNamedEvents(name, e) }); err != nil {
+			func(n *User, e *Event) { n.appendNamedEvents(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -608,7 +608,7 @@ func (_q *UserQuery) loadGroup(ctx context.Context, query *GroupQuery, nodes []*
 	}
 	return nil
 }
-func (_q *UserQuery) loadPoints(ctx context.Context, query *PointsQuery, nodes []*User, init func(*User), assign func(*User, *Points)) error {
+func (_q *UserQuery) loadPoints(ctx context.Context, query *PointQuery, nodes []*User, init func(*User), assign func(*User, *Point)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*User)
 	for i := range nodes {
@@ -619,7 +619,7 @@ func (_q *UserQuery) loadPoints(ctx context.Context, query *PointsQuery, nodes [
 		}
 	}
 	query.withFKs = true
-	query.Where(predicate.Points(func(s *sql.Selector) {
+	query.Where(predicate.Point(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(user.PointsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
@@ -639,7 +639,7 @@ func (_q *UserQuery) loadPoints(ctx context.Context, query *PointsQuery, nodes [
 	}
 	return nil
 }
-func (_q *UserQuery) loadEvents(ctx context.Context, query *EventsQuery, nodes []*User, init func(*User), assign func(*User, *Events)) error {
+func (_q *UserQuery) loadEvents(ctx context.Context, query *EventQuery, nodes []*User, init func(*User), assign func(*User, *Event)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*User)
 	for i := range nodes {
@@ -650,9 +650,9 @@ func (_q *UserQuery) loadEvents(ctx context.Context, query *EventsQuery, nodes [
 		}
 	}
 	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(events.FieldUserID)
+		query.ctx.AppendFieldOnce(event.FieldUserID)
 	}
-	query.Where(predicate.Events(func(s *sql.Selector) {
+	query.Where(predicate.Event(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(user.EventsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
@@ -787,13 +787,13 @@ func (_q *UserQuery) sqlQuery(ctx context.Context) *sql.Selector {
 
 // WithNamedPoints tells the query-builder to eager-load the nodes that are connected to the "points"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (_q *UserQuery) WithNamedPoints(name string, opts ...func(*PointsQuery)) *UserQuery {
-	query := (&PointsClient{config: _q.config}).Query()
+func (_q *UserQuery) WithNamedPoints(name string, opts ...func(*PointQuery)) *UserQuery {
+	query := (&PointClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
 	if _q.withNamedPoints == nil {
-		_q.withNamedPoints = make(map[string]*PointsQuery)
+		_q.withNamedPoints = make(map[string]*PointQuery)
 	}
 	_q.withNamedPoints[name] = query
 	return _q
@@ -801,13 +801,13 @@ func (_q *UserQuery) WithNamedPoints(name string, opts ...func(*PointsQuery)) *U
 
 // WithNamedEvents tells the query-builder to eager-load the nodes that are connected to the "events"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (_q *UserQuery) WithNamedEvents(name string, opts ...func(*EventsQuery)) *UserQuery {
-	query := (&EventsClient{config: _q.config}).Query()
+func (_q *UserQuery) WithNamedEvents(name string, opts ...func(*EventQuery)) *UserQuery {
+	query := (&EventClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
 	if _q.withNamedEvents == nil {
-		_q.withNamedEvents = make(map[string]*EventsQuery)
+		_q.withNamedEvents = make(map[string]*EventQuery)
 	}
 	_q.withNamedEvents[name] = query
 	return _q

@@ -10,25 +10,25 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/database-playground/backend-v2/ent/points"
+	"github.com/database-playground/backend-v2/ent/point"
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
-// PointsCreate is the builder for creating a Points entity.
-type PointsCreate struct {
+// PointCreate is the builder for creating a Point entity.
+type PointCreate struct {
 	config
-	mutation *PointsMutation
+	mutation *PointMutation
 	hooks    []Hook
 }
 
 // SetPoints sets the "points" field.
-func (_c *PointsCreate) SetPoints(v int) *PointsCreate {
+func (_c *PointCreate) SetPoints(v int) *PointCreate {
 	_c.mutation.SetPoints(v)
 	return _c
 }
 
 // SetNillablePoints sets the "points" field if the given value is not nil.
-func (_c *PointsCreate) SetNillablePoints(v *int) *PointsCreate {
+func (_c *PointCreate) SetNillablePoints(v *int) *PointCreate {
 	if v != nil {
 		_c.SetPoints(*v)
 	}
@@ -36,13 +36,13 @@ func (_c *PointsCreate) SetNillablePoints(v *int) *PointsCreate {
 }
 
 // SetGrantedAt sets the "granted_at" field.
-func (_c *PointsCreate) SetGrantedAt(v time.Time) *PointsCreate {
+func (_c *PointCreate) SetGrantedAt(v time.Time) *PointCreate {
 	_c.mutation.SetGrantedAt(v)
 	return _c
 }
 
 // SetNillableGrantedAt sets the "granted_at" field if the given value is not nil.
-func (_c *PointsCreate) SetNillableGrantedAt(v *time.Time) *PointsCreate {
+func (_c *PointCreate) SetNillableGrantedAt(v *time.Time) *PointCreate {
 	if v != nil {
 		_c.SetGrantedAt(*v)
 	}
@@ -50,13 +50,13 @@ func (_c *PointsCreate) SetNillableGrantedAt(v *time.Time) *PointsCreate {
 }
 
 // SetDescription sets the "description" field.
-func (_c *PointsCreate) SetDescription(v string) *PointsCreate {
+func (_c *PointCreate) SetDescription(v string) *PointCreate {
 	_c.mutation.SetDescription(v)
 	return _c
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (_c *PointsCreate) SetNillableDescription(v *string) *PointsCreate {
+func (_c *PointCreate) SetNillableDescription(v *string) *PointCreate {
 	if v != nil {
 		_c.SetDescription(*v)
 	}
@@ -64,29 +64,29 @@ func (_c *PointsCreate) SetNillableDescription(v *string) *PointsCreate {
 }
 
 // SetUserID sets the "user" edge to the User entity by ID.
-func (_c *PointsCreate) SetUserID(id int) *PointsCreate {
+func (_c *PointCreate) SetUserID(id int) *PointCreate {
 	_c.mutation.SetUserID(id)
 	return _c
 }
 
 // SetUser sets the "user" edge to the User entity.
-func (_c *PointsCreate) SetUser(v *User) *PointsCreate {
+func (_c *PointCreate) SetUser(v *User) *PointCreate {
 	return _c.SetUserID(v.ID)
 }
 
-// Mutation returns the PointsMutation object of the builder.
-func (_c *PointsCreate) Mutation() *PointsMutation {
+// Mutation returns the PointMutation object of the builder.
+func (_c *PointCreate) Mutation() *PointMutation {
 	return _c.mutation
 }
 
-// Save creates the Points in the database.
-func (_c *PointsCreate) Save(ctx context.Context) (*Points, error) {
+// Save creates the Point in the database.
+func (_c *PointCreate) Save(ctx context.Context) (*Point, error) {
 	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (_c *PointsCreate) SaveX(ctx context.Context) *Points {
+func (_c *PointCreate) SaveX(ctx context.Context) *Point {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -95,45 +95,45 @@ func (_c *PointsCreate) SaveX(ctx context.Context) *Points {
 }
 
 // Exec executes the query.
-func (_c *PointsCreate) Exec(ctx context.Context) error {
+func (_c *PointCreate) Exec(ctx context.Context) error {
 	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *PointsCreate) ExecX(ctx context.Context) {
+func (_c *PointCreate) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *PointsCreate) defaults() {
+func (_c *PointCreate) defaults() {
 	if _, ok := _c.mutation.Points(); !ok {
-		v := points.DefaultPoints
+		v := point.DefaultPoints
 		_c.mutation.SetPoints(v)
 	}
 	if _, ok := _c.mutation.GrantedAt(); !ok {
-		v := points.DefaultGrantedAt()
+		v := point.DefaultGrantedAt()
 		_c.mutation.SetGrantedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_c *PointsCreate) check() error {
+func (_c *PointCreate) check() error {
 	if _, ok := _c.mutation.Points(); !ok {
-		return &ValidationError{Name: "points", err: errors.New(`ent: missing required field "Points.points"`)}
+		return &ValidationError{Name: "points", err: errors.New(`ent: missing required field "Point.points"`)}
 	}
 	if _, ok := _c.mutation.GrantedAt(); !ok {
-		return &ValidationError{Name: "granted_at", err: errors.New(`ent: missing required field "Points.granted_at"`)}
+		return &ValidationError{Name: "granted_at", err: errors.New(`ent: missing required field "Point.granted_at"`)}
 	}
 	if len(_c.mutation.UserIDs()) == 0 {
-		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Points.user"`)}
+		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Point.user"`)}
 	}
 	return nil
 }
 
-func (_c *PointsCreate) sqlSave(ctx context.Context) (*Points, error) {
+func (_c *PointCreate) sqlSave(ctx context.Context) (*Point, error) {
 	if err := _c.check(); err != nil {
 		return nil, err
 	}
@@ -151,29 +151,29 @@ func (_c *PointsCreate) sqlSave(ctx context.Context) (*Points, error) {
 	return _node, nil
 }
 
-func (_c *PointsCreate) createSpec() (*Points, *sqlgraph.CreateSpec) {
+func (_c *PointCreate) createSpec() (*Point, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Points{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(points.Table, sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt))
+		_node = &Point{config: _c.config}
+		_spec = sqlgraph.NewCreateSpec(point.Table, sqlgraph.NewFieldSpec(point.FieldID, field.TypeInt))
 	)
 	if value, ok := _c.mutation.Points(); ok {
-		_spec.SetField(points.FieldPoints, field.TypeInt, value)
+		_spec.SetField(point.FieldPoints, field.TypeInt, value)
 		_node.Points = value
 	}
 	if value, ok := _c.mutation.GrantedAt(); ok {
-		_spec.SetField(points.FieldGrantedAt, field.TypeTime, value)
+		_spec.SetField(point.FieldGrantedAt, field.TypeTime, value)
 		_node.GrantedAt = value
 	}
 	if value, ok := _c.mutation.Description(); ok {
-		_spec.SetField(points.FieldDescription, field.TypeString, value)
+		_spec.SetField(point.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
 	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   points.UserTable,
-			Columns: []string{points.UserColumn},
+			Table:   point.UserTable,
+			Columns: []string{point.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
@@ -188,27 +188,27 @@ func (_c *PointsCreate) createSpec() (*Points, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
-// PointsCreateBulk is the builder for creating many Points entities in bulk.
-type PointsCreateBulk struct {
+// PointCreateBulk is the builder for creating many Point entities in bulk.
+type PointCreateBulk struct {
 	config
 	err      error
-	builders []*PointsCreate
+	builders []*PointCreate
 }
 
-// Save creates the Points entities in the database.
-func (_c *PointsCreateBulk) Save(ctx context.Context) ([]*Points, error) {
+// Save creates the Point entities in the database.
+func (_c *PointCreateBulk) Save(ctx context.Context) ([]*Point, error) {
 	if _c.err != nil {
 		return nil, _c.err
 	}
 	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
-	nodes := make([]*Points, len(_c.builders))
+	nodes := make([]*Point, len(_c.builders))
 	mutators := make([]Mutator, len(_c.builders))
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				mutation, ok := m.(*PointsMutation)
+				mutation, ok := m.(*PointMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
 				}
@@ -255,7 +255,7 @@ func (_c *PointsCreateBulk) Save(ctx context.Context) ([]*Points, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_c *PointsCreateBulk) SaveX(ctx context.Context) []*Points {
+func (_c *PointCreateBulk) SaveX(ctx context.Context) []*Point {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -264,13 +264,13 @@ func (_c *PointsCreateBulk) SaveX(ctx context.Context) []*Points {
 }
 
 // Exec executes the query.
-func (_c *PointsCreateBulk) Exec(ctx context.Context) error {
+func (_c *PointCreateBulk) Exec(ctx context.Context) error {
 	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *PointsCreateBulk) ExecX(ctx context.Context) {
+func (_c *PointCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}

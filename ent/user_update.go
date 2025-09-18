@@ -11,9 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/database-playground/backend-v2/ent/events"
+	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
-	"github.com/database-playground/backend-v2/ent/points"
+	"github.com/database-playground/backend-v2/ent/point"
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
@@ -117,14 +117,14 @@ func (_u *UserUpdate) SetGroup(v *Group) *UserUpdate {
 	return _u.SetGroupID(v.ID)
 }
 
-// AddPointIDs adds the "points" edge to the Points entity by IDs.
+// AddPointIDs adds the "points" edge to the Point entity by IDs.
 func (_u *UserUpdate) AddPointIDs(ids ...int) *UserUpdate {
 	_u.mutation.AddPointIDs(ids...)
 	return _u
 }
 
-// AddPoints adds the "points" edges to the Points entity.
-func (_u *UserUpdate) AddPoints(v ...*Points) *UserUpdate {
+// AddPoints adds the "points" edges to the Point entity.
+func (_u *UserUpdate) AddPoints(v ...*Point) *UserUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -132,14 +132,14 @@ func (_u *UserUpdate) AddPoints(v ...*Points) *UserUpdate {
 	return _u.AddPointIDs(ids...)
 }
 
-// AddEventIDs adds the "events" edge to the Events entity by IDs.
+// AddEventIDs adds the "events" edge to the Event entity by IDs.
 func (_u *UserUpdate) AddEventIDs(ids ...int) *UserUpdate {
 	_u.mutation.AddEventIDs(ids...)
 	return _u
 }
 
-// AddEvents adds the "events" edges to the Events entity.
-func (_u *UserUpdate) AddEvents(v ...*Events) *UserUpdate {
+// AddEvents adds the "events" edges to the Event entity.
+func (_u *UserUpdate) AddEvents(v ...*Event) *UserUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -173,20 +173,20 @@ func (_u *UserUpdate) ClearGroup() *UserUpdate {
 	return _u
 }
 
-// ClearPoints clears all "points" edges to the Points entity.
+// ClearPoints clears all "points" edges to the Point entity.
 func (_u *UserUpdate) ClearPoints() *UserUpdate {
 	_u.mutation.ClearPoints()
 	return _u
 }
 
-// RemovePointIDs removes the "points" edge to Points entities by IDs.
+// RemovePointIDs removes the "points" edge to Point entities by IDs.
 func (_u *UserUpdate) RemovePointIDs(ids ...int) *UserUpdate {
 	_u.mutation.RemovePointIDs(ids...)
 	return _u
 }
 
-// RemovePoints removes "points" edges to Points entities.
-func (_u *UserUpdate) RemovePoints(v ...*Points) *UserUpdate {
+// RemovePoints removes "points" edges to Point entities.
+func (_u *UserUpdate) RemovePoints(v ...*Point) *UserUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -194,20 +194,20 @@ func (_u *UserUpdate) RemovePoints(v ...*Points) *UserUpdate {
 	return _u.RemovePointIDs(ids...)
 }
 
-// ClearEvents clears all "events" edges to the Events entity.
+// ClearEvents clears all "events" edges to the Event entity.
 func (_u *UserUpdate) ClearEvents() *UserUpdate {
 	_u.mutation.ClearEvents()
 	return _u
 }
 
-// RemoveEventIDs removes the "events" edge to Events entities by IDs.
+// RemoveEventIDs removes the "events" edge to Event entities by IDs.
 func (_u *UserUpdate) RemoveEventIDs(ids ...int) *UserUpdate {
 	_u.mutation.RemoveEventIDs(ids...)
 	return _u
 }
 
-// RemoveEvents removes "events" edges to Events entities.
-func (_u *UserUpdate) RemoveEvents(v ...*Events) *UserUpdate {
+// RemoveEvents removes "events" edges to Event entities.
+func (_u *UserUpdate) RemoveEvents(v ...*Event) *UserUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -361,7 +361,7 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Columns: []string{user.PointsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(point.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -374,7 +374,7 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Columns: []string{user.PointsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(point.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -390,7 +390,7 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Columns: []string{user.PointsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(point.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -406,7 +406,7 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Columns: []string{user.EventsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(events.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(event.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -419,7 +419,7 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Columns: []string{user.EventsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(events.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(event.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -435,7 +435,7 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Columns: []string{user.EventsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(events.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(event.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -593,14 +593,14 @@ func (_u *UserUpdateOne) SetGroup(v *Group) *UserUpdateOne {
 	return _u.SetGroupID(v.ID)
 }
 
-// AddPointIDs adds the "points" edge to the Points entity by IDs.
+// AddPointIDs adds the "points" edge to the Point entity by IDs.
 func (_u *UserUpdateOne) AddPointIDs(ids ...int) *UserUpdateOne {
 	_u.mutation.AddPointIDs(ids...)
 	return _u
 }
 
-// AddPoints adds the "points" edges to the Points entity.
-func (_u *UserUpdateOne) AddPoints(v ...*Points) *UserUpdateOne {
+// AddPoints adds the "points" edges to the Point entity.
+func (_u *UserUpdateOne) AddPoints(v ...*Point) *UserUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -608,14 +608,14 @@ func (_u *UserUpdateOne) AddPoints(v ...*Points) *UserUpdateOne {
 	return _u.AddPointIDs(ids...)
 }
 
-// AddEventIDs adds the "events" edge to the Events entity by IDs.
+// AddEventIDs adds the "events" edge to the Event entity by IDs.
 func (_u *UserUpdateOne) AddEventIDs(ids ...int) *UserUpdateOne {
 	_u.mutation.AddEventIDs(ids...)
 	return _u
 }
 
-// AddEvents adds the "events" edges to the Events entity.
-func (_u *UserUpdateOne) AddEvents(v ...*Events) *UserUpdateOne {
+// AddEvents adds the "events" edges to the Event entity.
+func (_u *UserUpdateOne) AddEvents(v ...*Event) *UserUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -649,20 +649,20 @@ func (_u *UserUpdateOne) ClearGroup() *UserUpdateOne {
 	return _u
 }
 
-// ClearPoints clears all "points" edges to the Points entity.
+// ClearPoints clears all "points" edges to the Point entity.
 func (_u *UserUpdateOne) ClearPoints() *UserUpdateOne {
 	_u.mutation.ClearPoints()
 	return _u
 }
 
-// RemovePointIDs removes the "points" edge to Points entities by IDs.
+// RemovePointIDs removes the "points" edge to Point entities by IDs.
 func (_u *UserUpdateOne) RemovePointIDs(ids ...int) *UserUpdateOne {
 	_u.mutation.RemovePointIDs(ids...)
 	return _u
 }
 
-// RemovePoints removes "points" edges to Points entities.
-func (_u *UserUpdateOne) RemovePoints(v ...*Points) *UserUpdateOne {
+// RemovePoints removes "points" edges to Point entities.
+func (_u *UserUpdateOne) RemovePoints(v ...*Point) *UserUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -670,20 +670,20 @@ func (_u *UserUpdateOne) RemovePoints(v ...*Points) *UserUpdateOne {
 	return _u.RemovePointIDs(ids...)
 }
 
-// ClearEvents clears all "events" edges to the Events entity.
+// ClearEvents clears all "events" edges to the Event entity.
 func (_u *UserUpdateOne) ClearEvents() *UserUpdateOne {
 	_u.mutation.ClearEvents()
 	return _u
 }
 
-// RemoveEventIDs removes the "events" edge to Events entities by IDs.
+// RemoveEventIDs removes the "events" edge to Event entities by IDs.
 func (_u *UserUpdateOne) RemoveEventIDs(ids ...int) *UserUpdateOne {
 	_u.mutation.RemoveEventIDs(ids...)
 	return _u
 }
 
-// RemoveEvents removes "events" edges to Events entities.
-func (_u *UserUpdateOne) RemoveEvents(v ...*Events) *UserUpdateOne {
+// RemoveEvents removes "events" edges to Event entities.
+func (_u *UserUpdateOne) RemoveEvents(v ...*Event) *UserUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -867,7 +867,7 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Columns: []string{user.PointsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(point.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -880,7 +880,7 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Columns: []string{user.PointsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(point.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -896,7 +896,7 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Columns: []string{user.PointsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(points.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(point.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -912,7 +912,7 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Columns: []string{user.EventsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(events.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(event.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -925,7 +925,7 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Columns: []string{user.EventsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(events.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(event.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -941,7 +941,7 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Columns: []string{user.EventsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(events.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(event.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

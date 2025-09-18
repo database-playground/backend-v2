@@ -20,7 +20,7 @@ func (_m *Database) Questions(ctx context.Context) (result []*Question, err erro
 	return result, err
 }
 
-func (_m *Events) User(ctx context.Context) (*User, error) {
+func (_m *Event) User(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.UserOrErr()
 	if IsNotLoaded(err) {
 		result, err = _m.QueryUser().Only(ctx)
@@ -40,7 +40,7 @@ func (_m *Group) ScopeSets(ctx context.Context) (result []*ScopeSet, err error) 
 	return result, err
 }
 
-func (_m *Points) User(ctx context.Context) (*User, error) {
+func (_m *Point) User(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.UserOrErr()
 	if IsNotLoaded(err) {
 		result, err = _m.QueryUser().Only(ctx)
@@ -105,20 +105,20 @@ func (_m *User) Group(ctx context.Context) (*Group, error) {
 }
 
 func (_m *User) Points(
-	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *PointsOrder, where *PointsWhereInput,
-) (*PointsConnection, error) {
-	opts := []PointsPaginateOption{
-		WithPointsOrder(orderBy),
-		WithPointsFilter(where.Filter),
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *PointOrder, where *PointWhereInput,
+) (*PointConnection, error) {
+	opts := []PointPaginateOption{
+		WithPointOrder(orderBy),
+		WithPointFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
 	totalCount, hasTotalCount := _m.Edges.totalCount[1][alias]
 	if nodes, err := _m.NamedPoints(alias); err == nil || hasTotalCount {
-		pager, err := newPointsPager(opts, last != nil)
+		pager, err := newPointPager(opts, last != nil)
 		if err != nil {
 			return nil, err
 		}
-		conn := &PointsConnection{Edges: []*PointsEdge{}, TotalCount: totalCount}
+		conn := &PointConnection{Edges: []*PointEdge{}, TotalCount: totalCount}
 		conn.build(nodes, pager, after, first, before, last)
 		return conn, nil
 	}
@@ -126,20 +126,20 @@ func (_m *User) Points(
 }
 
 func (_m *User) Events(
-	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *EventsOrder, where *EventsWhereInput,
-) (*EventsConnection, error) {
-	opts := []EventsPaginateOption{
-		WithEventsOrder(orderBy),
-		WithEventsFilter(where.Filter),
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *EventOrder, where *EventWhereInput,
+) (*EventConnection, error) {
+	opts := []EventPaginateOption{
+		WithEventOrder(orderBy),
+		WithEventFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
 	totalCount, hasTotalCount := _m.Edges.totalCount[2][alias]
 	if nodes, err := _m.NamedEvents(alias); err == nil || hasTotalCount {
-		pager, err := newEventsPager(opts, last != nil)
+		pager, err := newEventPager(opts, last != nil)
 		if err != nil {
 			return nil, err
 		}
-		conn := &EventsConnection{Edges: []*EventsEdge{}, TotalCount: totalCount}
+		conn := &EventConnection{Edges: []*EventEdge{}, TotalCount: totalCount}
 		conn.build(nodes, pager, after, first, before, last)
 		return conn, nil
 	}

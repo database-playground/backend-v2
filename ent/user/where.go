@@ -455,7 +455,7 @@ func HasPoints() predicate.User {
 }
 
 // HasPointsWith applies the HasEdge predicate on the "points" edge with a given conditions (other predicates).
-func HasPointsWith(preds ...predicate.Points) predicate.User {
+func HasPointsWith(preds ...predicate.Point) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newPointsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
@@ -478,7 +478,7 @@ func HasEvents() predicate.User {
 }
 
 // HasEventsWith applies the HasEdge predicate on the "events" edge with a given conditions (other predicates).
-func HasEventsWith(preds ...predicate.Events) predicate.User {
+func HasEventsWith(preds ...predicate.Event) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newEventsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {

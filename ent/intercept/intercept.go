@@ -9,9 +9,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/ent/database"
-	"github.com/database-playground/backend-v2/ent/events"
+	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
-	"github.com/database-playground/backend-v2/ent/points"
+	"github.com/database-playground/backend-v2/ent/point"
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/scopeset"
@@ -102,31 +102,31 @@ func (f TraverseDatabase) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.DatabaseQuery", q)
 }
 
-// The EventsFunc type is an adapter to allow the use of ordinary function as a Querier.
-type EventsFunc func(context.Context, *ent.EventsQuery) (ent.Value, error)
+// The EventFunc type is an adapter to allow the use of ordinary function as a Querier.
+type EventFunc func(context.Context, *ent.EventQuery) (ent.Value, error)
 
 // Query calls f(ctx, q).
-func (f EventsFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
-	if q, ok := q.(*ent.EventsQuery); ok {
+func (f EventFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.EventQuery); ok {
 		return f(ctx, q)
 	}
-	return nil, fmt.Errorf("unexpected query type %T. expect *ent.EventsQuery", q)
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.EventQuery", q)
 }
 
-// The TraverseEvents type is an adapter to allow the use of ordinary function as Traverser.
-type TraverseEvents func(context.Context, *ent.EventsQuery) error
+// The TraverseEvent type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseEvent func(context.Context, *ent.EventQuery) error
 
 // Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
-func (f TraverseEvents) Intercept(next ent.Querier) ent.Querier {
+func (f TraverseEvent) Intercept(next ent.Querier) ent.Querier {
 	return next
 }
 
 // Traverse calls f(ctx, q).
-func (f TraverseEvents) Traverse(ctx context.Context, q ent.Query) error {
-	if q, ok := q.(*ent.EventsQuery); ok {
+func (f TraverseEvent) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.EventQuery); ok {
 		return f(ctx, q)
 	}
-	return fmt.Errorf("unexpected query type %T. expect *ent.EventsQuery", q)
+	return fmt.Errorf("unexpected query type %T. expect *ent.EventQuery", q)
 }
 
 // The GroupFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -156,31 +156,31 @@ func (f TraverseGroup) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.GroupQuery", q)
 }
 
-// The PointsFunc type is an adapter to allow the use of ordinary function as a Querier.
-type PointsFunc func(context.Context, *ent.PointsQuery) (ent.Value, error)
+// The PointFunc type is an adapter to allow the use of ordinary function as a Querier.
+type PointFunc func(context.Context, *ent.PointQuery) (ent.Value, error)
 
 // Query calls f(ctx, q).
-func (f PointsFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
-	if q, ok := q.(*ent.PointsQuery); ok {
+func (f PointFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.PointQuery); ok {
 		return f(ctx, q)
 	}
-	return nil, fmt.Errorf("unexpected query type %T. expect *ent.PointsQuery", q)
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.PointQuery", q)
 }
 
-// The TraversePoints type is an adapter to allow the use of ordinary function as Traverser.
-type TraversePoints func(context.Context, *ent.PointsQuery) error
+// The TraversePoint type is an adapter to allow the use of ordinary function as Traverser.
+type TraversePoint func(context.Context, *ent.PointQuery) error
 
 // Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
-func (f TraversePoints) Intercept(next ent.Querier) ent.Querier {
+func (f TraversePoint) Intercept(next ent.Querier) ent.Querier {
 	return next
 }
 
 // Traverse calls f(ctx, q).
-func (f TraversePoints) Traverse(ctx context.Context, q ent.Query) error {
-	if q, ok := q.(*ent.PointsQuery); ok {
+func (f TraversePoint) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.PointQuery); ok {
 		return f(ctx, q)
 	}
-	return fmt.Errorf("unexpected query type %T. expect *ent.PointsQuery", q)
+	return fmt.Errorf("unexpected query type %T. expect *ent.PointQuery", q)
 }
 
 // The QuestionFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -296,12 +296,12 @@ func NewQuery(q ent.Query) (Query, error) {
 	switch q := q.(type) {
 	case *ent.DatabaseQuery:
 		return &query[*ent.DatabaseQuery, predicate.Database, database.OrderOption]{typ: ent.TypeDatabase, tq: q}, nil
-	case *ent.EventsQuery:
-		return &query[*ent.EventsQuery, predicate.Events, events.OrderOption]{typ: ent.TypeEvents, tq: q}, nil
+	case *ent.EventQuery:
+		return &query[*ent.EventQuery, predicate.Event, event.OrderOption]{typ: ent.TypeEvent, tq: q}, nil
 	case *ent.GroupQuery:
 		return &query[*ent.GroupQuery, predicate.Group, group.OrderOption]{typ: ent.TypeGroup, tq: q}, nil
-	case *ent.PointsQuery:
-		return &query[*ent.PointsQuery, predicate.Points, points.OrderOption]{typ: ent.TypePoints, tq: q}, nil
+	case *ent.PointQuery:
+		return &query[*ent.PointQuery, predicate.Point, point.OrderOption]{typ: ent.TypePoint, tq: q}, nil
 	case *ent.QuestionQuery:
 		return &query[*ent.QuestionQuery, predicate.Question, question.OrderOption]{typ: ent.TypeQuestion, tq: q}, nil
 	case *ent.ScopeSetQuery:

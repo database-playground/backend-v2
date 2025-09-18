@@ -42,9 +42,9 @@ type UserEdges struct {
 	// Group holds the value of the group edge.
 	Group *Group `json:"group,omitempty"`
 	// Points holds the value of the points edge.
-	Points []*Points `json:"points,omitempty"`
+	Points []*Point `json:"points,omitempty"`
 	// Events holds the value of the events edge.
-	Events []*Events `json:"events,omitempty"`
+	Events []*Event `json:"events,omitempty"`
 	// Submissions holds the value of the submissions edge.
 	Submissions []*Submission `json:"submissions,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -53,8 +53,8 @@ type UserEdges struct {
 	// totalCount holds the count of the edges above.
 	totalCount [4]map[string]int
 
-	namedPoints      map[string][]*Points
-	namedEvents      map[string][]*Events
+	namedPoints      map[string][]*Point
+	namedEvents      map[string][]*Event
 	namedSubmissions map[string][]*Submission
 }
 
@@ -71,7 +71,7 @@ func (e UserEdges) GroupOrErr() (*Group, error) {
 
 // PointsOrErr returns the Points value or an error if the edge
 // was not loaded in eager-loading.
-func (e UserEdges) PointsOrErr() ([]*Points, error) {
+func (e UserEdges) PointsOrErr() ([]*Point, error) {
 	if e.loadedTypes[1] {
 		return e.Points, nil
 	}
@@ -80,7 +80,7 @@ func (e UserEdges) PointsOrErr() ([]*Points, error) {
 
 // EventsOrErr returns the Events value or an error if the edge
 // was not loaded in eager-loading.
-func (e UserEdges) EventsOrErr() ([]*Events, error) {
+func (e UserEdges) EventsOrErr() ([]*Event, error) {
 	if e.loadedTypes[2] {
 		return e.Events, nil
 	}
@@ -192,12 +192,12 @@ func (_m *User) QueryGroup() *GroupQuery {
 }
 
 // QueryPoints queries the "points" edge of the User entity.
-func (_m *User) QueryPoints() *PointsQuery {
+func (_m *User) QueryPoints() *PointQuery {
 	return NewUserClient(_m.config).QueryPoints(_m)
 }
 
 // QueryEvents queries the "events" edge of the User entity.
-func (_m *User) QueryEvents() *EventsQuery {
+func (_m *User) QueryEvents() *EventQuery {
 	return NewUserClient(_m.config).QueryEvents(_m)
 }
 
@@ -252,7 +252,7 @@ func (_m *User) String() string {
 
 // NamedPoints returns the Points named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (_m *User) NamedPoints(name string) ([]*Points, error) {
+func (_m *User) NamedPoints(name string) ([]*Point, error) {
 	if _m.Edges.namedPoints == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
@@ -263,12 +263,12 @@ func (_m *User) NamedPoints(name string) ([]*Points, error) {
 	return nodes, nil
 }
 
-func (_m *User) appendNamedPoints(name string, edges ...*Points) {
+func (_m *User) appendNamedPoints(name string, edges ...*Point) {
 	if _m.Edges.namedPoints == nil {
-		_m.Edges.namedPoints = make(map[string][]*Points)
+		_m.Edges.namedPoints = make(map[string][]*Point)
 	}
 	if len(edges) == 0 {
-		_m.Edges.namedPoints[name] = []*Points{}
+		_m.Edges.namedPoints[name] = []*Point{}
 	} else {
 		_m.Edges.namedPoints[name] = append(_m.Edges.namedPoints[name], edges...)
 	}
@@ -276,7 +276,7 @@ func (_m *User) appendNamedPoints(name string, edges ...*Points) {
 
 // NamedEvents returns the Events named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (_m *User) NamedEvents(name string) ([]*Events, error) {
+func (_m *User) NamedEvents(name string) ([]*Event, error) {
 	if _m.Edges.namedEvents == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
@@ -287,12 +287,12 @@ func (_m *User) NamedEvents(name string) ([]*Events, error) {
 	return nodes, nil
 }
 
-func (_m *User) appendNamedEvents(name string, edges ...*Events) {
+func (_m *User) appendNamedEvents(name string, edges ...*Event) {
 	if _m.Edges.namedEvents == nil {
-		_m.Edges.namedEvents = make(map[string][]*Events)
+		_m.Edges.namedEvents = make(map[string][]*Event)
 	}
 	if len(edges) == 0 {
-		_m.Edges.namedEvents[name] = []*Events{}
+		_m.Edges.namedEvents[name] = []*Event{}
 	} else {
 		_m.Edges.namedEvents[name] = append(_m.Edges.namedEvents[name], edges...)
 	}

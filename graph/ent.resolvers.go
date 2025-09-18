@@ -34,11 +34,9 @@ func (r *queryResolver) Databases(ctx context.Context) ([]*ent.Database, error) 
 	return entClient.Database.Query().All(ctx)
 }
 
-// EventsSlice is the resolver for the eventsSlice field.
-func (r *queryResolver) EventsSlice(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventsOrder, where *ent.EventsWhereInput) (*ent.EventsConnection, error) {
-	entClient := r.EntClient(ctx)
-
-	return entClient.Events.Query().Paginate(ctx, after, first, before, last, ent.WithEventsFilter(where.Filter))
+// Events is the resolver for the events field.
+func (r *queryResolver) Events(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventOrder, where *ent.EventWhereInput) (*ent.EventConnection, error) {
+	panic(fmt.Errorf("not implemented: Events - events"))
 }
 
 // Groups is the resolver for the groups field.
@@ -48,11 +46,9 @@ func (r *queryResolver) Groups(ctx context.Context) ([]*ent.Group, error) {
 	return entClient.Group.Query().All(ctx)
 }
 
-// PointsSlice is the resolver for the pointsSlice field.
-func (r *queryResolver) PointsSlice(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PointsOrder, where *ent.PointsWhereInput) (*ent.PointsConnection, error) {
-	entClient := r.EntClient(ctx)
-
-	return entClient.Points.Query().Paginate(ctx, after, first, before, last, ent.WithPointsFilter(where.Filter))
+// Points is the resolver for the points field.
+func (r *queryResolver) Points(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PointOrder, where *ent.PointWhereInput) (*ent.PointConnection, error) {
+	panic(fmt.Errorf("not implemented: Points - points"))
 }
 
 // Questions is the resolver for the questions field.
