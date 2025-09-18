@@ -39,6 +39,11 @@ extend type User {
   The user who impersonated this user.
   """
   impersonatedBy: User
+
+  """
+  The total points of the user.
+  """
+  totalPoints: Int!
 }
 
 extend type Mutation {

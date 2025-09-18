@@ -11,6 +11,7 @@ import (
 
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/ent/points"
 	"github.com/database-playground/backend-v2/ent/predicate"
 	"github.com/database-playground/backend-v2/ent/scopeset"
 	"github.com/database-playground/backend-v2/ent/user"
@@ -321,4 +322,23 @@ func (r *userResolver) ImpersonatedBy(ctx context.Context, obj *ent.User) (*ent.
 	}
 
 	return r.useraccount.GetUser(ctx, impersonatedBy)
+}
+
+// TotalPoints is the resolver for the totalPoints field.
+func (r *userResolver) TotalPoints(ctx context.Context, obj *ent.User) (int, error) {
+	// Check if the user has points
+	hasPoints, err := obj.QueryPoints().Exist(ctx)
+	if err != nil {
+		return 0, err
+	}
+	if !hasPoints {
+		return 0, nil
+	}
+
+	totalPoints, err := obj.QueryPoints().Aggregate(ent.Sum(points.FieldPoints)).Int(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	return totalPoints, nil
 }
