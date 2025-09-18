@@ -56,7 +56,7 @@ func (s *SqlRunner) Query(ctx context.Context, schema, query string) (DataRespon
 
 	// check if success
 	if respBody.ErrorResponse != nil {
-		return DataResponse{}, ConvertHttpError(respBody.ErrorResponse)
+		return DataResponse{}, respBody.ErrorResponse
 	}
 
 	if respBody.SuccessResponse == nil {

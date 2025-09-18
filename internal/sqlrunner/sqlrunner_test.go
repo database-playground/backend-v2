@@ -3,36 +3,21 @@ package sqlrunner_test
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 
-	"github.com/database-playground/backend-v2/internal/config"
 	"github.com/database-playground/backend-v2/internal/sqlrunner"
+	"github.com/database-playground/backend-v2/internal/testhelper"
 )
 
-func newTestSqlRunner(t *testing.T) *sqlrunner.SqlRunner {
-	t.Helper()
-
-	baseUri := os.Getenv("SQLRUNNER_BASE_URI")
-	if baseUri == "" {
-		t.Skip("SQLRUNNER_BASE_URI is not set")
-	}
-
-	cfg := config.SqlRunnerConfig{
-		URI: baseUri,
-	}
-	return sqlrunner.NewSqlRunner(cfg)
-}
-
 func TestHealthz(t *testing.T) {
-	s := newTestSqlRunner(t)
+	s := testhelper.NewSQLRunnerClient(t)
 	if !s.IsHealthy(context.Background()) {
 		t.Error("Expected IsHealthy to return true, got false")
 	}
 }
 
 func TestQuery_Success(t *testing.T) {
-	s := newTestSqlRunner(t)
+	s := testhelper.NewSQLRunnerClient(t)
 	data, err := s.Query(context.Background(), "CREATE TABLE dev(ID int); INSERT INTO dev VALUES(1);", "SELECT * FROM dev;")
 	if err != nil {
 		t.Fatalf("Expected success, got error: %v", err)
@@ -46,23 +31,33 @@ func TestQuery_Success(t *testing.T) {
 }
 
 func TestQuery_QueryError(t *testing.T) {
-	s := newTestSqlRunner(t)
+	s := testhelper.NewSQLRunnerClient(t)
 	_, err := s.Query(context.Background(), "CREATE TABLE dev(ID int); INSERT INTO dev VALUES(1);", "SELECT * FROM non_existing_table;")
 	if err == nil || err.Error() == "" {
 		t.Error("Expected query error, got nil")
 	}
-	if !errors.Is(err, sqlrunner.ErrQueryError) {
-		t.Errorf("Expected QUERY_ERROR, got %v", err)
+
+	var errResp *sqlrunner.ErrorResponse
+	if !errors.As(err, &errResp) {
+		t.Errorf("Expected ErrorResponse, got %v", err)
+	}
+	if errResp.Code != sqlrunner.ErrorCodeQueryError {
+		t.Errorf("Expected QUERY_ERROR, got %v", errResp.Code)
 	}
 }
 
 func TestQuery_SchemaError(t *testing.T) {
-	s := newTestSqlRunner(t)
+	s := testhelper.NewSQLRunnerClient(t)
 	_, err := s.Query(context.Background(), "CREATE TABLE dev(ID int", "SELECT * FROM dev;")
 	if err == nil || err.Error() == "" {
 		t.Error("Expected schema error, got nil")
 	}
-	if !errors.Is(err, sqlrunner.ErrSchemaError) {
-		t.Errorf("Expected SCHEMA_ERROR, got %v", err)
+
+	var errResp *sqlrunner.ErrorResponse
+	if !errors.As(err, &errResp) {
+		t.Errorf("Expected ErrorResponse, got %v", err)
+	}
+	if errResp.Code != sqlrunner.ErrorCodeSchemaError {
+		t.Errorf("Expected SCHEMA_ERROR, got %v", errResp.Code)
 	}
 }
