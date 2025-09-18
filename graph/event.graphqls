@@ -8,7 +8,7 @@ extend type Query {
   event(id: ID!): Event!
 
   """
-  Get an point grant by ID.
+  Get a point grant by ID.
 
   If you have the "point:read" scope, you can get any point grant by ID;
   otherwise, you can only get your own point grants.
