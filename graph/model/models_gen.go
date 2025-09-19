@@ -3,6 +3,7 @@
 package model
 
 import (
+	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/models"
 )
 
@@ -16,7 +17,19 @@ type ScopeSetFilter struct {
 	Slug *string `json:"slug,omitempty"`
 }
 
+type SolvedQuestionByDifficulty struct {
+	Difficulty      question.Difficulty `json:"difficulty"`
+	SolvedQuestions int                 `json:"solvedQuestions"`
+}
+
 type SubmissionResult struct {
 	Result *models.UserSQLExecutionResult `json:"result,omitempty"`
 	Error  *string                        `json:"error,omitempty"`
+}
+
+type SubmissionStatistics struct {
+	TotalQuestions             int                           `json:"totalQuestions"`
+	AttemptedQuestions         int                           `json:"attemptedQuestions"`
+	SolvedQuestions            int                           `json:"solvedQuestions"`
+	SolvedQuestionByDifficulty []*SolvedQuestionByDifficulty `json:"solvedQuestionByDifficulty"`
 }
