@@ -12,6 +12,7 @@ import (
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/ent/question"
 	entSubmission "github.com/database-playground/backend-v2/ent/submission"
+	"github.com/database-playground/backend-v2/ent/user"
 	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/graph/model"
 	"github.com/database-playground/backend-v2/internal/auth"
@@ -192,6 +193,49 @@ func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Q
 		Columns: response.Columns,
 		Rows:    response.Rows,
 	}, nil
+}
+
+// Attempted is the resolver for the attempted field.
+func (r *questionResolver) Attempted(ctx context.Context, obj *ent.Question) (bool, error) {
+	tokenInfo, ok := auth.GetUser(ctx)
+	if !ok {
+		return false, defs.ErrUnauthorized
+	}
+
+	exists, err := obj.QuerySubmissions().Where(
+		entSubmission.HasUserWith(user.ID(tokenInfo.UserID)),
+	).Exist(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return exists, nil
+}
+
+// Solved is the resolver for the solved field.
+func (r *questionResolver) Solved(ctx context.Context, obj *ent.Question) (bool, error) {
+	tokenInfo, ok := auth.GetUser(ctx)
+	if !ok {
+		return false, defs.ErrUnauthorized
+	}
+
+	exists, err := obj.QuerySubmissions().Where(
+		entSubmission.HasUserWith(user.ID(tokenInfo.UserID)),
+		entSubmission.StatusEQ(entSubmission.StatusSuccess),
+	).Exist(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return exists, nil
 }
 
 // SubmissionsOfQuestion is the resolver for the submissionsOfQuestion field.

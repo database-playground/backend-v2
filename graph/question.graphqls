@@ -62,6 +62,16 @@ extend type Mutation {
 
 extend type Question {
   referenceAnswerResult: SQLExecutionResult! @scope(scope: "question:read")
+
+  """
+  Have you tried to solve the question?
+  """
+  attempted: Boolean!
+
+  """
+  Have you solved the question?
+  """
+  solved: Boolean!
 }
 
 extend type User {
