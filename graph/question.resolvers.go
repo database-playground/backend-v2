@@ -221,10 +221,6 @@ func (r *questionResolver) Attempted(ctx context.Context, obj *ent.Question) (bo
 		entSubmission.HasUserWith(user.ID(tokenInfo.UserID)),
 	).Exist(ctx)
 	if err != nil {
-		if ent.IsNotFound(err) {
-			return false, nil
-		}
-
 		return false, err
 	}
 
@@ -243,10 +239,6 @@ func (r *questionResolver) Solved(ctx context.Context, obj *ent.Question) (bool,
 		entSubmission.StatusEQ(entSubmission.StatusSuccess),
 	).Exist(ctx)
 	if err != nil {
-		if ent.IsNotFound(err) {
-			return false, nil
-		}
-
 		return false, err
 	}
 
