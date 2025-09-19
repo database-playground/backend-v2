@@ -18,7 +18,7 @@ func (e GqlError) Error() string {
 func NewErrNoSufficientScope(requireScope string) GqlError {
 	return GqlError{
 		Message: fmt.Sprintf("no sufficient scope: %s", requireScope),
-		Code:    CodeUnauthorized,
+		Code:    CodeForbidden,
 	}
 }
 
