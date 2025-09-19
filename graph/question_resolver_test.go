@@ -367,7 +367,7 @@ func TestQuestionResolver_UserSubmissions(t *testing.T) {
 			}))
 		})
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "FORBIDDEN")
+		require.Contains(t, err.Error(), defs.CodeForbidden)
 	})
 
 	t.Run("unauthorized - no authentication", func(t *testing.T) {
@@ -491,7 +491,7 @@ func TestQuestionResolver_Attempted(t *testing.T) {
 			}))
 		})
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "FORBIDDEN")
+		require.Contains(t, err.Error(), defs.CodeForbidden)
 	})
 
 	t.Run("unauthorized - no authentication", func(t *testing.T) {
@@ -672,7 +672,7 @@ func TestQuestionResolver_Solved(t *testing.T) {
 			}))
 		})
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "FORBIDDEN")
+		require.Contains(t, err.Error(), defs.CodeForbidden)
 	})
 
 	t.Run("unauthorized - no authentication", func(t *testing.T) {
