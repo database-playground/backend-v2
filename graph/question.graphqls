@@ -79,6 +79,23 @@ extend type Question {
   solved: Boolean!
 }
 
+extend type User {
+  submissionStatistics: SubmissionStatistics!
+}
+
+type SubmissionStatistics {
+  totalQuestions: Int!
+  attemptedQuestions: Int!
+  solvedQuestions: Int!
+
+  solvedQuestionByDifficulty: [SolvedQuestionByDifficulty!]!
+}
+
+type SolvedQuestionByDifficulty {
+  difficulty: QuestionDifficulty!
+  solvedQuestions: Int!
+}
+
 type SQLExecutionResult {
   columns: [String!]!
   rows: [[String!]!]!

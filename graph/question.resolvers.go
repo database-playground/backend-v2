@@ -7,8 +7,10 @@ package graph
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/database-playground/backend-v2/ent"
+	entQuestion "github.com/database-playground/backend-v2/ent/question"
 	entSubmission "github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
 	"github.com/database-playground/backend-v2/graph/defs"
@@ -17,6 +19,7 @@ import (
 	"github.com/database-playground/backend-v2/internal/scope"
 	"github.com/database-playground/backend-v2/internal/submission"
 	"github.com/database-playground/backend-v2/models"
+	"github.com/samber/lo"
 )
 
 // CreateQuestion is the resolver for the createQuestion field.
@@ -243,6 +246,62 @@ func (r *questionResolver) Solved(ctx context.Context, obj *ent.Question) (bool,
 	}
 
 	return exists, nil
+}
+
+// SubmissionStatistics is the resolver for the submissionStatistics field.
+func (r *userResolver) SubmissionStatistics(ctx context.Context, obj *ent.User) (*model.SubmissionStatistics, error) {
+	entClient := r.EntClient(ctx)
+
+	type tSQLSolvedQuestionByDifficulty struct {
+		Difficulty entQuestion.Difficulty `json:"difficulty,omitempty"`
+		Count      int                    `json:"count,omitempty"`
+	}
+
+	// total questios
+	totalQuestions, err := entClient.Question.Query().Count(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving total questions: %w", err)
+	}
+
+	// attempted
+	attemptedQuestions, err := entClient.Question.Query().Where(
+		entQuestion.HasSubmissionsWith(entSubmission.HasUserWith(user.ID(obj.ID))),
+	).Count(ctx)
+
+	// solved
+	solvedQuestions, err := entClient.Question.Query().Where(
+		entQuestion.HasSubmissionsWith(entSubmission.HasUserWith(user.ID(obj.ID)), entSubmission.StatusEQ(entSubmission.StatusSuccess)),
+	).Count(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving solved questions: %w", err)
+	}
+
+	// solved question by difficulty
+	var solvedQuestionByDifficulty []tSQLSolvedQuestionByDifficulty
+	err = entClient.Question.Query().Where(
+		entQuestion.HasSubmissionsWith(
+			entSubmission.HasUserWith(user.ID(obj.ID)),
+			entSubmission.StatusEQ(entSubmission.StatusSuccess),
+		),
+	).
+		GroupBy(entQuestion.FieldDifficulty).
+		Aggregate(ent.Count()).
+		Scan(ctx, &solvedQuestionByDifficulty)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving solved question by difficulty: %w", err)
+	}
+
+	return &model.SubmissionStatistics{
+		TotalQuestions:     totalQuestions,
+		AttemptedQuestions: attemptedQuestions,
+		SolvedQuestions:    solvedQuestions,
+		SolvedQuestionByDifficulty: lo.Map(solvedQuestionByDifficulty, func(item tSQLSolvedQuestionByDifficulty, _ int) *model.SolvedQuestionByDifficulty {
+			return &model.SolvedQuestionByDifficulty{
+				Difficulty:      item.Difficulty,
+				SolvedQuestions: item.Count,
+			}
+		}),
+	}, nil
 }
 
 // Mutation returns MutationResolver implementation.
