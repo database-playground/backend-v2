@@ -257,7 +257,7 @@ func (r *userResolver) SubmissionStatistics(ctx context.Context, obj *ent.User) 
 		Count      int                    `json:"count,omitempty"`
 	}
 
-	// total questios
+	// total questions
 	totalQuestions, err := entClient.Question.Query().Count(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving total questions: %w", err)
@@ -267,6 +267,9 @@ func (r *userResolver) SubmissionStatistics(ctx context.Context, obj *ent.User) 
 	attemptedQuestions, err := entClient.Question.Query().Where(
 		entQuestion.HasSubmissionsWith(entSubmission.HasUserWith(user.ID(obj.ID))),
 	).Count(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving attempted questions: %w", err)
+	}
 
 	// solved
 	solvedQuestions, err := entClient.Question.Query().Where(
