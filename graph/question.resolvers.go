@@ -8,10 +8,9 @@ import (
 	"context"
 	"errors"
 
-	"entgo.io/contrib/entgql"
 	"github.com/database-playground/backend-v2/ent"
-	"github.com/database-playground/backend-v2/ent/question"
 	entSubmission "github.com/database-playground/backend-v2/ent/submission"
+	"github.com/database-playground/backend-v2/ent/user"
 	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/graph/model"
 	"github.com/database-playground/backend-v2/internal/auth"
@@ -194,18 +193,56 @@ func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Q
 	}, nil
 }
 
-// SubmissionsOfQuestion is the resolver for the submissionsOfQuestion field.
-func (r *userResolver) SubmissionsOfQuestion(ctx context.Context, obj *ent.User, questionID int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *model.SubmissionsOfQuestionWhereInput, orderBy *ent.SubmissionOrder) (*ent.SubmissionConnection, error) {
-	query := obj.QuerySubmissions()
-	query.Where(entSubmission.HasQuestionWith(question.ID(questionID)))
-
-	if where != nil {
-		if where.Status != nil {
-			query.Where(entSubmission.StatusEQ(*where.Status))
-		}
+// UserSubmissions is the resolver for the userSubmissions field.
+func (r *questionResolver) UserSubmissions(ctx context.Context, obj *ent.Question) ([]*ent.Submission, error) {
+	tokenInfo, ok := auth.GetUser(ctx)
+	if !ok {
+		return nil, defs.ErrUnauthorized
 	}
 
-	return query.Paginate(ctx, after, first, before, last, ent.WithSubmissionOrder(orderBy))
+	submissions, err := obj.QuerySubmissions().Where(
+		entSubmission.HasUserWith(user.ID(tokenInfo.UserID)),
+	).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return submissions, nil
+}
+
+// Attempted is the resolver for the attempted field.
+func (r *questionResolver) Attempted(ctx context.Context, obj *ent.Question) (bool, error) {
+	tokenInfo, ok := auth.GetUser(ctx)
+	if !ok {
+		return false, defs.ErrUnauthorized
+	}
+
+	exists, err := obj.QuerySubmissions().Where(
+		entSubmission.HasUserWith(user.ID(tokenInfo.UserID)),
+	).Exist(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+
+// Solved is the resolver for the solved field.
+func (r *questionResolver) Solved(ctx context.Context, obj *ent.Question) (bool, error) {
+	tokenInfo, ok := auth.GetUser(ctx)
+	if !ok {
+		return false, defs.ErrUnauthorized
+	}
+
+	exists, err := obj.QuerySubmissions().Where(
+		entSubmission.HasUserWith(user.ID(tokenInfo.UserID)),
+		entSubmission.StatusEQ(entSubmission.StatusSuccess),
+	).Exist(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }
 
 // Mutation returns MutationResolver implementation.

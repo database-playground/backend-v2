@@ -40,7 +40,11 @@ func (Question) Edges() []ent.Edge {
 			Ref("questions").
 			Unique().
 			Required(),
-		edge.To("submissions", Submission.Type),
+		edge.To("submissions", Submission.Type).
+			Annotations(
+				entgql.RelayConnection(),
+				entgql.Directives(ScopeDirective("submission:read")),
+			),
 	}
 }
 

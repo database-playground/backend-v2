@@ -3,7 +3,6 @@
 package model
 
 import (
-	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/models"
 )
 
@@ -20,8 +19,4 @@ type ScopeSetFilter struct {
 type SubmissionResult struct {
 	Result *models.UserSQLExecutionResult `json:"result,omitempty"`
 	Error  *string                        `json:"error,omitempty"`
-}
-
-type SubmissionsOfQuestionWhereInput struct {
-	Status *submission.Status `json:"status,omitempty"`
 }

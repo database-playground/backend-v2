@@ -62,51 +62,21 @@ extend type Mutation {
 
 extend type Question {
   referenceAnswerResult: SQLExecutionResult! @scope(scope: "question:read")
-}
 
-extend type User {
   """
-  Get all submissions of a question.
+  List of your submissions for this question.
   """
-  submissionsOfQuestion(
-    """
-    The question ID.
-    """
-    questionID: ID!,
-    """
-    Returns the elements in the list that come after the specified cursor.
-    """
-    after: Cursor
+  userSubmissions: [Submission!]!
 
-    """
-    Returns the first _n_ elements from the list.
-    """
-    first: Int
+  """
+  Have you tried to solve the question?
+  """
+  attempted: Boolean!
 
-    """
-    Returns the elements in the list that come before the specified cursor.
-    """
-    before: Cursor
-
-    """
-    Returns the last _n_ elements from the list.
-    """
-    last: Int
-
-    """
-    The where input to filter the submissions.
-    """
-    where: SubmissionsOfQuestionWhereInput
-
-    """
-    The order by input to order the submissions.
-    """
-    orderBy: SubmissionOrder
-  ): SubmissionConnection!
-}
-
-input SubmissionsOfQuestionWhereInput {
-  status: SubmissionStatus
+  """
+  Have you solved the question?
+  """
+  solved: Boolean!
 }
 
 type SQLExecutionResult {

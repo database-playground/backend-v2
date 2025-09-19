@@ -56,16 +56,25 @@ func (_m *Question) Database(ctx context.Context) (*Database, error) {
 	return result, err
 }
 
-func (_m *Question) Submissions(ctx context.Context) (result []*Submission, err error) {
-	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = _m.NamedSubmissions(graphql.GetFieldContext(ctx).Field.Alias)
-	} else {
-		result, err = _m.Edges.SubmissionsOrErr()
+func (_m *Question) Submissions(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *SubmissionOrder, where *SubmissionWhereInput,
+) (*SubmissionConnection, error) {
+	opts := []SubmissionPaginateOption{
+		WithSubmissionOrder(orderBy),
+		WithSubmissionFilter(where.Filter),
 	}
-	if IsNotLoaded(err) {
-		result, err = _m.QuerySubmissions().All(ctx)
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[1][alias]
+	if nodes, err := _m.NamedSubmissions(alias); err == nil || hasTotalCount {
+		pager, err := newSubmissionPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &SubmissionConnection{Edges: []*SubmissionEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
 	}
-	return result, err
+	return _m.QuerySubmissions().Paginate(ctx, after, first, before, last, opts...)
 }
 
 func (_m *ScopeSet) Groups(ctx context.Context) (result []*Group, err error) {

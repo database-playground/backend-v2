@@ -14,7 +14,6 @@ import (
 	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/graph/directive"
 	"github.com/database-playground/backend-v2/internal/auth"
-	"github.com/database-playground/backend-v2/internal/setup"
 	"github.com/database-playground/backend-v2/internal/testhelper"
 	"github.com/stretchr/testify/require"
 
@@ -225,50 +224,9 @@ func TestQueryResolver_Submission(t *testing.T) {
 	})
 }
 
-func TestUserResolver_SubmissionsOfQuestion(t *testing.T) {
+func TestQuestionResolver_UserSubmissions(t *testing.T) {
 	entClient := testhelper.NewEntSqliteClient(t)
-
-	// Setup database with required groups and scope sets
-	setupResult, err := setup.Setup(context.Background(), entClient)
-	require.NoError(t, err)
-
-	// Use the existing new-user group from setup
-	testGroup := setupResult.NewUserGroup
-
-	// Create test users
-	user1, err := entClient.User.Create().
-		SetName("testuser1").
-		SetEmail("test1@example.com").
-		SetGroup(testGroup).
-		Save(context.Background())
-	require.NoError(t, err)
-
-	user2, err := entClient.User.Create().
-		SetName("testuser2").
-		SetEmail("test2@example.com").
-		SetGroup(testGroup).
-		Save(context.Background())
-	require.NoError(t, err)
-
-	// Create test database and question
-	database := createTestDatabase(t, entClient)
-	question := createTestQuestion(t, entClient, database)
-
-	// Create test submissions for user1
-	now := time.Now()
-	submissions := []*ent.Submission{
-		createTestSubmission(t, entClient, user1, question, "SELECT * FROM test;", submission.StatusSuccess, now.Add(-3*time.Hour)),
-		createTestSubmission(t, entClient, user1, question, "SELECT id FROM test;", submission.StatusSuccess, now.Add(-2*time.Hour)),
-		createTestSubmission(t, entClient, user1, question, "INVALID SQL;", submission.StatusFailed, now.Add(-1*time.Hour)),
-		createTestSubmission(t, entClient, user1, question, "SELECT name FROM test;", submission.StatusPending, now),
-	}
-
-	// Create submissions for user2 (to ensure they don't appear in user1's results)
-	createTestSubmission(t, entClient, user2, question, "SELECT * FROM test ORDER BY id;", submission.StatusSuccess, now.Add(-30*time.Minute))
-
 	resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
-
-	// Create test server with scope directive
 	cfg := Config{
 		Resolvers:  resolver,
 		Directives: DirectiveRoot{Scope: directive.ScopeDirective},
@@ -277,671 +235,456 @@ func TestUserResolver_SubmissionsOfQuestion(t *testing.T) {
 	srv.AddTransport(transport.POST{})
 	gqlClient := client.New(srv)
 
-	t.Run("success - get all submissions", func(t *testing.T) {
+	// Create test group and users
+	group, err := createTestGroup(t, entClient)
+	require.NoError(t, err)
+
+	user1, err := entClient.User.Create().
+		SetName("user1").
+		SetEmail("user1@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	user2, err := entClient.User.Create().
+		SetName("user2").
+		SetEmail("user2@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	// Create test database and question
+	database := createTestDatabase(t, entClient)
+	question := createTestQuestion(t, entClient, database)
+
+	// Create multiple submissions for user1
+	submission1 := createTestSubmission(t, entClient, user1, question, "SELECT * FROM test;", submission.StatusSuccess, time.Now().Add(-2*time.Hour))
+	submission2 := createTestSubmission(t, entClient, user1, question, "SELECT id FROM test;", submission.StatusFailed, time.Now().Add(-1*time.Hour))
+	submission3 := createTestSubmission(t, entClient, user1, question, "SELECT name FROM test;", submission.StatusSuccess, time.Now())
+
+	// Create submission for user2 (should not appear in user1's results)
+	createTestSubmission(t, entClient, user2, question, "SELECT count(*) FROM test;", submission.StatusSuccess, time.Now())
+
+	t.Run("success - returns user submissions with question:read scope", func(t *testing.T) {
 		var resp struct {
-			Me struct {
-				SubmissionsOfQuestion struct {
-					Edges []struct {
-						Node struct {
-							ID            string
-							SubmittedCode string
-							Status        string
-						}
-					}
-					TotalCount int
+			Question struct {
+				UserSubmissions []struct {
+					ID            string
+					SubmittedCode string
+					Status        string
 				}
 			}
 		}
-
-		query := `query {
-			me {
-				submissionsOfQuestion(questionID: ` + strconv.Itoa(question.ID) + `) {
-					edges {
-						node {
-							id
-							submittedCode
-							status
-						}
-					}
-					totalCount
-				}
-			}
-		}`
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { userSubmissions { id submittedCode status } } }`
 
 		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(
-				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
-					UserID: user1.ID,
-					Scopes: []string{"me:read", "submission:read"},
-				}),
-			)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: user1.ID,
+				Scopes: []string{"question:read"},
+			}))
 		})
-
 		require.NoError(t, err)
-		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 4)
-		require.Equal(t, 4, resp.Me.SubmissionsOfQuestion.TotalCount)
 
-		// Verify ordering (by ID ascending - default order)
-		edges := resp.Me.SubmissionsOfQuestion.Edges
-		require.Equal(t, strconv.Itoa(submissions[0].ID), edges[0].Node.ID) // First submission (lowest ID)
-		require.Equal(t, strconv.Itoa(submissions[1].ID), edges[1].Node.ID) // Second submission
-		require.Equal(t, strconv.Itoa(submissions[2].ID), edges[2].Node.ID) // Third submission
-		require.Equal(t, strconv.Itoa(submissions[3].ID), edges[3].Node.ID) // Fourth submission (highest ID)
+		// Should return 3 submissions for user1
+		require.Len(t, resp.Question.UserSubmissions, 3)
+
+		// Check that all submissions belong to the authenticated user
+		submissionIDs := make(map[string]bool)
+		for _, sub := range resp.Question.UserSubmissions {
+			submissionIDs[sub.ID] = true
+		}
+		require.True(t, submissionIDs[strconv.Itoa(submission1.ID)])
+		require.True(t, submissionIDs[strconv.Itoa(submission2.ID)])
+		require.True(t, submissionIDs[strconv.Itoa(submission3.ID)])
 	})
 
-	t.Run("success - filter by status", func(t *testing.T) {
+	t.Run("success - returns user submissions with wildcard scope", func(t *testing.T) {
 		var resp struct {
-			Me struct {
-				SubmissionsOfQuestion struct {
-					Edges []struct {
-						Node struct {
-							ID     string
-							Status string
-						}
-					}
-					TotalCount int
+			Question struct {
+				UserSubmissions []struct {
+					ID            string
+					SubmittedCode string
+					Status        string
 				}
 			}
 		}
-
-		query := `query {
-			me {
-				submissionsOfQuestion(questionID: ` + strconv.Itoa(question.ID) + `, where: { status: success }) {
-					edges {
-						node {
-							id
-							status
-						}
-					}
-					totalCount
-				}
-			}
-		}`
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { userSubmissions { id submittedCode status } } }`
 
 		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(
-				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
-					UserID: user1.ID,
-					Scopes: []string{"me:read", "submission:read"},
-				}),
-			)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: user1.ID,
+				Scopes: []string{"*"},
+			}))
 		})
-
 		require.NoError(t, err)
-		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 2)
-		require.Equal(t, 2, resp.Me.SubmissionsOfQuestion.TotalCount)
 
-		// Verify only success status submissions are returned
-		for _, edge := range resp.Me.SubmissionsOfQuestion.Edges {
-			require.Equal(t, "success", edge.Node.Status)
-		}
+		// Should return 3 submissions for user1
+		require.Len(t, resp.Question.UserSubmissions, 3)
 	})
 
-	t.Run("success - pagination with first parameter", func(t *testing.T) {
-		var resp struct {
-			Me struct {
-				SubmissionsOfQuestion struct {
-					Edges []struct {
-						Node struct {
-							ID string
-						}
-					}
-					PageInfo struct {
-						HasNextPage     bool
-						HasPreviousPage bool
-						StartCursor     string
-						EndCursor       string
-					}
-					TotalCount int
-				}
-			}
-		}
-
-		query := `query {
-			me {
-				submissionsOfQuestion(questionID: ` + strconv.Itoa(question.ID) + `, first: 2) {
-					edges {
-						node {
-							id
-						}
-					}
-					pageInfo {
-						hasNextPage
-						hasPreviousPage
-						startCursor
-						endCursor
-					}
-					totalCount
-				}
-			}
-		}`
-
-		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(
-				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
-					UserID: user1.ID,
-					Scopes: []string{"me:read", "submission:read"},
-				}),
-			)
-		})
-
-		require.NoError(t, err)
-		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 2)
-		require.Equal(t, 4, resp.Me.SubmissionsOfQuestion.TotalCount)
-		require.True(t, resp.Me.SubmissionsOfQuestion.PageInfo.HasNextPage)
-		require.False(t, resp.Me.SubmissionsOfQuestion.PageInfo.HasPreviousPage)
-		require.NotEmpty(t, resp.Me.SubmissionsOfQuestion.PageInfo.StartCursor)
-		require.NotEmpty(t, resp.Me.SubmissionsOfQuestion.PageInfo.EndCursor)
-	})
-
-	t.Run("success - empty results for question with no submissions", func(t *testing.T) {
-		// Create another question with no submissions (with unique category)
-		emptyQuestion, err := entClient.Question.Create().
-			SetCategory("empty-query").
-			SetDifficulty("easy").
-			SetTitle("Empty Query").
-			SetDescription("Write another SELECT query").
-			SetReferenceAnswer("SELECT * FROM test WHERE 1=0;").
-			SetDatabase(database).
+	t.Run("success - no submissions returns empty array", func(t *testing.T) {
+		// Create a user with no submissions
+		userNoSubs, err := entClient.User.Create().
+			SetName("userNoSubs").
+			SetEmail("userNoSubs@example.com").
+			SetGroup(group).
 			Save(context.Background())
 		require.NoError(t, err)
 
 		var resp struct {
-			Me struct {
-				SubmissionsOfQuestion struct {
-					Edges      []interface{}
-					TotalCount int
+			Question struct {
+				UserSubmissions []struct {
+					ID string
 				}
 			}
 		}
-
-		query := `query {
-			me {
-				submissionsOfQuestion(questionID: ` + strconv.Itoa(emptyQuestion.ID) + `) {
-					edges {
-						node {
-							id
-						}
-					}
-					totalCount
-				}
-			}
-		}`
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { userSubmissions { id } } }`
 
 		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(
-				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
-					UserID: user1.ID,
-					Scopes: []string{"me:read", "submission:read"},
-				}),
-			)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userNoSubs.ID,
+				Scopes: []string{"question:read"},
+			}))
 		})
-
 		require.NoError(t, err)
-		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 0)
-		require.Equal(t, 0, resp.Me.SubmissionsOfQuestion.TotalCount)
+		require.Len(t, resp.Question.UserSubmissions, 0)
 	})
 
-	t.Run("success - filter by failed status", func(t *testing.T) {
+	t.Run("forbidden - user without question:read scope", func(t *testing.T) {
 		var resp struct {
-			Me struct {
-				SubmissionsOfQuestion struct {
-					Edges []struct {
-						Node struct {
-							ID            string
-							Status        string
-							SubmittedCode string
-						}
-					}
-					TotalCount int
+			Question struct {
+				UserSubmissions []struct {
+					ID string
 				}
 			}
 		}
-
-		query := `query {
-			me {
-				submissionsOfQuestion(questionID: ` + strconv.Itoa(question.ID) + `, where: { status: failed }) {
-					edges {
-						node {
-							id
-							status
-							submittedCode
-						}
-					}
-					totalCount
-				}
-			}
-		}`
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { userSubmissions { id } } }`
 
 		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(
-				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
-					UserID: user1.ID,
-					Scopes: []string{"me:read", "submission:read"},
-				}),
-			)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: user1.ID,
+				Scopes: []string{"submission:read"}, // Wrong scope
+			}))
 		})
-
-		require.NoError(t, err)
-		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 1)
-		require.Equal(t, 1, resp.Me.SubmissionsOfQuestion.TotalCount)
-		require.Equal(t, "failed", resp.Me.SubmissionsOfQuestion.Edges[0].Node.Status)
-		require.Equal(t, "INVALID SQL;", resp.Me.SubmissionsOfQuestion.Edges[0].Node.SubmittedCode)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeForbidden)
 	})
 
-	t.Run("error - unauthenticated", func(t *testing.T) {
+	t.Run("unauthorized - no authentication", func(t *testing.T) {
 		var resp struct {
-			Me struct {
-				SubmissionsOfQuestion struct {
-					Edges []interface{}
+			Question struct {
+				UserSubmissions []struct {
+					ID string
 				}
 			}
 		}
-
-		query := `query {
-			me {
-				submissionsOfQuestion(questionID: ` + strconv.Itoa(question.ID) + `) {
-					edges {
-						node {
-							id
-						}
-					}
-				}
-			}
-		}`
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { userSubmissions { id } } }`
 
 		err := gqlClient.Post(query, &resp)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "UNAUTHORIZED")
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
 	})
+}
 
-	t.Run("error - insufficient scope", func(t *testing.T) {
+func TestQuestionResolver_Attempted(t *testing.T) {
+	entClient := testhelper.NewEntSqliteClient(t)
+	resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+	cfg := Config{
+		Resolvers:  resolver,
+		Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+	}
+	srv := handler.New(NewExecutableSchema(cfg))
+	srv.AddTransport(transport.POST{})
+	gqlClient := client.New(srv)
+
+	// Create test group and users
+	group, err := createTestGroup(t, entClient)
+	require.NoError(t, err)
+
+	userWithSubmissions, err := entClient.User.Create().
+		SetName("userWithSubmissions").
+		SetEmail("userWithSubmissions@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	userWithoutSubmissions, err := entClient.User.Create().
+		SetName("userWithoutSubmissions").
+		SetEmail("userWithoutSubmissions@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	// Create test database and question
+	database := createTestDatabase(t, entClient)
+	question := createTestQuestion(t, entClient, database)
+
+	// Create submission for userWithSubmissions
+	createTestSubmission(t, entClient, userWithSubmissions, question, "SELECT * FROM test;", submission.StatusSuccess, time.Now())
+
+	t.Run("success - user has attempted with question:read scope", func(t *testing.T) {
 		var resp struct {
-			Me struct {
-				SubmissionsOfQuestion struct {
-					Edges []interface{}
-				}
+			Question struct {
+				Attempted bool
 			}
 		}
-
-		query := `query {
-			me {
-				submissionsOfQuestion(questionID: ` + strconv.Itoa(question.ID) + `) {
-					edges {
-						node {
-							id
-						}
-					}
-				}
-			}
-		}`
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { attempted } }`
 
 		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(
-				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
-					UserID: user1.ID,
-					Scopes: []string{"me:write"}, // Wrong scope
-				}),
-			)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithSubmissions.ID,
+				Scopes: []string{"question:read"},
+			}))
 		})
+		require.NoError(t, err)
+		require.True(t, resp.Question.Attempted)
+	})
 
+	t.Run("success - user has not attempted with question:read scope", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				Attempted bool
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { attempted } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithoutSubmissions.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.False(t, resp.Question.Attempted)
+	})
+
+	t.Run("success - user has attempted with wildcard scope", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				Attempted bool
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { attempted } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithSubmissions.ID,
+				Scopes: []string{"*"},
+			}))
+		})
+		require.NoError(t, err)
+		require.True(t, resp.Question.Attempted)
+	})
+
+	t.Run("forbidden - user without question:read scope", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				Attempted bool
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { attempted } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithSubmissions.ID,
+				Scopes: []string{"submission:write"}, // Wrong scope
+			}))
+		})
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "UNAUTHORIZED")
+		require.Contains(t, err.Error(), defs.CodeForbidden)
 	})
 
-	t.Run("error - non-existent question", func(t *testing.T) {
+	t.Run("unauthorized - no authentication", func(t *testing.T) {
 		var resp struct {
-			Me struct {
-				SubmissionsOfQuestion struct {
-					Edges []interface{}
-				}
+			Question struct {
+				Attempted bool
 			}
 		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { attempted } }`
 
-		query := `query {
-			me {
-				submissionsOfQuestion(questionID: 99999) {
-					edges {
-						node {
-							id
-						}
-					}
-				}
+		err := gqlClient.Post(query, &resp)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+	})
+}
+
+func TestQuestionResolver_Solved(t *testing.T) {
+	entClient := testhelper.NewEntSqliteClient(t)
+	resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+	cfg := Config{
+		Resolvers:  resolver,
+		Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+	}
+	srv := handler.New(NewExecutableSchema(cfg))
+	srv.AddTransport(transport.POST{})
+	gqlClient := client.New(srv)
+
+	// Create test group and users
+	group, err := createTestGroup(t, entClient)
+	require.NoError(t, err)
+
+	userSolved, err := entClient.User.Create().
+		SetName("userSolved").
+		SetEmail("userSolved@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	userNotSolved, err := entClient.User.Create().
+		SetName("userNotSolved").
+		SetEmail("userNotSolved@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	userNoSubmissions, err := entClient.User.Create().
+		SetName("userNoSubmissions").
+		SetEmail("userNoSubmissions@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	// Create test database and question
+	database := createTestDatabase(t, entClient)
+	question := createTestQuestion(t, entClient, database)
+
+	// Create successful submission for userSolved
+	createTestSubmission(t, entClient, userSolved, question, "SELECT * FROM test;", submission.StatusSuccess, time.Now())
+
+	// Create failed submission for userNotSolved
+	createTestSubmission(t, entClient, userNotSolved, question, "SELECT * FROM invalid;", submission.StatusFailed, time.Now())
+
+	t.Run("success - user has solved with question:read scope", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				Solved bool
 			}
-		}`
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { solved } }`
 
 		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(
-				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
-					UserID: user1.ID,
-					Scopes: []string{"me:read", "submission:read"},
-				}),
-			)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userSolved.ID,
+				Scopes: []string{"question:read"},
+			}))
 		})
-
-		// Should not error - just return empty results since we're filtering by user and question
 		require.NoError(t, err)
-		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 0)
+		require.True(t, resp.Question.Solved)
 	})
 
-	t.Run("success - default ordering (by ID ascending)", func(t *testing.T) {
+	t.Run("success - user has not solved (failed submissions only) with question:read scope", func(t *testing.T) {
 		var resp struct {
-			Me struct {
-				SubmissionsOfQuestion struct {
-					Edges []struct {
-						Node struct {
-							ID string
-						}
-					}
-					TotalCount int
-				}
+			Question struct {
+				Solved bool
 			}
 		}
-
-		query := `query {
-			me {
-				submissionsOfQuestion(questionID: ` + strconv.Itoa(question.ID) + `) {
-					edges {
-						node {
-							id
-						}
-					}
-					totalCount
-				}
-			}
-		}`
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { solved } }`
 
 		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(
-				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
-					UserID: user1.ID,
-					Scopes: []string{"me:read", "submission:read"},
-				}),
-			)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userNotSolved.ID,
+				Scopes: []string{"question:read"},
+			}))
 		})
-
 		require.NoError(t, err)
-		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 4)
-		require.Equal(t, 4, resp.Me.SubmissionsOfQuestion.TotalCount)
-
-		// Verify ordering (by ID ascending - default order)
-		edges := resp.Me.SubmissionsOfQuestion.Edges
-		require.Equal(t, strconv.Itoa(submissions[0].ID), edges[0].Node.ID) // First submission (lowest ID)
-		require.Equal(t, strconv.Itoa(submissions[1].ID), edges[1].Node.ID) // Second submission
-		require.Equal(t, strconv.Itoa(submissions[2].ID), edges[2].Node.ID) // Third submission
-		require.Equal(t, strconv.Itoa(submissions[3].ID), edges[3].Node.ID) // Fourth submission (highest ID)
+		require.False(t, resp.Question.Solved)
 	})
 
-	t.Run("success - order by submitted_at ascending (oldest first)", func(t *testing.T) {
+	t.Run("success - user has not solved (no submissions) with question:read scope", func(t *testing.T) {
 		var resp struct {
-			Me struct {
-				SubmissionsOfQuestion struct {
-					Edges []struct {
-						Node struct {
-							ID string
-						}
-					}
-					TotalCount int
-				}
+			Question struct {
+				Solved bool
 			}
 		}
-
-		query := `query {
-			me {
-				submissionsOfQuestion(
-					questionID: ` + strconv.Itoa(question.ID) + `, 
-					orderBy: { field: SUBMITTED_AT, direction: ASC }
-				) {
-					edges {
-						node {
-							id
-						}
-					}
-					totalCount
-				}
-			}
-		}`
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { solved } }`
 
 		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(
-				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
-					UserID: user1.ID,
-					Scopes: []string{"me:read", "submission:read"},
-				}),
-			)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userNoSubmissions.ID,
+				Scopes: []string{"question:read"},
+			}))
 		})
-
 		require.NoError(t, err)
-		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 4)
-		require.Equal(t, 4, resp.Me.SubmissionsOfQuestion.TotalCount)
-
-		// Verify ordering (oldest first - by submitted_at ASC)
-		edges := resp.Me.SubmissionsOfQuestion.Edges
-		require.Equal(t, strconv.Itoa(submissions[0].ID), edges[0].Node.ID) // Oldest submission (-3h)
-		require.Equal(t, strconv.Itoa(submissions[1].ID), edges[1].Node.ID) // Second oldest (-2h)
-		require.Equal(t, strconv.Itoa(submissions[2].ID), edges[2].Node.ID) // Third oldest (-1h)
-		require.Equal(t, strconv.Itoa(submissions[3].ID), edges[3].Node.ID) // Newest submission (now)
+		require.False(t, resp.Question.Solved)
 	})
 
-	t.Run("success - order by submitted_at descending (newest first)", func(t *testing.T) {
+	t.Run("success - user solved after failed attempts with question:read scope", func(t *testing.T) {
+		// Create a user with both failed and successful submissions
+		userMixed, err := entClient.User.Create().
+			SetName("userMixed").
+			SetEmail("userMixed@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create failed submission first
+		createTestSubmission(t, entClient, userMixed, question, "SELECT * FROM invalid;", submission.StatusFailed, time.Now().Add(-1*time.Hour))
+		// Create successful submission later
+		createTestSubmission(t, entClient, userMixed, question, "SELECT * FROM test;", submission.StatusSuccess, time.Now())
+
 		var resp struct {
-			Me struct {
-				SubmissionsOfQuestion struct {
-					Edges []struct {
-						Node struct {
-							ID string
-						}
-					}
-					TotalCount int
-				}
+			Question struct {
+				Solved bool
 			}
 		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { solved } }`
 
-		query := `query {
-			me {
-				submissionsOfQuestion(
-					questionID: ` + strconv.Itoa(question.ID) + `, 
-					orderBy: { field: SUBMITTED_AT, direction: DESC }
-				) {
-					edges {
-						node {
-							id
-						}
-					}
-					totalCount
-				}
-			}
-		}`
-
-		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(
-				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
-					UserID: user1.ID,
-					Scopes: []string{"me:read", "submission:read"},
-				}),
-			)
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userMixed.ID,
+				Scopes: []string{"question:read"},
+			}))
 		})
-
 		require.NoError(t, err)
-		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 4)
-		require.Equal(t, 4, resp.Me.SubmissionsOfQuestion.TotalCount)
-
-		// Verify ordering (newest first - by submitted_at DESC)
-		edges := resp.Me.SubmissionsOfQuestion.Edges
-		require.Equal(t, strconv.Itoa(submissions[3].ID), edges[0].Node.ID) // Newest submission (now)
-		require.Equal(t, strconv.Itoa(submissions[2].ID), edges[1].Node.ID) // Third oldest (-1h)
-		require.Equal(t, strconv.Itoa(submissions[1].ID), edges[2].Node.ID) // Second oldest (-2h)
-		require.Equal(t, strconv.Itoa(submissions[0].ID), edges[3].Node.ID) // Oldest submission (-3h)
+		require.True(t, resp.Question.Solved)
 	})
 
-	t.Run("success - order by submitted_at ascending with pagination", func(t *testing.T) {
+	t.Run("success - user has solved with wildcard scope", func(t *testing.T) {
 		var resp struct {
-			Me struct {
-				SubmissionsOfQuestion struct {
-					Edges []struct {
-						Node struct {
-							ID string
-						}
-					}
-					PageInfo struct {
-						HasNextPage     bool
-						HasPreviousPage bool
-						StartCursor     string
-						EndCursor       string
-					}
-					TotalCount int
-				}
+			Question struct {
+				Solved bool
 			}
 		}
-
-		query := `query {
-			me {
-				submissionsOfQuestion(
-					questionID: ` + strconv.Itoa(question.ID) + `, 
-					first: 2,
-					orderBy: { field: SUBMITTED_AT, direction: ASC }
-				) {
-					edges {
-						node {
-							id
-						}
-					}
-					pageInfo {
-						hasNextPage
-						hasPreviousPage
-						startCursor
-						endCursor
-					}
-					totalCount
-				}
-			}
-		}`
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { solved } }`
 
 		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(
-				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
-					UserID: user1.ID,
-					Scopes: []string{"me:read", "submission:read"},
-				}),
-			)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userSolved.ID,
+				Scopes: []string{"*"},
+			}))
 		})
-
 		require.NoError(t, err)
-		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 2)
-		require.Equal(t, 4, resp.Me.SubmissionsOfQuestion.TotalCount)
-		require.True(t, resp.Me.SubmissionsOfQuestion.PageInfo.HasNextPage)
-		require.False(t, resp.Me.SubmissionsOfQuestion.PageInfo.HasPreviousPage)
-
-		// Verify ordering with pagination (first 2, oldest first)
-		edges := resp.Me.SubmissionsOfQuestion.Edges
-		require.Equal(t, strconv.Itoa(submissions[0].ID), edges[0].Node.ID) // Oldest submission (-3h)
-		require.Equal(t, strconv.Itoa(submissions[1].ID), edges[1].Node.ID) // Second oldest (-2h)
+		require.True(t, resp.Question.Solved)
 	})
 
-	t.Run("success - order by submitted_at descending with filter and pagination", func(t *testing.T) {
+	t.Run("forbidden - user without question:read scope", func(t *testing.T) {
 		var resp struct {
-			Me struct {
-				SubmissionsOfQuestion struct {
-					Edges []struct {
-						Node struct {
-							ID     string
-							Status string
-						}
-					}
-					PageInfo struct {
-						HasNextPage     bool
-						HasPreviousPage bool
-					}
-					TotalCount int
-				}
+			Question struct {
+				Solved bool
 			}
 		}
-
-		query := `query {
-			me {
-				submissionsOfQuestion(
-					questionID: ` + strconv.Itoa(question.ID) + `, 
-					where: { status: success },
-					first: 1,
-					orderBy: { field: SUBMITTED_AT, direction: DESC }
-				) {
-					edges {
-						node {
-							id
-							status
-						}
-					}
-					pageInfo {
-						hasNextPage
-						hasPreviousPage
-					}
-					totalCount
-				}
-			}
-		}`
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { solved } }`
 
 		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(
-				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
-					UserID: user1.ID,
-					Scopes: []string{"me:read", "submission:read"},
-				}),
-			)
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userSolved.ID,
+				Scopes: []string{"user:read"}, // Wrong scope
+			}))
 		})
-
-		require.NoError(t, err)
-		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 1)
-		require.Equal(t, 2, resp.Me.SubmissionsOfQuestion.TotalCount) // Only 2 success submissions
-		require.True(t, resp.Me.SubmissionsOfQuestion.PageInfo.HasNextPage)
-		require.False(t, resp.Me.SubmissionsOfQuestion.PageInfo.HasPreviousPage)
-
-		// Verify ordering with filter and pagination (newest success first)
-		edge := resp.Me.SubmissionsOfQuestion.Edges[0]
-		require.Equal(t, strconv.Itoa(submissions[1].ID), edge.Node.ID) // Newer success submission (-2h)
-		require.Equal(t, "success", edge.Node.Status)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeForbidden)
 	})
 
-	t.Run("success - user isolation (user2 doesn't see user1's submissions)", func(t *testing.T) {
+	t.Run("unauthorized - no authentication", func(t *testing.T) {
 		var resp struct {
-			Me struct {
-				SubmissionsOfQuestion struct {
-					Edges []struct {
-						Node struct {
-							ID            string
-							SubmittedCode string
-						}
-					}
-					TotalCount int
-				}
+			Question struct {
+				Solved bool
 			}
 		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { solved } }`
 
-		query := `query {
-			me {
-				submissionsOfQuestion(questionID: ` + strconv.Itoa(question.ID) + `) {
-					edges {
-						node {
-							id
-							submittedCode
-						}
-					}
-					totalCount
-				}
-			}
-		}`
-
-		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
-			bd.HTTP = bd.HTTP.WithContext(
-				auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
-					UserID: user2.ID, // Different user
-					Scopes: []string{"me:read", "submission:read"},
-				}),
-			)
-		})
-
-		require.NoError(t, err)
-		require.Len(t, resp.Me.SubmissionsOfQuestion.Edges, 1) // Only user2's submission
-		require.Equal(t, 1, resp.Me.SubmissionsOfQuestion.TotalCount)
-		require.Equal(t, "SELECT * FROM test ORDER BY id;", resp.Me.SubmissionsOfQuestion.Edges[0].Node.SubmittedCode)
+		err := gqlClient.Post(query, &resp)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
 	})
 }

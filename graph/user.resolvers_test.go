@@ -491,7 +491,7 @@ func TestQueryResolver_Me(t *testing.T) {
 
 		// Verify error
 		require.Error(t, err)
-		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+		require.Contains(t, err.Error(), defs.CodeForbidden)
 	})
 
 	t.Run("invalid user id", func(t *testing.T) {
@@ -595,7 +595,7 @@ func TestQueryResolver_User(t *testing.T) {
 			}))
 		})
 		require.Error(t, err)
-		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+		require.Contains(t, err.Error(), defs.CodeForbidden)
 	})
 
 	t.Run("unauthenticated", func(t *testing.T) {
@@ -672,7 +672,7 @@ func TestQueryResolver_Group(t *testing.T) {
 		})
 
 		require.Error(t, err)
-		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+		require.Contains(t, err.Error(), defs.CodeForbidden)
 	})
 
 	t.Run("unauthenticated", func(t *testing.T) {
@@ -805,7 +805,7 @@ func TestQueryResolver_ScopeSet(t *testing.T) {
 		})
 
 		require.Error(t, err)
-		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+		require.Contains(t, err.Error(), defs.CodeForbidden)
 	})
 
 	t.Run("unauthenticated", func(t *testing.T) {
