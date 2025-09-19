@@ -223,3 +223,468 @@ func TestQueryResolver_Submission(t *testing.T) {
 		require.Contains(t, err.Error(), defs.CodeUnauthorized)
 	})
 }
+
+func TestQuestionResolver_UserSubmissions(t *testing.T) {
+	entClient := testhelper.NewEntSqliteClient(t)
+	resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+	cfg := Config{
+		Resolvers:  resolver,
+		Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+	}
+	srv := handler.New(NewExecutableSchema(cfg))
+	srv.AddTransport(transport.POST{})
+	gqlClient := client.New(srv)
+
+	// Create test group and users
+	group, err := createTestGroup(t, entClient)
+	require.NoError(t, err)
+
+	user1, err := entClient.User.Create().
+		SetName("user1").
+		SetEmail("user1@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	user2, err := entClient.User.Create().
+		SetName("user2").
+		SetEmail("user2@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	// Create test database and question
+	database := createTestDatabase(t, entClient)
+	question := createTestQuestion(t, entClient, database)
+
+	// Create multiple submissions for user1
+	submission1 := createTestSubmission(t, entClient, user1, question, "SELECT * FROM test;", submission.StatusSuccess, time.Now().Add(-2*time.Hour))
+	submission2 := createTestSubmission(t, entClient, user1, question, "SELECT id FROM test;", submission.StatusFailed, time.Now().Add(-1*time.Hour))
+	submission3 := createTestSubmission(t, entClient, user1, question, "SELECT name FROM test;", submission.StatusSuccess, time.Now())
+
+	// Create submission for user2 (should not appear in user1's results)
+	createTestSubmission(t, entClient, user2, question, "SELECT count(*) FROM test;", submission.StatusSuccess, time.Now())
+
+	t.Run("success - returns user submissions with question:read scope", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				UserSubmissions []struct {
+					ID            string
+					SubmittedCode string
+					Status        string
+				}
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { userSubmissions { id submittedCode status } } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: user1.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+
+		// Should return 3 submissions for user1
+		require.Len(t, resp.Question.UserSubmissions, 3)
+
+		// Check that all submissions belong to the authenticated user
+		submissionIDs := make(map[string]bool)
+		for _, sub := range resp.Question.UserSubmissions {
+			submissionIDs[sub.ID] = true
+		}
+		require.True(t, submissionIDs[strconv.Itoa(submission1.ID)])
+		require.True(t, submissionIDs[strconv.Itoa(submission2.ID)])
+		require.True(t, submissionIDs[strconv.Itoa(submission3.ID)])
+	})
+
+	t.Run("success - returns user submissions with wildcard scope", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				UserSubmissions []struct {
+					ID            string
+					SubmittedCode string
+					Status        string
+				}
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { userSubmissions { id submittedCode status } } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: user1.ID,
+				Scopes: []string{"*"},
+			}))
+		})
+		require.NoError(t, err)
+
+		// Should return 3 submissions for user1
+		require.Len(t, resp.Question.UserSubmissions, 3)
+	})
+
+	t.Run("success - no submissions returns empty array", func(t *testing.T) {
+		// Create a user with no submissions
+		userNoSubs, err := entClient.User.Create().
+			SetName("userNoSubs").
+			SetEmail("userNoSubs@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		var resp struct {
+			Question struct {
+				UserSubmissions []struct {
+					ID string
+				}
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { userSubmissions { id } } }`
+
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userNoSubs.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Len(t, resp.Question.UserSubmissions, 0)
+	})
+
+	t.Run("forbidden - user without question:read scope", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				UserSubmissions []struct {
+					ID string
+				}
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { userSubmissions { id } } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: user1.ID,
+				Scopes: []string{"submission:read"}, // Wrong scope
+			}))
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "FORBIDDEN")
+	})
+
+	t.Run("unauthorized - no authentication", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				UserSubmissions []struct {
+					ID string
+				}
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { userSubmissions { id } } }`
+
+		err := gqlClient.Post(query, &resp)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+	})
+}
+
+func TestQuestionResolver_Attempted(t *testing.T) {
+	entClient := testhelper.NewEntSqliteClient(t)
+	resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+	cfg := Config{
+		Resolvers:  resolver,
+		Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+	}
+	srv := handler.New(NewExecutableSchema(cfg))
+	srv.AddTransport(transport.POST{})
+	gqlClient := client.New(srv)
+
+	// Create test group and users
+	group, err := createTestGroup(t, entClient)
+	require.NoError(t, err)
+
+	userWithSubmissions, err := entClient.User.Create().
+		SetName("userWithSubmissions").
+		SetEmail("userWithSubmissions@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	userWithoutSubmissions, err := entClient.User.Create().
+		SetName("userWithoutSubmissions").
+		SetEmail("userWithoutSubmissions@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	// Create test database and question
+	database := createTestDatabase(t, entClient)
+	question := createTestQuestion(t, entClient, database)
+
+	// Create submission for userWithSubmissions
+	createTestSubmission(t, entClient, userWithSubmissions, question, "SELECT * FROM test;", submission.StatusSuccess, time.Now())
+
+	t.Run("success - user has attempted with question:read scope", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				Attempted bool
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { attempted } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithSubmissions.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.True(t, resp.Question.Attempted)
+	})
+
+	t.Run("success - user has not attempted with question:read scope", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				Attempted bool
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { attempted } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithoutSubmissions.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.False(t, resp.Question.Attempted)
+	})
+
+	t.Run("success - user has attempted with wildcard scope", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				Attempted bool
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { attempted } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithSubmissions.ID,
+				Scopes: []string{"*"},
+			}))
+		})
+		require.NoError(t, err)
+		require.True(t, resp.Question.Attempted)
+	})
+
+	t.Run("forbidden - user without question:read scope", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				Attempted bool
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { attempted } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithSubmissions.ID,
+				Scopes: []string{"submission:write"}, // Wrong scope
+			}))
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "FORBIDDEN")
+	})
+
+	t.Run("unauthorized - no authentication", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				Attempted bool
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { attempted } }`
+
+		err := gqlClient.Post(query, &resp)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+	})
+}
+
+func TestQuestionResolver_Solved(t *testing.T) {
+	entClient := testhelper.NewEntSqliteClient(t)
+	resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+	cfg := Config{
+		Resolvers:  resolver,
+		Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+	}
+	srv := handler.New(NewExecutableSchema(cfg))
+	srv.AddTransport(transport.POST{})
+	gqlClient := client.New(srv)
+
+	// Create test group and users
+	group, err := createTestGroup(t, entClient)
+	require.NoError(t, err)
+
+	userSolved, err := entClient.User.Create().
+		SetName("userSolved").
+		SetEmail("userSolved@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	userNotSolved, err := entClient.User.Create().
+		SetName("userNotSolved").
+		SetEmail("userNotSolved@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	userNoSubmissions, err := entClient.User.Create().
+		SetName("userNoSubmissions").
+		SetEmail("userNoSubmissions@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	// Create test database and question
+	database := createTestDatabase(t, entClient)
+	question := createTestQuestion(t, entClient, database)
+
+	// Create successful submission for userSolved
+	createTestSubmission(t, entClient, userSolved, question, "SELECT * FROM test;", submission.StatusSuccess, time.Now())
+
+	// Create failed submission for userNotSolved
+	createTestSubmission(t, entClient, userNotSolved, question, "SELECT * FROM invalid;", submission.StatusFailed, time.Now())
+
+	t.Run("success - user has solved with question:read scope", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				Solved bool
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { solved } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userSolved.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.True(t, resp.Question.Solved)
+	})
+
+	t.Run("success - user has not solved (failed submissions only) with question:read scope", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				Solved bool
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { solved } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userNotSolved.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.False(t, resp.Question.Solved)
+	})
+
+	t.Run("success - user has not solved (no submissions) with question:read scope", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				Solved bool
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { solved } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userNoSubmissions.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.False(t, resp.Question.Solved)
+	})
+
+	t.Run("success - user solved after failed attempts with question:read scope", func(t *testing.T) {
+		// Create a user with both failed and successful submissions
+		userMixed, err := entClient.User.Create().
+			SetName("userMixed").
+			SetEmail("userMixed@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create failed submission first
+		createTestSubmission(t, entClient, userMixed, question, "SELECT * FROM invalid;", submission.StatusFailed, time.Now().Add(-1*time.Hour))
+		// Create successful submission later
+		createTestSubmission(t, entClient, userMixed, question, "SELECT * FROM test;", submission.StatusSuccess, time.Now())
+
+		var resp struct {
+			Question struct {
+				Solved bool
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { solved } }`
+
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userMixed.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.True(t, resp.Question.Solved)
+	})
+
+	t.Run("success - user has solved with wildcard scope", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				Solved bool
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { solved } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userSolved.ID,
+				Scopes: []string{"*"},
+			}))
+		})
+		require.NoError(t, err)
+		require.True(t, resp.Question.Solved)
+	})
+
+	t.Run("forbidden - user without question:read scope", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				Solved bool
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { solved } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userSolved.ID,
+				Scopes: []string{"user:read"}, // Wrong scope
+			}))
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "FORBIDDEN")
+	})
+
+	t.Run("unauthorized - no authentication", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				Solved bool
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { solved } }`
+
+		err := gqlClient.Post(query, &resp)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+	})
+}
