@@ -7,6 +7,15 @@ import (
 	"github.com/database-playground/backend-v2/models"
 )
 
+type DatabaseStructure struct {
+	Tables []*DatabaseTable `json:"tables"`
+}
+
+type DatabaseTable struct {
+	Name    string   `json:"name"`
+	Columns []string `json:"columns"`
+}
+
 // Filter for scope sets.
 //
 // The filters are mutually exclusive, only one of them can be provided.
