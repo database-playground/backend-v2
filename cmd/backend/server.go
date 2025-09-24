@@ -19,6 +19,7 @@ func main() {
 			UserAccountContext,
 			EventService,
 			SubmissionService,
+			ApqCache,
 			AnnotateService(AuthService),
 			GqlgenHandler,
 			fx.Annotate(

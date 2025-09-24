@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"entgo.io/contrib/entgql"
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/lru"
@@ -21,6 +22,7 @@ import (
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/config"
 	"github.com/database-playground/backend-v2/internal/events"
+	"github.com/database-playground/backend-v2/internal/graphql/apq"
 	"github.com/database-playground/backend-v2/internal/httputils"
 	"github.com/database-playground/backend-v2/internal/sqlrunner"
 	"github.com/database-playground/backend-v2/internal/submission"
@@ -44,8 +46,20 @@ func SqlRunner(cfg config.Config) *sqlrunner.SqlRunner {
 	return sqlrunner.NewSqlRunner(cfg.SqlRunner)
 }
 
+func ApqCache(redisClient rueidis.Client) graphql.Cache[string] {
+	return apq.NewCache(redisClient, 24*time.Hour)
+}
+
 // GqlgenHandler creates a gqlgen handler.
-func GqlgenHandler(entClient *ent.Client, storage auth.Storage, sqlrunner *sqlrunner.SqlRunner, useraccount *useraccount.Context, eventService *events.EventService, submissionService *submission.SubmissionService) *handler.Server {
+func GqlgenHandler(
+	entClient *ent.Client,
+	storage auth.Storage,
+	sqlrunner *sqlrunner.SqlRunner,
+	useraccount *useraccount.Context,
+	eventService *events.EventService,
+	submissionService *submission.SubmissionService,
+	apqCache graphql.Cache[string],
+) *handler.Server {
 	srv := handler.New(graph.NewSchema(entClient, storage, sqlrunner, useraccount, eventService, submissionService))
 
 	srv.AddTransport(transport.Options{})
@@ -57,7 +71,7 @@ func GqlgenHandler(entClient *ent.Client, storage auth.Storage, sqlrunner *sqlru
 	srv.Use(entgql.Transactioner{TxOpener: entClient})
 	srv.Use(extension.Introspection{})
 	srv.Use(extension.AutomaticPersistedQuery{
-		Cache: lru.New[string](100),
+		Cache: apqCache,
 	})
 
 	srv.SetErrorPresenter(graph.NewErrorPresenter())
@@ -86,7 +100,12 @@ func AuthService(entClient *ent.Client, storage auth.Storage, config config.Conf
 }
 
 // GinEngine creates a gin engine.
-func GinEngine(services []httpapi.Service, authStorage auth.Storage, gqlgenHandler *handler.Server, cfg config.Config) *gin.Engine {
+func GinEngine(
+	services []httpapi.Service,
+	authStorage auth.Storage,
+	gqlgenHandler *handler.Server,
+	cfg config.Config,
+) *gin.Engine {
 	engine := gin.New()
 
 	if err := engine.SetTrustedProxies(cfg.TrustProxies); err != nil {
