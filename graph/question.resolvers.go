@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/database-playground/backend-v2/ent"
 	entQuestion "github.com/database-playground/backend-v2/ent/question"
 	entSubmission "github.com/database-playground/backend-v2/ent/submission"
@@ -205,12 +206,33 @@ func (r *questionResolver) UserSubmissions(ctx context.Context, obj *ent.Questio
 
 	submissions, err := obj.QuerySubmissions().Where(
 		entSubmission.HasUserWith(user.ID(tokenInfo.UserID)),
-	).All(ctx)
+	).Order(entSubmission.BySubmittedAt(sql.OrderDesc())).All(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	return submissions, nil
+}
+
+// LastSubmission is the resolver for the lastSubmission field.
+func (r *questionResolver) LastSubmission(ctx context.Context, obj *ent.Question) (*ent.Submission, error) {
+	tokenInfo, ok := auth.GetUser(ctx)
+	if !ok {
+		return nil, defs.ErrUnauthorized
+	}
+
+	submission, err := obj.QuerySubmissions().Where(
+		entSubmission.HasUserWith(user.ID(tokenInfo.UserID)),
+	).Order(entSubmission.BySubmittedAt(sql.OrderDesc())).First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return submission, nil
 }
 
 // Attempted is the resolver for the attempted field.
