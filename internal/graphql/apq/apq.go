@@ -4,6 +4,7 @@ package apq
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/99designs/gqlgen/graphql"
@@ -24,6 +25,11 @@ func NewCache(client rueidis.Client, ttl time.Duration) *Cache {
 func (c *Cache) Get(ctx context.Context, query string) (string, bool) {
 	reply, err := c.client.Do(ctx, c.client.B().Get().Key(redisApqPrefix+query).Build()).ToString()
 	if err != nil {
+		if rueidis.IsRedisNil(err) {
+			return "", false
+		}
+
+		slog.Warn("error getting apq from cache", "error", err, "query", query)
 		return "", false
 	}
 
@@ -31,7 +37,10 @@ func (c *Cache) Get(ctx context.Context, query string) (string, bool) {
 }
 
 func (c *Cache) Add(ctx context.Context, query string, value string) {
-	c.client.Do(ctx, c.client.B().Set().Key(redisApqPrefix+query).Value(value).Ex(c.ttl).Build())
+	err := c.client.Do(ctx, c.client.B().Set().Key(redisApqPrefix+query).Value(value).Ex(c.ttl).Build()).Error()
+	if err != nil {
+		slog.Warn("error adding apq to cache", "error", err, "query", query)
+	}
 }
 
 var _ graphql.Cache[string] = &Cache{}
