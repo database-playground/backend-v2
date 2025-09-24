@@ -1,0 +1,12 @@
+extend type Database {
+    structure: DatabaseStructure!
+}
+
+type DatabaseStructure {
+    tables: [DatabaseTable!]!
+}
+
+type DatabaseTable {
+    name: String!
+    columns: [String!]!
+}

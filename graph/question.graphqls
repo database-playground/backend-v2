@@ -64,9 +64,14 @@ extend type Question {
   referenceAnswerResult: SQLExecutionResult! @scope(scope: "question:read")
 
   """
-  List of your submissions for this question.
+  List of your submissions for this question, ordered by submitted at descending.
   """
   userSubmissions: [Submission!]!
+
+  """
+  Get the last submission for this question.
+  """
+  lastSubmission: Submission
 
   """
   Have you tried to solve the question?

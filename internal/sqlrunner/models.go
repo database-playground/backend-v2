@@ -45,3 +45,14 @@ type ErrorResponse struct {
 func (e ErrorResponse) Error() string {
 	return fmt.Sprintf("%s: %s", e.Code, e.Message)
 }
+
+// DatabaseStructure is the database structure of a schema.
+type DatabaseStructure struct {
+	Tables []DatabaseTable `json:"tables"`
+}
+
+// DatabaseTable is the table structure of a schema.
+type DatabaseTable struct {
+	Name    string   `json:"name"`
+	Columns []string `json:"columns"`
+}
