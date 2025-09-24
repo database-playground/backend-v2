@@ -66,6 +66,50 @@ func (s *SqlRunner) Query(ctx context.Context, schema, query string) (DataRespon
 	return respBody.Data, nil
 }
 
+func (s *SqlRunner) GetDatabaseStructure(ctx context.Context, schema string) (DatabaseStructure, error) {
+	// Query SQLite's master table to get all table names
+	tablesQuery := "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+	tablesResp, err := s.Query(ctx, schema, tablesQuery)
+	if err != nil {
+		return DatabaseStructure{}, fmt.Errorf("failed to query tables: %w", err)
+	}
+
+	var tables []DatabaseTable
+
+	// For each table, get its column information
+	for _, row := range tablesResp.Rows {
+		if len(row) == 0 {
+			continue
+		}
+		tableName := row[0]
+
+		// Use PRAGMA table_info to get column information
+		columnsQuery := fmt.Sprintf("PRAGMA table_info(%s)", tableName)
+		columnsResp, err := s.Query(ctx, schema, columnsQuery)
+		if err != nil {
+			return DatabaseStructure{}, fmt.Errorf("query columns for table %s: %w", tableName, err)
+		}
+
+		var columns []string
+		// PRAGMA table_info returns: cid, name, type, notnull, dflt_value, pk
+		// We only need the name (index 1)
+		for _, columnRow := range columnsResp.Rows {
+			if len(columnRow) > 1 {
+				columns = append(columns, columnRow[1])
+			}
+		}
+
+		tables = append(tables, DatabaseTable{
+			Name:    tableName,
+			Columns: columns,
+		})
+	}
+
+	return DatabaseStructure{
+		Tables: tables,
+	}, nil
+}
+
 func (s *SqlRunner) IsHealthy(ctx context.Context) bool {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/healthz", s.cfg.URI), nil)
 	if err != nil {
