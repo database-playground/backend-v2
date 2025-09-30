@@ -433,3 +433,109 @@ func TestGrantToken_MultipleTokensCreateMultipleEvents(t *testing.T) {
 	assert.True(t, machines["machine-2"])
 	assert.True(t, machines["machine-3"])
 }
+
+func TestRevokeToken_LogoutEventTriggered(t *testing.T) {
+	client := setupTestDatabase(t)
+	authStorage := newMockAuthStorage()
+	eventService := events_pkg.NewEventService(client)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
+	context := context.Background()
+
+	// Create a user in unverified group
+	unverifiedGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).Only(context)
+	require.NoError(t, err)
+
+	user, err := client.User.Create().
+		SetName("Test User").
+		SetEmail("test-event-logout@example.com").
+		SetGroup(unverifiedGroup).
+		Save(context)
+	require.NoError(t, err)
+
+	// Grant token first
+	token, err := ctx.GrantToken(
+		context, user, "test-machine-logout",
+		useraccount.WithFlow("login"),
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, token)
+
+	// Revoke token (should trigger logout event)
+	err = ctx.RevokeToken(context, token)
+	require.NoError(t, err)
+
+	// Verify logout event was created in database
+	logoutEvents, err := client.Event.Query().
+		Where(event.UserIDEQ(user.ID)).
+		Where(event.TypeEQ(string(events_pkg.EventTypeLogout))).
+		All(context)
+	require.NoError(t, err)
+	require.Len(t, logoutEvents, 1)
+
+	// Verify event details
+	logoutEvent := logoutEvents[0]
+	assert.Equal(t, user.ID, logoutEvent.UserID)
+	assert.Equal(t, string(events_pkg.EventTypeLogout), logoutEvent.Type)
+	assert.NotZero(t, logoutEvent.TriggeredAt)
+}
+
+func TestRevokeAllTokens_LogoutAllEventTriggered(t *testing.T) {
+	client := setupTestDatabase(t)
+	authStorage := newMockAuthStorage()
+	eventService := events_pkg.NewEventService(client)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
+	context := context.Background()
+
+	// Create a user in unverified group
+	unverifiedGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).Only(context)
+	require.NoError(t, err)
+
+	user, err := client.User.Create().
+		SetName("Test User").
+		SetEmail("test-event-logout-all@example.com").
+		SetGroup(unverifiedGroup).
+		Save(context)
+	require.NoError(t, err)
+
+	// Grant multiple tokens first
+	token1, err := ctx.GrantToken(
+		context, user, "test-machine-1",
+		useraccount.WithFlow("login"),
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, token1)
+
+	token2, err := ctx.GrantToken(
+		context, user, "test-machine-2",
+		useraccount.WithFlow("login"),
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, token2)
+
+	// Revoke all tokens (should trigger logout_all event)
+	err = ctx.RevokeAllTokens(context, user.ID)
+	require.NoError(t, err)
+
+	// Verify logout_all event was created in database
+	logoutAllEvents, err := client.Event.Query().
+		Where(event.UserIDEQ(user.ID)).
+		Where(event.TypeEQ(string(events_pkg.EventTypeLogoutAll))).
+		All(context)
+	require.NoError(t, err)
+	require.Len(t, logoutAllEvents, 1)
+
+	// Verify event details
+	logoutAllEvent := logoutAllEvents[0]
+	assert.Equal(t, user.ID, logoutAllEvent.UserID)
+	assert.Equal(t, string(events_pkg.EventTypeLogoutAll), logoutAllEvent.Type)
+	assert.NotZero(t, logoutAllEvent.TriggeredAt)
+
+	// Verify tokens are actually revoked
+	_, err = authStorage.Get(context, token1)
+	require.Error(t, err)
+	assert.Equal(t, auth.ErrNotFound, err)
+
+	_, err = authStorage.Get(context, token2)
+	require.Error(t, err)
+	assert.Equal(t, auth.ErrNotFound, err)
+}

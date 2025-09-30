@@ -91,10 +91,25 @@ func (c *Context) GrantToken(ctx context.Context, user *ent.User, machine string
 
 // RevokeToken revokes a token.
 func (c *Context) RevokeToken(ctx context.Context, token string) error {
+	tokenInfo, err := c.auth.Peek(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	c.eventService.TriggerEvent(ctx, events.Event{
+		Type:   events.EventTypeLogout,
+		UserID: tokenInfo.UserID,
+	})
+
 	return c.auth.Delete(ctx, token)
 }
 
 // RevokeAllTokens revokes all tokens for a user.
 func (c *Context) RevokeAllTokens(ctx context.Context, userID int) error {
+	c.eventService.TriggerEvent(ctx, events.Event{
+		Type:   events.EventTypeLogoutAll,
+		UserID: userID,
+	})
+
 	return c.auth.DeleteByUser(ctx, userID)
 }
