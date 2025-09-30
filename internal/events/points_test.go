@@ -479,6 +479,7 @@ func createSubmitAnswerEvent(t *testing.T, client *ent.Client, userID int, submi
 		SetUserID(userID).
 		SetType(string(events.EventTypeSubmitAnswer)).
 		SetPayload(map[string]any{
+			// ent requires float64 for JSON serialization
 			"submission_id": float64(submissionID),
 			"question_id":   float64(questionID),
 		}).

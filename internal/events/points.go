@@ -185,7 +185,7 @@ func (d *PointsGranter) GrantDailyLoginPoints(ctx context.Context, userID int) (
 
 // GrantWeeklyLoginPoints grants the "weekly login" points to a user.
 func (d *PointsGranter) GrantWeeklyLoginPoints(ctx context.Context, userID int) (bool, error) {
-	// Calculate the start of 7 days ago (midnight)
+	// Calculate the start of 6 days ago (start of the 7-day period)
 	sevenDaysAgo := startOfDay(time.Now().AddDate(0, 0, -6))
 
 	// Check if we have granted the "weekly login" points for this user this week.
@@ -211,12 +211,12 @@ func (d *PointsGranter) GrantWeeklyLoginPoints(ctx context.Context, userID int) 
 	}
 
 	// Aggregated by day
-	weekLoginRecordsByDay := make(map[time.Time]int)
+	distinctLoginDays := make(map[time.Time]int)
 	for _, record := range weekLoginRecords {
-		weekLoginRecordsByDay[startOfDay(record.TriggeredAt)]++
+		distinctLoginDays[startOfDay(record.TriggeredAt)]++
 	}
 
-	if len(weekLoginRecordsByDay) != 7 {
+	if len(distinctLoginDays) != 7 {
 		return false, nil
 	}
 
