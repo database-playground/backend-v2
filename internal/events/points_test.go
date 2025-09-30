@@ -7,6 +7,7 @@ import (
 
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/ent/point"
+	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
 	"github.com/database-playground/backend-v2/internal/events"
 	"github.com/database-playground/backend-v2/internal/setup"
@@ -413,4 +414,590 @@ func TestGrantWeeklyLoginPoints_NonExistentUser(t *testing.T) {
 	granted, err := granter.GrantWeeklyLoginPoints(ctx, nonExistentUserID)
 	require.NoError(t, err)
 	require.False(t, granted)
+}
+
+// createQuestion creates a question for testing
+func createQuestion(t *testing.T, client *ent.Client, databaseID int) int {
+	t.Helper()
+
+	ctx := context.Background()
+
+	q, err := client.Question.Create().
+		SetCategory("test-category").
+		SetTitle("Test Question").
+		SetDescription("Test Description").
+		SetReferenceAnswer("SELECT * FROM test;").
+		SetDatabaseID(databaseID).
+		Save(ctx)
+	require.NoError(t, err)
+
+	return q.ID
+}
+
+// createDatabase creates a database for testing
+func createDatabase(t *testing.T, client *ent.Client) int {
+	t.Helper()
+
+	ctx := context.Background()
+
+	db, err := client.Database.Create().
+		SetSlug("test-db").
+		SetDescription("Test Database").
+		SetSchema("CREATE TABLE test (id INT);").
+		SetRelationFigure("https://example.com/test-db-relation.png").
+		Save(ctx)
+	require.NoError(t, err)
+
+	return db.ID
+}
+
+// createSubmission creates a submission for testing
+func createSubmission(t *testing.T, client *ent.Client, userID int, questionID int, status submission.Status, submittedAt time.Time) int {
+	t.Helper()
+
+	ctx := context.Background()
+
+	sub, err := client.Submission.Create().
+		SetUserID(userID).
+		SetQuestionID(questionID).
+		SetSubmittedCode("SELECT * FROM test;").
+		SetStatus(status).
+		SetSubmittedAt(submittedAt).
+		Save(ctx)
+	require.NoError(t, err)
+
+	return sub.ID
+}
+
+// createSubmitAnswerEvent creates a submit answer event for testing
+func createSubmitAnswerEvent(t *testing.T, client *ent.Client, userID int, submissionID int, questionID int, triggeredAt time.Time) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	_, err := client.Event.Create().
+		SetUserID(userID).
+		SetType(string(events.EventTypeSubmitAnswer)).
+		SetPayload(map[string]any{
+			"submission_id": float64(submissionID),
+			"question_id":   float64(questionID),
+		}).
+		SetTriggeredAt(triggeredAt).
+		Save(ctx)
+	require.NoError(t, err)
+}
+
+func TestGrantFirstAttemptPoints_Success(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	// Create a database and question
+	databaseID := createDatabase(t, client)
+	questionID := createQuestion(t, client, databaseID)
+
+	// Create the first submission for this user on this question
+	createSubmission(t, client, userID, questionID, submission.StatusFailed, now)
+
+	// Grant first attempt points
+	granted, err := granter.GrantFirstAttemptPoints(ctx, userID, questionID)
+	require.NoError(t, err)
+	require.True(t, granted)
+
+	// Verify points were created
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 1)
+	require.Equal(t, events.PointValueFirstAttempt, pointsRecords[0].Points)
+}
+
+func TestGrantFirstAttemptPoints_AlreadyGranted(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	databaseID := createDatabase(t, client)
+	questionID := createQuestion(t, client, databaseID)
+
+	// Create a submission
+	createSubmission(t, client, userID, questionID, submission.StatusFailed, now)
+
+	// Grant points once
+	granted, err := granter.GrantFirstAttemptPoints(ctx, userID, questionID)
+	require.NoError(t, err)
+	require.True(t, granted)
+
+	// Attempt to grant again
+	granted, err = granter.GrantFirstAttemptPoints(ctx, userID, questionID)
+	require.NoError(t, err)
+	require.False(t, granted)
+
+	// Verify only one points record exists
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 1)
+}
+
+func TestGrantFirstAttemptPoints_SecondSubmission(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	databaseID := createDatabase(t, client)
+	questionID := createQuestion(t, client, databaseID)
+
+	// Create two submissions
+	createSubmission(t, client, userID, questionID, submission.StatusFailed, now)
+	createSubmission(t, client, userID, questionID, submission.StatusSuccess, now.Add(time.Minute))
+
+	// Attempt to grant first attempt points (should fail because there are 2 submissions)
+	granted, err := granter.GrantFirstAttemptPoints(ctx, userID, questionID)
+	require.NoError(t, err)
+	require.False(t, granted)
+
+	// Verify no points record was created
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 0)
+}
+
+func TestGrantDailyAttemptPoints_Success(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	databaseID := createDatabase(t, client)
+	questionID := createQuestion(t, client, databaseID)
+	submissionID := createSubmission(t, client, userID, questionID, submission.StatusFailed, now)
+
+	// Create a submit answer event from today
+	createSubmitAnswerEvent(t, client, userID, submissionID, questionID, now)
+
+	// Grant daily attempt points
+	granted, err := granter.GrantDailyAttemptPoints(ctx, userID)
+	require.NoError(t, err)
+	require.True(t, granted)
+
+	// Verify points were created
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		Where(point.DescriptionEQ(events.PointDescriptionDailyAttempt)).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 1)
+	require.Equal(t, events.PointValueDailyAttempt, pointsRecords[0].Points)
+}
+
+func TestGrantDailyAttemptPoints_AlreadyGrantedToday(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	databaseID := createDatabase(t, client)
+	questionID := createQuestion(t, client, databaseID)
+	submissionID := createSubmission(t, client, userID, questionID, submission.StatusFailed, now)
+
+	// Create a submit answer event from today
+	createSubmitAnswerEvent(t, client, userID, submissionID, questionID, now)
+
+	// Create an existing points record from today
+	createPointsRecord(t, client, userID, events.PointDescriptionDailyAttempt, events.PointValueDailyAttempt, now)
+
+	// Attempt to grant daily attempt points again
+	granted, err := granter.GrantDailyAttemptPoints(ctx, userID)
+	require.NoError(t, err)
+	require.False(t, granted)
+
+	// Verify only one points record exists
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		Where(point.DescriptionEQ(events.PointDescriptionDailyAttempt)).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 1)
+}
+
+func TestGrantDailyAttemptPoints_NoSubmissionToday(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	twoDaysAgo := time.Now().AddDate(0, 0, -2)
+
+	databaseID := createDatabase(t, client)
+	questionID := createQuestion(t, client, databaseID)
+	submissionID := createSubmission(t, client, userID, questionID, submission.StatusFailed, twoDaysAgo)
+
+	// Create a submit answer event from 2 days ago
+	createSubmitAnswerEvent(t, client, userID, submissionID, questionID, twoDaysAgo)
+
+	// Attempt to grant daily attempt points
+	granted, err := granter.GrantDailyAttemptPoints(ctx, userID)
+	require.NoError(t, err)
+	require.False(t, granted)
+
+	// Verify no points record was created
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		Where(point.DescriptionEQ(events.PointDescriptionDailyAttempt)).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 0)
+}
+
+func TestGrantCorrectAnswerPoints_Success(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	databaseID := createDatabase(t, client)
+	questionID := createQuestion(t, client, databaseID)
+
+	// Create a successful submission
+	createSubmission(t, client, userID, questionID, submission.StatusSuccess, now)
+
+	// Grant correct answer points
+	granted, err := granter.GrantCorrectAnswerPoints(ctx, userID, questionID)
+	require.NoError(t, err)
+	require.True(t, granted)
+
+	// Verify points were created
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 1)
+	require.Equal(t, events.PointValueCorrectAnswer, pointsRecords[0].Points)
+}
+
+func TestGrantCorrectAnswerPoints_AlreadyGranted(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	databaseID := createDatabase(t, client)
+	questionID := createQuestion(t, client, databaseID)
+
+	// Create a successful submission
+	createSubmission(t, client, userID, questionID, submission.StatusSuccess, now)
+
+	// Grant points once
+	granted, err := granter.GrantCorrectAnswerPoints(ctx, userID, questionID)
+	require.NoError(t, err)
+	require.True(t, granted)
+
+	// Attempt to grant again
+	granted, err = granter.GrantCorrectAnswerPoints(ctx, userID, questionID)
+	require.NoError(t, err)
+	require.False(t, granted)
+
+	// Verify only one points record exists
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 1)
+}
+
+func TestGrantCorrectAnswerPoints_NoSuccessfulSubmission(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	databaseID := createDatabase(t, client)
+	questionID := createQuestion(t, client, databaseID)
+
+	// Create a failed submission
+	createSubmission(t, client, userID, questionID, submission.StatusFailed, now)
+
+	// Attempt to grant correct answer points
+	granted, err := granter.GrantCorrectAnswerPoints(ctx, userID, questionID)
+	require.NoError(t, err)
+	require.False(t, granted)
+
+	// Verify no points record was created
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 0)
+}
+
+func TestGrantFirstPlacePoints_Success(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	databaseID := createDatabase(t, client)
+	questionID := createQuestion(t, client, databaseID)
+
+	// Create the first successful submission
+	createSubmission(t, client, userID, questionID, submission.StatusSuccess, now)
+
+	// Grant first place points
+	granted, err := granter.GrantFirstPlacePoints(ctx, userID, questionID)
+	require.NoError(t, err)
+	require.True(t, granted)
+
+	// Verify points were created
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 1)
+	require.Equal(t, events.PointValueFirstPlace, pointsRecords[0].Points)
+}
+
+func TestGrantFirstPlacePoints_NotFirstPlace(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	// Create two users
+	userID1 := setupTestData(t, client)
+	setupResult, err := setup.Setup(ctx, client)
+	require.NoError(t, err)
+
+	user2, err := client.User.Create().
+		SetName("Test User 2").
+		SetEmail("test2@example.com").
+		SetGroup(setupResult.NewUserGroup).
+		Save(ctx)
+	require.NoError(t, err)
+	userID2 := user2.ID
+
+	databaseID := createDatabase(t, client)
+	questionID := createQuestion(t, client, databaseID)
+
+	// User 1 submits successfully first
+	createSubmission(t, client, userID1, questionID, submission.StatusSuccess, now)
+
+	// User 2 submits successfully later
+	createSubmission(t, client, userID2, questionID, submission.StatusSuccess, now.Add(time.Minute))
+
+	// Attempt to grant first place points to user 2
+	granted, err := granter.GrantFirstPlacePoints(ctx, userID2, questionID)
+	require.NoError(t, err)
+	require.False(t, granted)
+
+	// Verify no points record was created for user 2
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID2))).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 0)
+}
+
+func TestGrantFirstPlacePoints_AlreadyGranted(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	databaseID := createDatabase(t, client)
+	questionID := createQuestion(t, client, databaseID)
+
+	// Create the first successful submission
+	createSubmission(t, client, userID, questionID, submission.StatusSuccess, now)
+
+	// Grant first place points once
+	granted, err := granter.GrantFirstPlacePoints(ctx, userID, questionID)
+	require.NoError(t, err)
+	require.True(t, granted)
+
+	// Attempt to grant again
+	granted, err = granter.GrantFirstPlacePoints(ctx, userID, questionID)
+	require.NoError(t, err)
+	require.False(t, granted)
+
+	// Verify only one points record exists
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 1)
+}
+
+func TestHandleSubmitAnswerEvent_SuccessfulSubmission(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	databaseID := createDatabase(t, client)
+	questionID := createQuestion(t, client, databaseID)
+
+	// Create the first successful submission
+	submissionID := createSubmission(t, client, userID, questionID, submission.StatusSuccess, now)
+
+	// Create and handle the event
+	event, err := client.Event.Create().
+		SetUserID(userID).
+		SetType(string(events.EventTypeSubmitAnswer)).
+		SetPayload(map[string]any{
+			"submission_id": float64(submissionID),
+			"question_id":   float64(questionID),
+		}).
+		SetTriggeredAt(now).
+		Save(ctx)
+	require.NoError(t, err)
+
+	err = granter.HandleEvent(ctx, event)
+	require.NoError(t, err)
+
+	// Verify all appropriate points were granted
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 4)
+
+	totalPoints := 0
+	for _, p := range pointsRecords {
+		totalPoints += p.Points
+	}
+	expectedTotal := events.PointValueFirstAttempt + events.PointValueDailyAttempt + events.PointValueCorrectAnswer + events.PointValueFirstPlace
+	require.Equal(t, expectedTotal, totalPoints)
+}
+
+func TestHandleSubmitAnswerEvent_FailedSubmission(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	databaseID := createDatabase(t, client)
+	questionID := createQuestion(t, client, databaseID)
+
+	// Create a failed submission
+	submissionID := createSubmission(t, client, userID, questionID, submission.StatusFailed, now)
+
+	// Create and handle the event
+	event, err := client.Event.Create().
+		SetUserID(userID).
+		SetType(string(events.EventTypeSubmitAnswer)).
+		SetPayload(map[string]any{
+			"submission_id": float64(submissionID),
+			"question_id":   float64(questionID),
+		}).
+		SetTriggeredAt(now).
+		Save(ctx)
+	require.NoError(t, err)
+
+	err = granter.HandleEvent(ctx, event)
+	require.NoError(t, err)
+
+	// Verify only first attempt and daily attempt points were granted
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 2)
+
+	totalPoints := 0
+	for _, p := range pointsRecords {
+		totalPoints += p.Points
+	}
+	expectedTotal := events.PointValueFirstAttempt + events.PointValueDailyAttempt
+	require.Equal(t, expectedTotal, totalPoints)
+}
+
+func TestHandleSubmitAnswerEvent_SecondAttemptSuccess(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	databaseID := createDatabase(t, client)
+	questionID := createQuestion(t, client, databaseID)
+
+	// First attempt - failed
+	submission1ID := createSubmission(t, client, userID, questionID, submission.StatusFailed, now)
+	event1, err := client.Event.Create().
+		SetUserID(userID).
+		SetType(string(events.EventTypeSubmitAnswer)).
+		SetPayload(map[string]any{
+			"submission_id": float64(submission1ID),
+			"question_id":   float64(questionID),
+		}).
+		SetTriggeredAt(now).
+		Save(ctx)
+	require.NoError(t, err)
+
+	err = granter.HandleEvent(ctx, event1)
+	require.NoError(t, err)
+
+	// Second attempt - success
+	submission2ID := createSubmission(t, client, userID, questionID, submission.StatusSuccess, now.Add(time.Minute))
+	event2, err := client.Event.Create().
+		SetUserID(userID).
+		SetType(string(events.EventTypeSubmitAnswer)).
+		SetPayload(map[string]any{
+			"submission_id": float64(submission2ID),
+			"question_id":   float64(questionID),
+		}).
+		SetTriggeredAt(now.Add(time.Minute)).
+		Save(ctx)
+	require.NoError(t, err)
+
+	err = granter.HandleEvent(ctx, event2)
+	require.NoError(t, err)
+
+	// Verify points were granted correctly
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 4)
+
+	totalPoints := 0
+	for _, p := range pointsRecords {
+		totalPoints += p.Points
+	}
+	expectedTotal := events.PointValueFirstAttempt + events.PointValueDailyAttempt + events.PointValueCorrectAnswer + events.PointValueFirstPlace
+	require.Equal(t, expectedTotal, totalPoints)
 }
