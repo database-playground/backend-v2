@@ -14,6 +14,17 @@ import (
 	"github.com/database-playground/backend-v2/ent/user"
 )
 
+// startOfDay returns the start of the given day (midnight).
+func startOfDay(t time.Time) time.Time {
+	year, month, day := t.Date()
+	return time.Date(year, month, day, 0, 0, 0, 0, t.Location())
+}
+
+// startOfToday returns the start of today (midnight).
+func startOfToday() time.Time {
+	return startOfDay(time.Now())
+}
+
 const (
 	PointDescriptionDailyLogin    = "daily login"
 	PointDescriptionWeeklyLogin   = "weekly login"
@@ -132,11 +143,13 @@ func (d *PointsGranter) handleSubmitAnswerEvent(ctx context.Context, event *ent.
 
 // GrantDailyLoginPoints grants the "daily login" points to a user.
 func (d *PointsGranter) GrantDailyLoginPoints(ctx context.Context, userID int) (bool, error) {
+	today := startOfToday()
+
 	// Check if we have granted the "daily login" points for this user today.
 	hasPointsRecord, err := d.entClient.Point.Query().
 		Where(point.HasUserWith(user.ID(userID))).
 		Where(point.DescriptionEQ(PointDescriptionDailyLogin)).
-		Where(point.GrantedAtGTE(time.Now().AddDate(0, 0, -1))).Exist(ctx)
+		Where(point.GrantedAtGTE(today)).Exist(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -148,7 +161,7 @@ func (d *PointsGranter) GrantDailyLoginPoints(ctx context.Context, userID int) (
 	hasTodayLoginRecord, err := d.entClient.Event.Query().
 		Where(event.Type(string(EventTypeLogin))).
 		Where(event.UserID(userID)).
-		Where(event.TriggeredAtGTE(time.Now().AddDate(0, 0, -1))).
+		Where(event.TriggeredAtGTE(today)).
 		Exist(ctx)
 	if err != nil {
 		return false, err
@@ -172,11 +185,14 @@ func (d *PointsGranter) GrantDailyLoginPoints(ctx context.Context, userID int) (
 
 // GrantWeeklyLoginPoints grants the "weekly login" points to a user.
 func (d *PointsGranter) GrantWeeklyLoginPoints(ctx context.Context, userID int) (bool, error) {
+	// Calculate the start of 7 days ago (midnight)
+	sevenDaysAgo := startOfDay(time.Now().AddDate(0, 0, -6))
+
 	// Check if we have granted the "weekly login" points for this user this week.
 	hasPointsRecord, err := d.entClient.Point.Query().
 		Where(point.HasUserWith(user.ID(userID))).
 		Where(point.DescriptionEQ(PointDescriptionWeeklyLogin)).
-		Where(point.GrantedAtGTE(time.Now().AddDate(0, 0, -7))).Exist(ctx)
+		Where(point.GrantedAtGTE(sevenDaysAgo)).Exist(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -184,11 +200,11 @@ func (d *PointsGranter) GrantWeeklyLoginPoints(ctx context.Context, userID int) 
 		return false, nil
 	}
 
-	// Check if the user has logged in every day this week.
+	// Check if the user has logged in every day for the last 7 days.
 	weekLoginRecords, err := d.entClient.Event.Query().
 		Where(event.Type(string(EventTypeLogin))).
 		Where(event.UserID(userID)).
-		Where(event.TriggeredAtGTE(time.Now().AddDate(0, 0, -7))).
+		Where(event.TriggeredAtGTE(sevenDaysAgo)).
 		All(ctx)
 	if err != nil {
 		return false, err
@@ -197,7 +213,7 @@ func (d *PointsGranter) GrantWeeklyLoginPoints(ctx context.Context, userID int) 
 	// Aggregated by day
 	weekLoginRecordsByDay := make(map[time.Time]int)
 	for _, record := range weekLoginRecords {
-		weekLoginRecordsByDay[record.TriggeredAt.Truncate(24*time.Hour)]++
+		weekLoginRecordsByDay[startOfDay(record.TriggeredAt)]++
 	}
 
 	if len(weekLoginRecordsByDay) != 7 {
@@ -260,11 +276,13 @@ func (d *PointsGranter) GrantFirstAttemptPoints(ctx context.Context, userID int,
 // GrantDailyAttemptPoints grants the "daily attempt" points to a user.
 // This is awarded when a user attempts any question today.
 func (d *PointsGranter) GrantDailyAttemptPoints(ctx context.Context, userID int) (bool, error) {
+	today := startOfToday()
+
 	// Check if we have granted the "daily attempt" points for this user today.
 	hasPointsRecord, err := d.entClient.Point.Query().
 		Where(point.HasUserWith(user.ID(userID))).
 		Where(point.DescriptionEQ(PointDescriptionDailyAttempt)).
-		Where(point.GrantedAtGTE(time.Now().AddDate(0, 0, -1))).
+		Where(point.GrantedAtGTE(today)).
 		Exist(ctx)
 	if err != nil {
 		return false, err
@@ -277,7 +295,7 @@ func (d *PointsGranter) GrantDailyAttemptPoints(ctx context.Context, userID int)
 	hasSubmittedToday, err := d.entClient.Event.Query().
 		Where(event.Type(string(EventTypeSubmitAnswer))).
 		Where(event.UserID(userID)).
-		Where(event.TriggeredAtGTE(time.Now().AddDate(0, 0, -1))).
+		Where(event.TriggeredAtGTE(today)).
 		Exist(ctx)
 	if err != nil {
 		return false, err

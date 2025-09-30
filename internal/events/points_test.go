@@ -1001,3 +1001,209 @@ func TestHandleSubmitAnswerEvent_SecondAttemptSuccess(t *testing.T) {
 	expectedTotal := events.PointValueFirstAttempt + events.PointValueDailyAttempt + events.PointValueCorrectAnswer + events.PointValueFirstPlace
 	require.Equal(t, expectedTotal, totalPoints)
 }
+
+// TestGrantDailyLoginPoints_MidnightBoundary tests the edge case where events happen around midnight
+func TestGrantDailyLoginPoints_MidnightBoundary(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	// Get today's date at 11:59 PM (just before midnight)
+	year, month, day := now.Date()
+	yesterdayNight := time.Date(year, month, day-1, 23, 59, 59, 0, now.Location())
+
+	// Create a login event from yesterday at 11:59 PM
+	createLoginEvent(t, client, userID, yesterdayNight)
+
+	// Create a points record from yesterday
+	createPointsRecord(t, client, userID, events.PointDescriptionDailyLogin, events.PointValueDailyLogin, yesterdayNight)
+
+	// Now create a login event from today at 12:01 AM (just after midnight)
+	todayMorning := time.Date(year, month, day, 0, 1, 0, 0, now.Location())
+	createLoginEvent(t, client, userID, todayMorning)
+
+	// Grant daily login points should succeed because the old record is from yesterday
+	granted, err := granter.GrantDailyLoginPoints(ctx, userID)
+	require.NoError(t, err)
+	require.True(t, granted, "Should grant points because yesterday's 11:59 PM and today's 12:01 AM are different days")
+
+	// Verify two points records exist now (one from yesterday, one from today)
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		Where(point.DescriptionEQ(events.PointDescriptionDailyLogin)).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 2, "Should have two records: one from yesterday and one from today")
+}
+
+// TestGrantDailyLoginPoints_SameDayDifferentTimes tests that multiple events on the same day only grant points once
+func TestGrantDailyLoginPoints_SameDayDifferentTimes(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	// Get today's date
+	year, month, day := now.Date()
+
+	// Create a login event at 8:00 AM today
+	morning := time.Date(year, month, day, 8, 0, 0, 0, now.Location())
+	createLoginEvent(t, client, userID, morning)
+
+	// Grant daily login points
+	granted, err := granter.GrantDailyLoginPoints(ctx, userID)
+	require.NoError(t, err)
+	require.True(t, granted)
+
+	// Create another login event at 11:00 PM today (same day)
+	evening := time.Date(year, month, day, 23, 0, 0, 0, now.Location())
+	createLoginEvent(t, client, userID, evening)
+
+	// Attempt to grant daily login points again
+	granted, err = granter.GrantDailyLoginPoints(ctx, userID)
+	require.NoError(t, err)
+	require.False(t, granted, "Should not grant points again on the same day")
+
+	// Verify only one points record exists
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		Where(point.DescriptionEQ(events.PointDescriptionDailyLogin)).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 1)
+}
+
+// TestGrantDailyAttemptPoints_MidnightBoundary tests the edge case for daily attempts around midnight
+func TestGrantDailyAttemptPoints_MidnightBoundary(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	databaseID := createDatabase(t, client)
+	questionID := createQuestion(t, client, databaseID)
+
+	// Get today's date
+	year, month, day := now.Date()
+
+	// Create a submission and event from yesterday at 11:59 PM
+	yesterdayNight := time.Date(year, month, day-1, 23, 59, 59, 0, now.Location())
+	submissionID1 := createSubmission(t, client, userID, questionID, submission.StatusFailed, yesterdayNight)
+	createSubmitAnswerEvent(t, client, userID, submissionID1, questionID, yesterdayNight)
+
+	// Create a points record from yesterday
+	createPointsRecord(t, client, userID, events.PointDescriptionDailyAttempt, events.PointValueDailyAttempt, yesterdayNight)
+
+	// Create a submission and event from today at 12:01 AM
+	todayMorning := time.Date(year, month, day, 0, 1, 0, 0, now.Location())
+	submissionID2 := createSubmission(t, client, userID, questionID, submission.StatusFailed, todayMorning)
+	createSubmitAnswerEvent(t, client, userID, submissionID2, questionID, todayMorning)
+
+	// Grant daily attempt points should succeed because the old record is from yesterday
+	granted, err := granter.GrantDailyAttemptPoints(ctx, userID)
+	require.NoError(t, err)
+	require.True(t, granted, "Should grant points because yesterday's 11:59 PM and today's 12:01 AM are different days")
+
+	// Verify two points records exist now
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		Where(point.DescriptionEQ(events.PointDescriptionDailyAttempt)).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 2, "Should have two records: one from yesterday and one from today")
+}
+
+// TestGrantWeeklyLoginPoints_MidnightBoundary tests that weekly login properly counts distinct calendar days
+func TestGrantWeeklyLoginPoints_MidnightBoundary(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	// Get today's date
+	year, month, day := now.Date()
+
+	// Create login events for 7 consecutive days, but with times near midnight
+	// Day 0 (today): 00:01 AM
+	createLoginEvent(t, client, userID, time.Date(year, month, day, 0, 1, 0, 0, now.Location()))
+
+	// Day -1: 23:59 PM
+	createLoginEvent(t, client, userID, time.Date(year, month, day-1, 23, 59, 0, 0, now.Location()))
+
+	// Day -2: 00:30 AM
+	createLoginEvent(t, client, userID, time.Date(year, month, day-2, 0, 30, 0, 0, now.Location()))
+
+	// Day -3: 23:30 PM
+	createLoginEvent(t, client, userID, time.Date(year, month, day-3, 23, 30, 0, 0, now.Location()))
+
+	// Day -4: 01:00 AM
+	createLoginEvent(t, client, userID, time.Date(year, month, day-4, 1, 0, 0, 0, now.Location()))
+
+	// Day -5: 22:00 PM
+	createLoginEvent(t, client, userID, time.Date(year, month, day-5, 22, 0, 0, 0, now.Location()))
+
+	// Day -6: 02:00 AM
+	createLoginEvent(t, client, userID, time.Date(year, month, day-6, 2, 0, 0, 0, now.Location()))
+
+	// Grant weekly login points
+	granted, err := granter.GrantWeeklyLoginPoints(ctx, userID)
+	require.NoError(t, err)
+	require.True(t, granted, "Should grant weekly points when user logged in on 7 distinct calendar days, regardless of time")
+
+	// Verify points were created
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		Where(point.DescriptionEQ(events.PointDescriptionWeeklyLogin)).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 1)
+	require.Equal(t, events.PointValueWeeklyLogin, pointsRecords[0].Points)
+}
+
+// TestGrantWeeklyLoginPoints_NotEnoughDistinctDays tests that multiple logins on the same day don't count as multiple days
+func TestGrantWeeklyLoginPoints_NotEnoughDistinctDays(t *testing.T) {
+	client := testhelper.NewEntSqliteClient(t)
+	granter := events.NewPointsGranter(client)
+	userID := setupTestData(t, client)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	// Get today's date
+	year, month, day := now.Date()
+
+	// Create multiple login events on 6 days (not enough for weekly)
+	for i := 0; i < 6; i++ {
+		// Create 3 events per day at different times to test that multiple events on the same day only count once
+		createLoginEvent(t, client, userID, time.Date(year, month, day-i, 8, 0, 0, 0, now.Location()))
+		createLoginEvent(t, client, userID, time.Date(year, month, day-i, 16, 0, 0, 0, now.Location()))
+		createLoginEvent(t, client, userID, time.Date(year, month, day-i, 23, 59, 59, 0, now.Location()))
+	}
+
+	// Also add multiple events just after midnight on day -5 (last day in our range)
+	// These should still count as the same day (day -5), not a new day
+	createLoginEvent(t, client, userID, time.Date(year, month, day-5, 0, 0, 1, 0, now.Location()))
+	createLoginEvent(t, client, userID, time.Date(year, month, day-5, 0, 30, 0, 0, now.Location()))
+
+	// Attempt to grant weekly login points
+	granted, err := granter.GrantWeeklyLoginPoints(ctx, userID)
+	require.NoError(t, err)
+	require.False(t, granted, "Should not grant weekly points with only 6 distinct days (day-0 to day-5)")
+
+	// Verify no points record was created
+	pointsRecords, err := client.Point.Query().
+		Where(point.HasUserWith(user.IDEQ(userID))).
+		Where(point.DescriptionEQ(events.PointDescriptionWeeklyLogin)).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, pointsRecords, 0)
+}
