@@ -34,7 +34,7 @@ func (s *AuthService) RevokeToken(c *gin.Context) {
 	}
 
 	// Attempt to revoke the token
-	err := s.storage.Delete(c.Request.Context(), token)
+	err := s.useraccount.RevokeToken(c.Request.Context(), token)
 	if err != nil && !errors.Is(err, auth.ErrNotFound) {
 		// Internal server error - failed to revoke token
 		c.JSON(http.StatusInternalServerError, gin.H{
