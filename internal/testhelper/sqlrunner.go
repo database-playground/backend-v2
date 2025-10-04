@@ -33,7 +33,7 @@ func NewSQLRunnerContainer(t *testing.T) testcontainers.Container {
 	req := testcontainers.ContainerRequest{
 		Image:        "ghcr.io/database-playground/sqlrunner-v2:main",
 		ExposedPorts: []string{"8080/tcp"},
-		WaitingFor:   wait.ForLog("Listening"),
+		WaitingFor:   wait.ForHTTP("/healthz").WithPort("8080/tcp"),
 	}
 	sqlrunnerC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
