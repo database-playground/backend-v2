@@ -25,6 +25,12 @@ func (c *Context) GetOrRegister(ctx context.Context, req UserRegisterRequest) (*
 	// check if user already exists
 	user, err := c.entClient.User.Query().Where(user.EmailEQ(req.Email)).Only(ctx)
 	if err == nil {
+		// update name and avatar to match the OAuth user info
+		user, err = user.Update().SetName(req.Name).SetAvatar(req.Avatar).Save(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("update user: %w", err)
+		}
+
 		return user, nil
 	}
 	if !ent.IsNotFound(err) {
