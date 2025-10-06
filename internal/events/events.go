@@ -23,7 +23,7 @@ func NewEventService(entClient *ent.Client, posthogClient posthog.Client) *Event
 	return &EventService{
 		entClient:     entClient,
 		posthogClient: posthogClient,
-		handlers:      []EventHandler{NewPointsGranter(entClient)},
+		handlers:      []EventHandler{NewPointsGranter(entClient, posthogClient)},
 	}
 }
 

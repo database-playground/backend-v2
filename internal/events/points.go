@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/database-playground/backend-v2/ent"
@@ -12,6 +13,7 @@ import (
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
+	"github.com/posthog/posthog-go"
 )
 
 // startOfDay returns the start of the given day (midnight).
@@ -45,13 +47,17 @@ const (
 
 // PointsGranter determines if the criteria is met to grant points to a user.
 type PointsGranter struct {
-	entClient *ent.Client
+	entClient     *ent.Client
+	posthogClient posthog.Client
 }
 
+const GRANT_POINT_EVENT = "grant_point"
+
 // NewPointsGranter creates a new PointsGranter.
-func NewPointsGranter(entClient *ent.Client) *PointsGranter {
+func NewPointsGranter(entClient *ent.Client, posthogClient posthog.Client) *PointsGranter {
 	return &PointsGranter{
-		entClient: entClient,
+		entClient:     entClient,
+		posthogClient: posthogClient,
 	}
 }
 
@@ -171,11 +177,7 @@ func (d *PointsGranter) GrantDailyLoginPoints(ctx context.Context, userID int) (
 	}
 
 	// Grant the "daily login" points to the user.
-	err = d.entClient.Point.Create().
-		SetUserID(userID).
-		SetDescription(PointDescriptionDailyLogin).
-		SetPoints(PointValueDailyLogin).
-		Exec(ctx)
+	err = d.grantPoint(ctx, userID, 0, PointDescriptionDailyLogin, PointValueDailyLogin)
 	if err != nil {
 		return false, err
 	}
@@ -221,14 +223,11 @@ func (d *PointsGranter) GrantWeeklyLoginPoints(ctx context.Context, userID int) 
 	}
 
 	// Grant the "weekly login" points to the user.
-	err = d.entClient.Point.Create().
-		SetUserID(userID).
-		SetDescription(PointDescriptionWeeklyLogin).
-		SetPoints(PointValueWeeklyLogin).
-		Exec(ctx)
+	err = d.grantPoint(ctx, userID, 0, PointDescriptionWeeklyLogin, PointValueWeeklyLogin)
 	if err != nil {
 		return false, err
 	}
+
 	return true, nil
 }
 
@@ -261,11 +260,7 @@ func (d *PointsGranter) GrantFirstAttemptPoints(ctx context.Context, userID int,
 	}
 
 	// Grant the "first attempt" points to the user.
-	err = d.entClient.Point.Create().
-		SetUserID(userID).
-		SetDescription(description).
-		SetPoints(PointValueFirstAttempt).
-		Exec(ctx)
+	err = d.grantPoint(ctx, userID, questionID, description, PointValueFirstAttempt)
 	if err != nil {
 		return false, err
 	}
@@ -305,11 +300,7 @@ func (d *PointsGranter) GrantDailyAttemptPoints(ctx context.Context, userID int)
 	}
 
 	// Grant the "daily attempt" points to the user.
-	err = d.entClient.Point.Create().
-		SetUserID(userID).
-		SetDescription(PointDescriptionDailyAttempt).
-		SetPoints(PointValueDailyAttempt).
-		Exec(ctx)
+	err = d.grantPoint(ctx, userID, 0, PointDescriptionDailyAttempt, PointValueDailyAttempt)
 	if err != nil {
 		return false, err
 	}
@@ -347,11 +338,7 @@ func (d *PointsGranter) GrantCorrectAnswerPoints(ctx context.Context, userID int
 	}
 
 	// Grant the "correct answer" points to the user.
-	err = d.entClient.Point.Create().
-		SetUserID(userID).
-		SetDescription(description).
-		SetPoints(PointValueCorrectAnswer).
-		Exec(ctx)
+	err = d.grantPoint(ctx, userID, questionID, description, PointValueCorrectAnswer)
 	if err != nil {
 		return false, err
 	}
@@ -397,14 +384,53 @@ func (d *PointsGranter) GrantFirstPlacePoints(ctx context.Context, userID int, q
 	}
 
 	// Grant the "first place" points to the user.
-	err = d.entClient.Point.Create().
-		SetUserID(userID).
-		SetDescription(description).
-		SetPoints(PointValueFirstPlace).
-		Exec(ctx)
+	err = d.grantPoint(ctx, userID, questionID, description, PointValueFirstPlace)
 	if err != nil {
 		return false, err
 	}
 
+	if d.posthogClient != nil {
+		d.posthogClient.Enqueue(posthog.Capture{
+			DistinctId: strconv.Itoa(userID),
+		})
+	}
+
 	return true, nil
+}
+
+func (d *PointsGranter) grantPoint(ctx context.Context, userID int, questionID int, description string, points int) error {
+	err := d.entClient.Point.Create().
+		SetUserID(userID).
+		SetDescription(description).
+		SetPoints(points).
+		Exec(ctx)
+	if err != nil {
+		if d.posthogClient != nil {
+			d.posthogClient.Enqueue(posthog.NewDefaultException(
+				time.Now(), strconv.Itoa(userID),
+				"failed to grant point", err.Error(),
+			))
+		}
+
+		return err
+	}
+
+	if d.posthogClient != nil {
+		properties := posthog.NewProperties().
+			Set("description", description).
+			Set("points", points)
+
+		if questionID != 0 {
+			properties.Set("questionID", strconv.Itoa(questionID))
+		}
+
+		d.posthogClient.Enqueue(posthog.Capture{
+			DistinctId: strconv.Itoa(userID),
+			Event:      GRANT_POINT_EVENT,
+			Timestamp:  time.Now(),
+			Properties: properties,
+		})
+	}
+
+	return nil
 }
