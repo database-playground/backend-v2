@@ -20,6 +20,7 @@ func main() {
 			EventService,
 			SubmissionService,
 			ApqCache,
+			PostHogClient,
 			AnnotateService(AuthService),
 			GqlgenHandler,
 			fx.Annotate(
