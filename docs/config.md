@@ -65,3 +65,5 @@ PostHog 是一個產品統計平台。這個專案使用 [posthog-go](https://po
 如果不填寫 API Key 則代表不送出任何統計。
 
 - `POSTHOG_API_KEY`: PostHog 的 API key。可以在 PostHog 的 Settings > Project > General > Project API key 中取得。
+- `POSTHOG_HOST`: PostHog API 的主機。可以在 PostHog 的 Settings > Project > General > Web snippet 中的 `api_host` 取得。
+  - e.g. `https://us.i.posthog.com`

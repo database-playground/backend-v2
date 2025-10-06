@@ -157,11 +157,16 @@ func (c SqlRunnerConfig) Validate() error {
 
 type PostHogConfig struct {
 	APIKey *string `env:"API_KEY"`
+	Host   *string `env:"HOST"`
 }
 
 func (c PostHogConfig) Validate() error {
 	if c.APIKey != nil && *c.APIKey == "" {
 		return errors.New("POSTHOG_API_KEY cannot be empty")
+	}
+
+	if c.Host != nil && *c.Host == "" {
+		return errors.New("POSTHOG_HOST cannot be empty")
 	}
 
 	return nil

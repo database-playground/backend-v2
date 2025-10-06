@@ -52,15 +52,15 @@ func ApqCache(redisClient rueidis.Client) graphql.Cache[string] {
 }
 
 func PostHogClient(lifecycle fx.Lifecycle, cfg config.Config) (posthog.Client, error) {
-	if cfg.PostHog.APIKey == nil {
-		slog.Warn("PostHog client is not initialized, because you did not configure a PostHog API key.")
+	if cfg.PostHog.APIKey == nil || cfg.PostHog.Host == nil {
+		slog.Warn("PostHog client is not initialized, because you did not configure a PostHog API key and a host.")
 		return nil, nil
 	}
 
 	client, err := posthog.NewWithConfig(
 		*cfg.PostHog.APIKey,
 		posthog.Config{
-			Endpoint: "https://us.i.posthog.com",
+			Endpoint: *cfg.PostHog.Host,
 		},
 	)
 	if err != nil {
