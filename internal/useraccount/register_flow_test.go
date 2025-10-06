@@ -73,8 +73,138 @@ func TestGetOrRegister_ExistingUser(t *testing.T) {
 
 	// Should return existing user, not create new one
 	assert.Equal(t, existingUser.ID, user.ID)
-	assert.Equal(t, existingUser.Name, user.Name) // Should keep original name
+	assert.Equal(t, req.Name, user.Name) // Should update to new name from OAuth
 	assert.Equal(t, existingUser.Email, user.Email)
+}
+
+func TestGetOrRegister_UpdateNameAndAvatar(t *testing.T) {
+	client := setupTestDatabase(t)
+	authStorage := newMockAuthStorage()
+	eventService := events.NewEventService(client, nil)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
+	context := context.Background()
+
+	// Create an existing user with original name and avatar
+	unverifiedGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).Only(context)
+	require.NoError(t, err)
+
+	originalName := "Original Name"
+	originalAvatar := "https://example.com/old-avatar.jpg"
+	existingUser, err := client.User.Create().
+		SetName(originalName).
+		SetEmail("update-test@example.com").
+		SetAvatar(originalAvatar).
+		SetGroup(unverifiedGroup).
+		Save(context)
+	require.NoError(t, err)
+
+	// Register again with updated OAuth info
+	updatedName := "Updated OAuth Name"
+	updatedAvatar := "https://oauth-provider.com/new-avatar.jpg"
+	req := useraccount.UserRegisterRequest{
+		Name:   updatedName,
+		Email:  "update-test@example.com", // Same email
+		Avatar: updatedAvatar,
+	}
+
+	user, err := ctx.GetOrRegister(context, req)
+	require.NoError(t, err)
+	require.NotNil(t, user)
+
+	// Verify it's the same user (ID unchanged)
+	assert.Equal(t, existingUser.ID, user.ID)
+
+	// Verify name and avatar were updated to match OAuth info
+	assert.Equal(t, updatedName, user.Name, "name should be updated to match OAuth info")
+	assert.Equal(t, updatedAvatar, user.Avatar, "avatar should be updated to match OAuth info")
+	assert.Equal(t, existingUser.Email, user.Email, "email should remain unchanged")
+
+	// Verify the updates persisted in the database
+	refreshedUser, err := client.User.Get(context, user.ID)
+	require.NoError(t, err)
+	assert.Equal(t, updatedName, refreshedUser.Name)
+	assert.Equal(t, updatedAvatar, refreshedUser.Avatar)
+}
+
+func TestGetOrRegister_UpdateNameAndAvatar_VerifiedUser(t *testing.T) {
+	client := setupTestDatabase(t)
+	authStorage := newMockAuthStorage()
+	eventService := events.NewEventService(client, nil)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
+	context := context.Background()
+
+	// Create an existing verified user (in new-user group)
+	newUserGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.NewUserGroupSlug)).Only(context)
+	require.NoError(t, err)
+
+	originalName := "Verified User Original"
+	originalAvatar := "https://example.com/verified-old.jpg"
+	existingUser, err := client.User.Create().
+		SetName(originalName).
+		SetEmail("verified-update@example.com").
+		SetAvatar(originalAvatar).
+		SetGroup(newUserGroup).
+		Save(context)
+	require.NoError(t, err)
+
+	// Login/register again with updated OAuth info
+	updatedName := "Verified User Updated"
+	updatedAvatar := "https://oauth-provider.com/verified-new.jpg"
+	req := useraccount.UserRegisterRequest{
+		Name:   updatedName,
+		Email:  "verified-update@example.com",
+		Avatar: updatedAvatar,
+	}
+
+	user, err := ctx.GetOrRegister(context, req)
+	require.NoError(t, err)
+	require.NotNil(t, user)
+
+	// Verify the existing verified user was updated
+	assert.Equal(t, existingUser.ID, user.ID)
+	assert.Equal(t, updatedName, user.Name, "name should be updated even for verified users")
+	assert.Equal(t, updatedAvatar, user.Avatar, "avatar should be updated even for verified users")
+
+	// Verify user is still in the verified group
+	group, err := user.QueryGroup().Only(context)
+	require.NoError(t, err)
+	assert.Equal(t, useraccount.NewUserGroupSlug, group.Name, "group should not change")
+}
+
+func TestGetOrRegister_UpdateWithEmptyAvatar(t *testing.T) {
+	client := setupTestDatabase(t)
+	authStorage := newMockAuthStorage()
+	eventService := events.NewEventService(client, nil)
+	ctx := useraccount.NewContext(client, authStorage, eventService)
+	context := context.Background()
+
+	// Create user with avatar
+	unverifiedGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.UnverifiedGroupSlug)).Only(context)
+	require.NoError(t, err)
+
+	existingUser, err := client.User.Create().
+		SetName("User With Avatar").
+		SetEmail("avatar-test@example.com").
+		SetAvatar("https://example.com/has-avatar.jpg").
+		SetGroup(unverifiedGroup).
+		Save(context)
+	require.NoError(t, err)
+
+	// Register again with empty avatar (OAuth provider might not provide avatar)
+	req := useraccount.UserRegisterRequest{
+		Name:   "User Name Updated",
+		Email:  "avatar-test@example.com",
+		Avatar: "", // Empty avatar
+	}
+
+	user, err := ctx.GetOrRegister(context, req)
+	require.NoError(t, err)
+	require.NotNil(t, user)
+
+	// Verify avatar was cleared
+	assert.Equal(t, existingUser.ID, user.ID)
+	assert.Equal(t, req.Name, user.Name)
+	assert.Equal(t, "", user.Avatar, "empty avatar should be set")
 }
 
 func TestGetOrRegister_MissingUnverifiedGroup(t *testing.T) {
@@ -275,7 +405,7 @@ func TestRegistrationFlow_ExistingUser(t *testing.T) {
 
 	// Should return existing user
 	assert.Equal(t, existingUser.ID, user.ID)
-	assert.Equal(t, existingUser.Name, user.Name) // Keep original name
+	assert.Equal(t, req.Name, user.Name) // Name updated to match OAuth info
 
 	// Grant token - should have new-user scopes
 	token, err := ctx.GrantToken(context, user, "web", useraccount.WithFlow("login"))
