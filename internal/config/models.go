@@ -17,6 +17,7 @@ type Config struct {
 	GAuth     GAuthConfig     `envPrefix:"GAUTH_"`
 	Server    ServerConfig    `envPrefix:"SERVER_"`
 	SqlRunner SqlRunnerConfig `envPrefix:"SQL_RUNNER_"`
+	PostHog   PostHogConfig   `envPrefix:"POSTHOG_"`
 }
 
 func (c Config) Validate() error {
@@ -31,6 +32,12 @@ func (c Config) Validate() error {
 	}
 	if err := c.Server.Validate(); err != nil {
 		return fmt.Errorf("SERVER: %w", err)
+	}
+	if err := c.SqlRunner.Validate(); err != nil {
+		return fmt.Errorf("SQL_RUNNER: %w", err)
+	}
+	if err := c.PostHog.Validate(); err != nil {
+		return fmt.Errorf("POSTHOG: %w", err)
 	}
 
 	return nil
@@ -143,6 +150,18 @@ type SqlRunnerConfig struct {
 func (c SqlRunnerConfig) Validate() error {
 	if c.URI == "" {
 		return errors.New("SQL_RUNNER_URI is required")
+	}
+
+	return nil
+}
+
+type PostHogConfig struct {
+	APIKey *string `env:"API_KEY"`
+}
+
+func (c PostHogConfig) Validate() error {
+	if c.APIKey != nil && *c.APIKey == "" {
+		return errors.New("POSTHOG_API_KEY cannot be empty")
 	}
 
 	return nil

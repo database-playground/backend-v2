@@ -57,3 +57,11 @@ Google OAuth 的「已授權的重新導向 URI」應包含 `https://HOST/api/au
 ## SQL Runner
 
 - `SQL_RUNNER_URI`：[SQL Runner API](https://github.com/database-playground/sqlrunner-v2) 的連線 URL，如 `https://sqlrunner.dbplay.app`。部署說明可參見 [Usage > Starting the service](https://github.com/database-playground/sqlrunner-v2/tree/main?tab=readme-ov-file#starting-the-service)。
+
+## PostHog 設定
+
+PostHog 是一個產品統計平台。這個專案使用 [posthog-go](https://posthog.com/docs/libraries/go) 做後端的 event 寫入。
+
+如果不填寫 API Key 則代表不送出任何統計。
+
+- `POSTHOG_API_KEY`: PostHog 的 API key。可以在 PostHog 的 Settings > Project > General > Project API key 中取得。
