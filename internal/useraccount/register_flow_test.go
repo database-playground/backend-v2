@@ -15,7 +15,7 @@ import (
 func TestGetOrRegister_NewUser(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events.NewEventService(client)
+	eventService := events.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -47,7 +47,7 @@ func TestGetOrRegister_NewUser(t *testing.T) {
 func TestGetOrRegister_ExistingUser(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events.NewEventService(client)
+	eventService := events.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -81,7 +81,7 @@ func TestGetOrRegister_MissingUnverifiedGroup(t *testing.T) {
 	// Create a fresh database without setup
 	client := testhelper.NewEntSqliteClient(t)
 	authStorage := newMockAuthStorage()
-	eventService := events.NewEventService(client)
+	eventService := events.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -98,7 +98,7 @@ func TestGetOrRegister_MissingUnverifiedGroup(t *testing.T) {
 func TestVerify_Success(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events.NewEventService(client)
+	eventService := events.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -135,7 +135,7 @@ func TestVerify_Success(t *testing.T) {
 func TestVerify_UserNotFound(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events.NewEventService(client)
+	eventService := events.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -147,7 +147,7 @@ func TestVerify_UserNotFound(t *testing.T) {
 func TestVerify_UserAlreadyVerified(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events.NewEventService(client)
+	eventService := events.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -172,7 +172,7 @@ func TestVerify_MissingNewUserGroup(t *testing.T) {
 	// Create a fresh database without setup
 	client := testhelper.NewEntSqliteClient(t)
 	authStorage := newMockAuthStorage()
-	eventService := events.NewEventService(client)
+	eventService := events.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -199,7 +199,7 @@ func TestVerify_MissingNewUserGroup(t *testing.T) {
 func TestRegistrationFlow_Complete(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events.NewEventService(client)
+	eventService := events.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -249,7 +249,7 @@ func TestRegistrationFlow_Complete(t *testing.T) {
 func TestRegistrationFlow_ExistingUser(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events.NewEventService(client)
+	eventService := events.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -291,7 +291,7 @@ func TestRegistrationFlow_ErrorCases(t *testing.T) {
 		// Create a fresh database without setup
 		client := testhelper.NewEntSqliteClient(t)
 		authStorage := newMockAuthStorage()
-		eventService := events.NewEventService(client)
+		eventService := events.NewEventService(client, nil)
 		ctx := useraccount.NewContext(client, authStorage, eventService)
 		context := context.Background()
 
@@ -308,7 +308,7 @@ func TestRegistrationFlow_ErrorCases(t *testing.T) {
 	t.Run("verify already verified user", func(t *testing.T) {
 		client := setupTestDatabase(t)
 		authStorage := newMockAuthStorage()
-		eventService := events.NewEventService(client)
+		eventService := events.NewEventService(client, nil)
 		ctx := useraccount.NewContext(client, authStorage, eventService)
 		context := context.Background()
 
@@ -332,7 +332,7 @@ func TestRegistrationFlow_ErrorCases(t *testing.T) {
 	t.Run("verify non-existent user", func(t *testing.T) {
 		client := setupTestDatabase(t)
 		authStorage := newMockAuthStorage()
-		eventService := events.NewEventService(client)
+		eventService := events.NewEventService(client, nil)
 		ctx := useraccount.NewContext(client, authStorage, eventService)
 		context := context.Background()
 

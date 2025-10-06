@@ -54,7 +54,7 @@ func (m *mockAuthStorage) Peek(ctx context.Context, token string) (auth.TokenInf
 func NewTestResolver(t *testing.T, entClient *ent.Client, authStorage auth.Storage) *Resolver {
 	t.Helper()
 
-	eventService := events.NewEventService(entClient)
+	eventService := events.NewEventService(entClient, nil)
 	sqlrunner := testhelper.NewSQLRunnerClient(t)
 
 	submissionService := submission.NewSubmissionService(entClient, eventService, sqlrunner)

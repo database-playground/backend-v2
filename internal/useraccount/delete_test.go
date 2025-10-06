@@ -36,7 +36,7 @@ func TestDeleteUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			client := setupTestDatabase(t)
 			authStorage := newMockAuthStorage()
-			eventService := events.NewEventService(client)
+			eventService := events.NewEventService(client, nil)
 			ctx := useraccount.NewContext(client, authStorage, eventService)
 
 			var userID int
@@ -78,7 +78,7 @@ func TestDeleteUser(t *testing.T) {
 func TestDeleteUser_Integration(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events.NewEventService(client)
+	eventService := events.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 
 	// Get the unverified group

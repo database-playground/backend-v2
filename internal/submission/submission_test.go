@@ -68,7 +68,7 @@ func setupTestData(t *testing.T, client *ent.Client) (userID, questionID, databa
 
 func TestSubmitAnswer_Success_MatchingAnswer(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	eventService := eventsService.NewEventService(client)
+	eventService := eventsService.NewEventService(client, nil)
 	sqlRunner := newTestSQLRunner(t)
 
 	service := submissionService.NewSubmissionService(client, eventService, sqlRunner)
@@ -106,7 +106,7 @@ func TestSubmitAnswer_Success_MatchingAnswer(t *testing.T) {
 
 func TestSubmitAnswer_Failed_NonMatchingAnswer(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	eventService := eventsService.NewEventService(client)
+	eventService := eventsService.NewEventService(client, nil)
 	sqlRunner := newTestSQLRunner(t)
 
 	service := submissionService.NewSubmissionService(client, eventService, sqlRunner)
@@ -135,7 +135,7 @@ func TestSubmitAnswer_Failed_NonMatchingAnswer(t *testing.T) {
 
 func TestSubmitAnswer_Failed_UserQueryError(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	eventService := eventsService.NewEventService(client)
+	eventService := eventsService.NewEventService(client, nil)
 	sqlRunner := newTestSQLRunner(t)
 
 	service := submissionService.NewSubmissionService(client, eventService, sqlRunner)
@@ -160,7 +160,7 @@ func TestSubmitAnswer_Failed_UserQueryError(t *testing.T) {
 
 func TestSubmitAnswer_Failed_ReferenceQueryError(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	eventService := eventsService.NewEventService(client)
+	eventService := eventsService.NewEventService(client, nil)
 	sqlRunner := newTestSQLRunner(t)
 
 	service := submissionService.NewSubmissionService(client, eventService, sqlRunner)
@@ -214,7 +214,7 @@ func TestSubmitAnswer_Failed_ReferenceQueryError(t *testing.T) {
 
 func TestSubmitAnswer_QuestionNotFound(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	eventService := eventsService.NewEventService(client)
+	eventService := eventsService.NewEventService(client, nil)
 	sqlRunner := newTestSQLRunner(t)
 
 	service := submissionService.NewSubmissionService(client, eventService, sqlRunner)
@@ -313,7 +313,7 @@ func TestCompareAnswer(t *testing.T) {
 
 func TestNewSubmissionService(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	eventService := eventsService.NewEventService(client)
+	eventService := eventsService.NewEventService(client, nil)
 	sqlRunner := newTestSQLRunner(t)
 
 	service := submissionService.NewSubmissionService(client, eventService, sqlRunner)
@@ -324,7 +324,7 @@ func TestNewSubmissionService(t *testing.T) {
 
 func TestSubmitAnswer_Integration_MultipleSubmissions(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	eventService := eventsService.NewEventService(client)
+	eventService := eventsService.NewEventService(client, nil)
 	sqlRunner := newTestSQLRunner(t)
 
 	service := submissionService.NewSubmissionService(client, eventService, sqlRunner)
@@ -394,7 +394,7 @@ func TestSubmitAnswer_Integration_MultipleSubmissions(t *testing.T) {
 
 func TestSubmitAnswer_EventAndSubmissionRecordGeneration(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	eventService := eventsService.NewEventService(client)
+	eventService := eventsService.NewEventService(client, nil)
 	sqlRunner := newTestSQLRunner(t)
 
 	service := submissionService.NewSubmissionService(client, eventService, sqlRunner)

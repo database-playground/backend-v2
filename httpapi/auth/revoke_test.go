@@ -76,7 +76,7 @@ func setupTestAuthService(t *testing.T) (*AuthService, *mockAuthStorage) {
 	entClient := testhelper.NewEntSqliteClient(t)
 	storage := newMockAuthStorage()
 	cfg := config.Config{}
-	eventService := events.NewEventService(entClient)
+	eventService := events.NewEventService(entClient, nil)
 	useraccount := useraccount.NewContext(entClient, storage, eventService)
 
 	authService := NewAuthService(entClient, storage, cfg, useraccount)
