@@ -70,7 +70,7 @@ func createPointsRecord(t *testing.T, client *ent.Client, userID int, descriptio
 
 func TestGrantDailyLoginPoints_Success(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -96,7 +96,7 @@ func TestGrantDailyLoginPoints_Success(t *testing.T) {
 
 func TestGrantDailyLoginPoints_AlreadyGrantedToday(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -124,7 +124,7 @@ func TestGrantDailyLoginPoints_AlreadyGrantedToday(t *testing.T) {
 
 func TestGrantDailyLoginPoints_NoLoginToday(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -149,7 +149,7 @@ func TestGrantDailyLoginPoints_NoLoginToday(t *testing.T) {
 
 func TestGrantDailyLoginPoints_OldPointsRecordExists(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -178,7 +178,7 @@ func TestGrantDailyLoginPoints_OldPointsRecordExists(t *testing.T) {
 
 func TestGrantWeeklyLoginPoints_Success(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -207,7 +207,7 @@ func TestGrantWeeklyLoginPoints_Success(t *testing.T) {
 
 func TestGrantWeeklyLoginPoints_AlreadyGrantedThisWeek(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -238,7 +238,7 @@ func TestGrantWeeklyLoginPoints_AlreadyGrantedThisWeek(t *testing.T) {
 
 func TestGrantWeeklyLoginPoints_InsufficientLoginDays(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -266,7 +266,7 @@ func TestGrantWeeklyLoginPoints_InsufficientLoginDays(t *testing.T) {
 
 func TestGrantWeeklyLoginPoints_NoLoginEvents(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -311,7 +311,7 @@ func TestGrantWeeklyLoginPoints_MultipleLoginsPerDay(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			client := testhelper.NewEntSqliteClient(t)
-			granter := events.NewPointsGranter(client)
+			granter := events.NewPointsGranter(client, nil)
 			userID := setupTestData(t, client)
 
 			ctx := context.Background()
@@ -351,7 +351,7 @@ func TestGrantWeeklyLoginPoints_MultipleLoginsPerDay(t *testing.T) {
 
 func TestGrantWeeklyLoginPoints_OldWeeklyPointsRecordExists(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -384,13 +384,13 @@ func TestGrantWeeklyLoginPoints_OldWeeklyPointsRecordExists(t *testing.T) {
 func TestNewPointsGranter(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
 
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	require.NotNil(t, granter)
 }
 
 func TestGrantDailyLoginPoints_NonExistentUser(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 
 	ctx := context.Background()
 	nonExistentUserID := 99999
@@ -404,7 +404,7 @@ func TestGrantDailyLoginPoints_NonExistentUser(t *testing.T) {
 
 func TestGrantWeeklyLoginPoints_NonExistentUser(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 
 	ctx := context.Background()
 	nonExistentUserID := 99999
@@ -490,7 +490,7 @@ func createSubmitAnswerEvent(t *testing.T, client *ent.Client, userID int, submi
 
 func TestGrantFirstAttemptPoints_Success(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -519,7 +519,7 @@ func TestGrantFirstAttemptPoints_Success(t *testing.T) {
 
 func TestGrantFirstAttemptPoints_AlreadyGranted(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -551,7 +551,7 @@ func TestGrantFirstAttemptPoints_AlreadyGranted(t *testing.T) {
 
 func TestGrantFirstAttemptPoints_SecondSubmission(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -579,7 +579,7 @@ func TestGrantFirstAttemptPoints_SecondSubmission(t *testing.T) {
 
 func TestGrantDailyAttemptPoints_Success(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -609,7 +609,7 @@ func TestGrantDailyAttemptPoints_Success(t *testing.T) {
 
 func TestGrantDailyAttemptPoints_AlreadyGrantedToday(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -641,7 +641,7 @@ func TestGrantDailyAttemptPoints_AlreadyGrantedToday(t *testing.T) {
 
 func TestGrantDailyAttemptPoints_NoSubmissionToday(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -670,7 +670,7 @@ func TestGrantDailyAttemptPoints_NoSubmissionToday(t *testing.T) {
 
 func TestGrantCorrectAnswerPoints_Success(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -698,7 +698,7 @@ func TestGrantCorrectAnswerPoints_Success(t *testing.T) {
 
 func TestGrantCorrectAnswerPoints_AlreadyGranted(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -730,7 +730,7 @@ func TestGrantCorrectAnswerPoints_AlreadyGranted(t *testing.T) {
 
 func TestGrantCorrectAnswerPoints_NoSuccessfulSubmission(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -757,7 +757,7 @@ func TestGrantCorrectAnswerPoints_NoSuccessfulSubmission(t *testing.T) {
 
 func TestGrantFirstPlacePoints_Success(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -785,7 +785,7 @@ func TestGrantFirstPlacePoints_Success(t *testing.T) {
 
 func TestGrantFirstPlacePoints_NotFirstPlace(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 
 	ctx := context.Background()
 	now := time.Now()
@@ -827,7 +827,7 @@ func TestGrantFirstPlacePoints_NotFirstPlace(t *testing.T) {
 
 func TestGrantFirstPlacePoints_AlreadyGranted(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -859,7 +859,7 @@ func TestGrantFirstPlacePoints_AlreadyGranted(t *testing.T) {
 
 func TestHandleSubmitAnswerEvent_SuccessfulSubmission(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -903,7 +903,7 @@ func TestHandleSubmitAnswerEvent_SuccessfulSubmission(t *testing.T) {
 
 func TestHandleSubmitAnswerEvent_FailedSubmission(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -947,7 +947,7 @@ func TestHandleSubmitAnswerEvent_FailedSubmission(t *testing.T) {
 
 func TestHandleSubmitAnswerEvent_SecondAttemptSuccess(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -1006,7 +1006,7 @@ func TestHandleSubmitAnswerEvent_SecondAttemptSuccess(t *testing.T) {
 // TestGrantDailyLoginPoints_MidnightBoundary tests the edge case where events happen around midnight
 func TestGrantDailyLoginPoints_MidnightBoundary(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -1043,7 +1043,7 @@ func TestGrantDailyLoginPoints_MidnightBoundary(t *testing.T) {
 // TestGrantDailyLoginPoints_SameDayDifferentTimes tests that multiple events on the same day only grant points once
 func TestGrantDailyLoginPoints_SameDayDifferentTimes(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -1082,7 +1082,7 @@ func TestGrantDailyLoginPoints_SameDayDifferentTimes(t *testing.T) {
 // TestGrantDailyAttemptPoints_MidnightBoundary tests the edge case for daily attempts around midnight
 func TestGrantDailyAttemptPoints_MidnightBoundary(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -1124,7 +1124,7 @@ func TestGrantDailyAttemptPoints_MidnightBoundary(t *testing.T) {
 // TestGrantWeeklyLoginPoints_MidnightBoundary tests that weekly login properly counts distinct calendar days
 func TestGrantWeeklyLoginPoints_MidnightBoundary(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()
@@ -1173,7 +1173,7 @@ func TestGrantWeeklyLoginPoints_MidnightBoundary(t *testing.T) {
 // TestGrantWeeklyLoginPoints_NotEnoughDistinctDays tests that multiple logins on the same day don't count as multiple days
 func TestGrantWeeklyLoginPoints_NotEnoughDistinctDays(t *testing.T) {
 	client := testhelper.NewEntSqliteClient(t)
-	granter := events.NewPointsGranter(client)
+	granter := events.NewPointsGranter(client, nil)
 	userID := setupTestData(t, client)
 
 	ctx := context.Background()

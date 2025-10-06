@@ -30,6 +30,7 @@ import (
 	"github.com/database-playground/backend-v2/internal/workers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/posthog/posthog-go"
 	"github.com/redis/rueidis"
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/fx"
@@ -48,6 +49,31 @@ func SqlRunner(cfg config.Config) *sqlrunner.SqlRunner {
 
 func ApqCache(redisClient rueidis.Client) graphql.Cache[string] {
 	return apq.NewCache(redisClient, 24*time.Hour)
+}
+
+func PostHogClient(lifecycle fx.Lifecycle, cfg config.Config) (posthog.Client, error) {
+	if cfg.PostHog.APIKey == nil || cfg.PostHog.Host == nil {
+		slog.Warn("PostHog client is not initialized, because you did not configure a PostHog API key and a host.")
+		return nil, nil
+	}
+
+	client, err := posthog.NewWithConfig(
+		*cfg.PostHog.APIKey,
+		posthog.Config{
+			Endpoint: *cfg.PostHog.Host,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	lifecycle.Append(fx.StopHook(func() {
+		if err := client.Close(); err != nil {
+			slog.Info("failed to close PostHog client", "error", err)
+		}
+	}))
+
+	return client, nil
 }
 
 // GqlgenHandler creates a gqlgen handler.
@@ -85,8 +111,8 @@ func UserAccountContext(entClient *ent.Client, storage auth.Storage, eventServic
 }
 
 // EventService creates an events.EventService.
-func EventService(entClient *ent.Client) *events.EventService {
-	return events.NewEventService(entClient)
+func EventService(entClient *ent.Client, posthogClient posthog.Client) *events.EventService {
+	return events.NewEventService(entClient, posthogClient)
 }
 
 // SubmissionService creates a submission.SubmissionService.

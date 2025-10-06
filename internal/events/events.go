@@ -3,23 +3,27 @@ package events
 import (
 	"context"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/posthog/posthog-go"
 )
 
 // EventService is the service for triggering events.
 type EventService struct {
-	entClient *ent.Client
+	entClient     *ent.Client
+	posthogClient posthog.Client
 
 	handlers []EventHandler
 }
 
 // NewEventService creates a new EventService.
-func NewEventService(entClient *ent.Client) *EventService {
+func NewEventService(entClient *ent.Client, posthogClient posthog.Client) *EventService {
 	return &EventService{
-		entClient: entClient,
-		handlers:  []EventHandler{NewPointsGranter(entClient)},
+		entClient:     entClient,
+		posthogClient: posthogClient,
+		handlers:      []EventHandler{NewPointsGranter(entClient, posthogClient)},
 	}
 }
 
@@ -42,6 +46,16 @@ func (s *EventService) TriggerEvent(ctx context.Context, event Event) {
 	err := s.triggerEvent(ctx, event)
 	if err != nil {
 		slog.Error("failed to trigger event", "error", err)
+	}
+
+	if s.posthogClient != nil {
+		slog.Debug("sending event to PostHog", "event_type", event.Type, "user_id", event.UserID)
+		s.posthogClient.Enqueue(posthog.Capture{
+			DistinctId: strconv.Itoa(event.UserID),
+			Event:      string(event.Type),
+			Timestamp:  time.Now(),
+			Properties: event.Payload,
+		})
 	}
 }
 

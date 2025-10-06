@@ -18,7 +18,7 @@ import (
 func TestGrantToken_Success(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events_pkg.NewEventService(client)
+	eventService := events_pkg.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -55,7 +55,7 @@ func TestGrantToken_Success(t *testing.T) {
 func TestGrantToken_Impersonation(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events_pkg.NewEventService(client)
+	eventService := events_pkg.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -90,7 +90,7 @@ func TestGrantToken_Impersonation(t *testing.T) {
 func TestGrantToken_DefaultFlow(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events_pkg.NewEventService(client)
+	eventService := events_pkg.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -119,7 +119,7 @@ func TestGrantToken_DefaultFlow(t *testing.T) {
 func TestGrantToken_NewUserScopes(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events_pkg.NewEventService(client)
+	eventService := events_pkg.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -153,7 +153,7 @@ func TestGrantToken_NewUserScopes(t *testing.T) {
 func TestGrantToken_UserWithoutScopeSet(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events_pkg.NewEventService(client)
+	eventService := events_pkg.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -187,7 +187,7 @@ func TestGrantToken_UserWithoutScopeSet(t *testing.T) {
 func TestRevokeToken_Success(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events_pkg.NewEventService(client)
+	eventService := events_pkg.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -219,7 +219,7 @@ func TestRevokeToken_Success(t *testing.T) {
 func TestRevokeAllTokens_Success(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events_pkg.NewEventService(client)
+	eventService := events_pkg.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -262,7 +262,7 @@ func TestRevokeAllTokens_Success(t *testing.T) {
 func TestGrantToken_LoginEventTriggered(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events_pkg.NewEventService(client)
+	eventService := events_pkg.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -305,7 +305,7 @@ func TestGrantToken_LoginEventTriggered(t *testing.T) {
 func TestGrantToken_ImpersonationEventTriggered(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events_pkg.NewEventService(client)
+	eventService := events_pkg.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -369,7 +369,7 @@ func TestGrantToken_ImpersonationEventTriggered(t *testing.T) {
 func TestGrantToken_MultipleTokensCreateMultipleEvents(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events_pkg.NewEventService(client)
+	eventService := events_pkg.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -437,7 +437,7 @@ func TestGrantToken_MultipleTokensCreateMultipleEvents(t *testing.T) {
 func TestRevokeToken_LogoutEventTriggered(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events_pkg.NewEventService(client)
+	eventService := events_pkg.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
@@ -482,7 +482,7 @@ func TestRevokeToken_LogoutEventTriggered(t *testing.T) {
 func TestRevokeAllTokens_LogoutAllEventTriggered(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events_pkg.NewEventService(client)
+	eventService := events_pkg.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 

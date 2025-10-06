@@ -72,7 +72,7 @@ func setupTestDatabase(t *testing.T) *ent.Client {
 func TestNewContext(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events.NewEventService(client)
+	eventService := events.NewEventService(client, nil)
 
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	require.NotNil(t, ctx)
@@ -81,7 +81,7 @@ func TestNewContext(t *testing.T) {
 func TestGetUser(t *testing.T) {
 	client := setupTestDatabase(t)
 	authStorage := newMockAuthStorage()
-	eventService := events.NewEventService(client)
+	eventService := events.NewEventService(client, nil)
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
