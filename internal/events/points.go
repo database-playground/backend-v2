@@ -51,8 +51,6 @@ type PointsGranter struct {
 	posthogClient posthog.Client
 }
 
-const GRANT_POINT_EVENT = "grant_point"
-
 // NewPointsGranter creates a new PointsGranter.
 func NewPointsGranter(entClient *ent.Client, posthogClient posthog.Client) *PointsGranter {
 	return &PointsGranter{
@@ -418,11 +416,11 @@ func (d *PointsGranter) grantPoint(ctx context.Context, userID int, questionID i
 			properties.Set("questionID", strconv.Itoa(questionID))
 		}
 
-		slog.Debug("sending event to PostHog", "event_type", GRANT_POINT_EVENT, "user_id", userID)
+		slog.Debug("sending event to PostHog", "event_type", EventTypeGrantPoint, "user_id", userID)
 
 		d.posthogClient.Enqueue(posthog.Capture{
 			DistinctId: strconv.Itoa(userID),
-			Event:      GRANT_POINT_EVENT,
+			Event:      string(EventTypeGrantPoint),
 			Timestamp:  time.Now(),
 			Properties: properties,
 		})

@@ -53,6 +53,7 @@ func (s *EventService) TriggerEvent(ctx context.Context, event Event) {
 		s.posthogClient.Enqueue(posthog.Capture{
 			DistinctId: strconv.Itoa(event.UserID),
 			Event:      string(event.Type),
+			Timestamp:  time.Now(),
 			Properties: event.Payload,
 		})
 	}
