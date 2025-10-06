@@ -389,12 +389,6 @@ func (d *PointsGranter) GrantFirstPlacePoints(ctx context.Context, userID int, q
 		return false, err
 	}
 
-	if d.posthogClient != nil {
-		d.posthogClient.Enqueue(posthog.Capture{
-			DistinctId: strconv.Itoa(userID),
-		})
-	}
-
 	return true, nil
 }
 
@@ -423,6 +417,8 @@ func (d *PointsGranter) grantPoint(ctx context.Context, userID int, questionID i
 		if questionID != 0 {
 			properties.Set("questionID", strconv.Itoa(questionID))
 		}
+
+		slog.Debug("sending event to PostHog", "event_type", GRANT_POINT_EVENT, "user_id", userID)
 
 		d.posthogClient.Enqueue(posthog.Capture{
 			DistinctId: strconv.Itoa(userID),
