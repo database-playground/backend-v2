@@ -47,7 +47,7 @@ func TestGrantToken_Success(t *testing.T) {
 	assert.Equal(t, user.ID, tokenInfo.UserID)
 	assert.Equal(t, user.Email, tokenInfo.UserEmail)
 	assert.Equal(t, "test-machine", tokenInfo.Machine)
-	assert.Contains(t, tokenInfo.Scopes, "verification:*")
+	assert.Contains(t, tokenInfo.Scopes, "me:read")
 	assert.Equal(t, "registration", tokenInfo.Meta[useraccount.MetaInitiateFromFlow])
 	assert.Empty(t, tokenInfo.Meta[useraccount.MetaImpersonation])
 }
@@ -82,7 +82,7 @@ func TestGrantToken_Impersonation(t *testing.T) {
 	assert.Equal(t, user.ID, tokenInfo.UserID)
 	assert.Equal(t, user.Email, tokenInfo.UserEmail)
 	assert.Equal(t, "test-machine", tokenInfo.Machine)
-	assert.Contains(t, tokenInfo.Scopes, "verification:*")
+	assert.Contains(t, tokenInfo.Scopes, "me:read")
 	assert.Equal(t, "registration", tokenInfo.Meta[useraccount.MetaInitiateFromFlow])
 	assert.Equal(t, strconv.Itoa(user.ID), tokenInfo.Meta[useraccount.MetaImpersonation])
 }
