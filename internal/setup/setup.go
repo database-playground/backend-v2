@@ -66,7 +66,7 @@ func Setup(ctx context.Context, entClient *ent.Client) (*SetupResult, error) {
 		log.Println("[*] Creating the 'student' scope set…")
 		studentScopeSet, err = entClient.ScopeSet.Create().
 			SetSlug(useraccount.StudentScopeSetSlug).
-			SetDescription("The necessary permissions to use the main app").
+			SetDescription("The necessary permissions for using the main app").
 			SetScopes([]string{"me:*", "question:read", "database:read", "ai"}).
 			Save(ctx)
 		if err != nil {
@@ -131,7 +131,7 @@ func Setup(ctx context.Context, entClient *ent.Client) (*SetupResult, error) {
 		log.Println("[*] Creating the 'student' group…")
 		studentGroup, err = entClient.Group.Create().
 			SetName(useraccount.StudentGroupSlug).
-			SetDescription("The group that has the minimum permission for accessing this system.").
+			SetDescription("The group that has the minimum permissions for accessing this system.").
 			AddScopeSetIDs(studentScopeSet.ID).
 			Save(ctx)
 		if err != nil {
