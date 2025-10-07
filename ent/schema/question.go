@@ -6,6 +6,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 type Question struct {
@@ -45,6 +46,13 @@ func (Question) Edges() []ent.Edge {
 				entgql.RelayConnection(),
 				entgql.Directives(ScopeDirective("submission:read")),
 			),
+	}
+}
+
+func (Question) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("category"),
+		index.Fields("difficulty"),
 	}
 }
 
