@@ -54,7 +54,7 @@ func Setup(ctx context.Context, entClient *ent.Client) (*SetupResult, error) {
 		log.Println("[*] Admin scope set already exists, skipping creation")
 	}
 
-	// Check if new-user scope set already exists
+	// Check if the student scope set already exists
 	studentScopeSet, err := entClient.ScopeSet.Query().
 		Where(scopeset.SlugEQ(useraccount.StudentScopeSetSlug)).
 		Only(ctx)
@@ -66,7 +66,7 @@ func Setup(ctx context.Context, entClient *ent.Client) (*SetupResult, error) {
 		log.Println("[*] Creating the 'student' scope set…")
 		studentScopeSet, err = entClient.ScopeSet.Create().
 			SetSlug(useraccount.StudentScopeSetSlug).
-			SetDescription("The necessary permissions to use the main app.").
+			SetDescription("The necessary permissions to use the main app").
 			SetScopes([]string{"me:*", "question:read", "database:read", "ai"}).
 			Save(ctx)
 		if err != nil {
