@@ -88,7 +88,7 @@ func Setup(ctx context.Context, entClient *ent.Client) (*SetupResult, error) {
 		unverifiedScopeSet, err = entClient.ScopeSet.Create().
 			SetSlug(useraccount.UnverifiedScopeSetSlug).
 			SetDescription("Unverified users can only read their own initial data, and must be manually verified by an administrator.").
-			SetScopes([]string{"me:read"}).
+			SetScopes([]string{"me:read", "unverified"}).
 			Save(ctx)
 		if err != nil {
 			return nil, err

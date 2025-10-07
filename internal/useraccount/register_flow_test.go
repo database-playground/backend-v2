@@ -37,11 +37,11 @@ func TestGetOrRegister_NewUser(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, useraccount.UnverifiedGroupSlug, group.Name)
 
-	// Verify user has me:read scope
+	// Verify user has unverified scope
 	scopeSets, err := user.QueryGroup().QueryScopeSets().All(context)
 	require.NoError(t, err)
 	require.Len(t, scopeSets, 1)
-	assert.Contains(t, scopeSets[0].Scopes, "me:read")
+	assert.Contains(t, scopeSets[0].Scopes, "unverified")
 }
 
 func TestGetOrRegister_ExistingUser(t *testing.T) {
@@ -353,7 +353,7 @@ func TestRegistrationFlow_Complete(t *testing.T) {
 
 	tokenInfo, err := authStorage.Get(context, token)
 	require.NoError(t, err)
-	assert.Contains(t, tokenInfo.Scopes, "me:read")
+	assert.Contains(t, tokenInfo.Scopes, "unverified")
 
 	// Step 3: Verify the user
 	err = ctx.Verify(context, user.ID)
