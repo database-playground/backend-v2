@@ -131,7 +131,7 @@ func Setup(ctx context.Context, entClient *ent.Client) (*SetupResult, error) {
 		log.Println("[*] Creating the 'student' group…")
 		studentGroup, err = entClient.Group.Create().
 			SetName(useraccount.StudentGroupSlug).
-			SetDescription("Student").
+			SetDescription("The group that has the minimum permission for accessing this system.").
 			AddScopeSetIDs(studentScopeSet.ID).
 			Save(ctx)
 		if err != nil {
