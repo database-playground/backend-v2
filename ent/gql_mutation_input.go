@@ -184,6 +184,7 @@ func (c *QuestionCreate) SetInput(i CreateQuestionInput) *QuestionCreate {
 
 // UpdateQuestionInput represents a mutation input for updating questions.
 type UpdateQuestionInput struct {
+	Category            *string
 	Difficulty          *question.Difficulty
 	Title               *string
 	Description         *string
@@ -196,6 +197,9 @@ type UpdateQuestionInput struct {
 
 // Mutate applies the UpdateQuestionInput on the QuestionMutation builder.
 func (i *UpdateQuestionInput) Mutate(m *QuestionMutation) {
+	if v := i.Category; v != nil {
+		m.SetCategory(*v)
+	}
 	if v := i.Difficulty; v != nil {
 		m.SetDifficulty(*v)
 	}

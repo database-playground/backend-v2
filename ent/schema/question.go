@@ -14,7 +14,7 @@ type Question struct {
 
 func (Question) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("category").NotEmpty().Unique().Immutable().Comment("Question category, e.g. 'query'").Annotations(
+		field.String("category").NotEmpty().Comment("Question category, e.g. 'query'").Annotations(
 			entgql.OrderField("CATEGORY"),
 		),
 		field.Enum("difficulty").NamedValues(
