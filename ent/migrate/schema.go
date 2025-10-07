@@ -97,7 +97,7 @@ var (
 	// QuestionsColumns holds the columns for the "questions" table.
 	QuestionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "category", Type: field.TypeString, Unique: true},
+		{Name: "category", Type: field.TypeString},
 		{Name: "difficulty", Type: field.TypeEnum, Enums: []string{"unspecified", "easy", "medium", "hard"}, Default: "medium"},
 		{Name: "title", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Size: 2147483647},

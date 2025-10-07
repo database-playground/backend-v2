@@ -6,6 +6,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 type Question struct {
@@ -14,7 +15,7 @@ type Question struct {
 
 func (Question) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("category").NotEmpty().Unique().Immutable().Comment("Question category, e.g. 'query'").Annotations(
+		field.String("category").NotEmpty().Comment("Question category, e.g. 'query'").Annotations(
 			entgql.OrderField("CATEGORY"),
 		),
 		field.Enum("difficulty").NamedValues(
@@ -45,6 +46,13 @@ func (Question) Edges() []ent.Edge {
 				entgql.RelayConnection(),
 				entgql.Directives(ScopeDirective("submission:read")),
 			),
+	}
+}
+
+func (Question) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("category"),
+		index.Fields("difficulty"),
 	}
 }
 

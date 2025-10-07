@@ -29,6 +29,20 @@ func (_u *QuestionUpdate) Where(ps ...predicate.Question) *QuestionUpdate {
 	return _u
 }
 
+// SetCategory sets the "category" field.
+func (_u *QuestionUpdate) SetCategory(v string) *QuestionUpdate {
+	_u.mutation.SetCategory(v)
+	return _u
+}
+
+// SetNillableCategory sets the "category" field if the given value is not nil.
+func (_u *QuestionUpdate) SetNillableCategory(v *string) *QuestionUpdate {
+	if v != nil {
+		_u.SetCategory(*v)
+	}
+	return _u
+}
+
 // SetDifficulty sets the "difficulty" field.
 func (_u *QuestionUpdate) SetDifficulty(v question.Difficulty) *QuestionUpdate {
 	_u.mutation.SetDifficulty(v)
@@ -172,6 +186,11 @@ func (_u *QuestionUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *QuestionUpdate) check() error {
+	if v, ok := _u.mutation.Category(); ok {
+		if err := question.CategoryValidator(v); err != nil {
+			return &ValidationError{Name: "category", err: fmt.Errorf(`ent: validator failed for field "Question.category": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Difficulty(); ok {
 		if err := question.DifficultyValidator(v); err != nil {
 			return &ValidationError{Name: "difficulty", err: fmt.Errorf(`ent: validator failed for field "Question.difficulty": %w`, err)}
@@ -194,6 +213,9 @@ func (_u *QuestionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := _u.mutation.Category(); ok {
+		_spec.SetField(question.FieldCategory, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Difficulty(); ok {
 		_spec.SetField(question.FieldDifficulty, field.TypeEnum, value)
@@ -299,6 +321,20 @@ type QuestionUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *QuestionMutation
+}
+
+// SetCategory sets the "category" field.
+func (_u *QuestionUpdateOne) SetCategory(v string) *QuestionUpdateOne {
+	_u.mutation.SetCategory(v)
+	return _u
+}
+
+// SetNillableCategory sets the "category" field if the given value is not nil.
+func (_u *QuestionUpdateOne) SetNillableCategory(v *string) *QuestionUpdateOne {
+	if v != nil {
+		_u.SetCategory(*v)
+	}
+	return _u
 }
 
 // SetDifficulty sets the "difficulty" field.
@@ -457,6 +493,11 @@ func (_u *QuestionUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *QuestionUpdateOne) check() error {
+	if v, ok := _u.mutation.Category(); ok {
+		if err := question.CategoryValidator(v); err != nil {
+			return &ValidationError{Name: "category", err: fmt.Errorf(`ent: validator failed for field "Question.category": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Difficulty(); ok {
 		if err := question.DifficultyValidator(v); err != nil {
 			return &ValidationError{Name: "difficulty", err: fmt.Errorf(`ent: validator failed for field "Question.difficulty": %w`, err)}
@@ -496,6 +537,9 @@ func (_u *QuestionUpdateOne) sqlSave(ctx context.Context) (_node *Question, err 
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := _u.mutation.Category(); ok {
+		_spec.SetField(question.FieldCategory, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Difficulty(); ok {
 		_spec.SetField(question.FieldDifficulty, field.TypeEnum, value)
