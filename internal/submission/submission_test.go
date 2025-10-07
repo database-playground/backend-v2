@@ -39,7 +39,7 @@ func setupTestData(t *testing.T, client *ent.Client) (userID, questionID, databa
 	testUser, err := client.User.Create().
 		SetName("Test User").
 		SetEmail("test@example.com").
-		SetGroup(setupResult.NewUserGroup).
+		SetGroup(setupResult.StudentGroup).
 		Save(ctx)
 	require.NoError(t, err)
 
@@ -173,7 +173,7 @@ func TestSubmitAnswer_Failed_ReferenceQueryError(t *testing.T) {
 	testUser, err := client.User.Create().
 		SetName("Test User").
 		SetEmail("test@example.com").
-		SetGroup(setupResult.NewUserGroup).
+		SetGroup(setupResult.StudentGroup).
 		Save(ctx)
 	require.NoError(t, err)
 
@@ -337,7 +337,7 @@ func TestSubmitAnswer_Integration_MultipleSubmissions(t *testing.T) {
 	testUser, err := client.User.Create().
 		SetName("Test User").
 		SetEmail("test@example.com").
-		SetGroup(setupResult.NewUserGroup).
+		SetGroup(setupResult.StudentGroup).
 		Save(ctx)
 	require.NoError(t, err)
 

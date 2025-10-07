@@ -105,9 +105,4 @@ extend type Mutation {
   Logout from all the devices of the current user.
   """
   logoutAll: Boolean! @scope(scope: "me:write")
-
-  """
-  Verify the registration of this user.
-  """
-  verifyRegistration: Boolean! @scope(scope: "verification:write")
 }

@@ -47,7 +47,7 @@ func TestGrantToken_Success(t *testing.T) {
 	assert.Equal(t, user.ID, tokenInfo.UserID)
 	assert.Equal(t, user.Email, tokenInfo.UserEmail)
 	assert.Equal(t, "test-machine", tokenInfo.Machine)
-	assert.Contains(t, tokenInfo.Scopes, "verification:*")
+	assert.Contains(t, tokenInfo.Scopes, "me:read")
 	assert.Equal(t, "registration", tokenInfo.Meta[useraccount.MetaInitiateFromFlow])
 	assert.Empty(t, tokenInfo.Meta[useraccount.MetaImpersonation])
 }
@@ -82,7 +82,7 @@ func TestGrantToken_Impersonation(t *testing.T) {
 	assert.Equal(t, user.ID, tokenInfo.UserID)
 	assert.Equal(t, user.Email, tokenInfo.UserEmail)
 	assert.Equal(t, "test-machine", tokenInfo.Machine)
-	assert.Contains(t, tokenInfo.Scopes, "verification:*")
+	assert.Contains(t, tokenInfo.Scopes, "me:read")
 	assert.Equal(t, "registration", tokenInfo.Meta[useraccount.MetaInitiateFromFlow])
 	assert.Equal(t, strconv.Itoa(user.ID), tokenInfo.Meta[useraccount.MetaImpersonation])
 }
@@ -123,14 +123,14 @@ func TestGrantToken_NewUserScopes(t *testing.T) {
 	ctx := useraccount.NewContext(client, authStorage, eventService)
 	context := context.Background()
 
-	// Create a user in new-user group
-	newUserGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.NewUserGroupSlug)).Only(context)
+	// Create a user in student group
+	studentGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.StudentGroupSlug)).Only(context)
 	require.NoError(t, err)
 
 	user, err := client.User.Create().
 		SetName("Verified User").
 		SetEmail("verified8@example.com"). // Unique email
-		SetGroup(newUserGroup).
+		SetGroup(studentGroup).
 		Save(context)
 	require.NoError(t, err)
 
@@ -142,7 +142,7 @@ func TestGrantToken_NewUserScopes(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 
-	// Verify token has new-user scopes
+	// Verify token has student scopes
 	tokenInfo, err := authStorage.Get(context, token)
 	require.NoError(t, err)
 	assert.Contains(t, tokenInfo.Scopes, "me:*")

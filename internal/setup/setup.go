@@ -13,9 +13,9 @@ import (
 // SetupResult is the result of the setup process.
 type SetupResult struct {
 	AdminScopeSet      *ent.ScopeSet
-	NewUserScopeSet    *ent.ScopeSet
 	AdminGroup         *ent.Group
-	NewUserGroup       *ent.Group
+	StudentScopeSet    *ent.ScopeSet
+	StudentGroup       *ent.Group
 	UnverifiedScopeSet *ent.ScopeSet
 	UnverifiedGroup    *ent.Group
 }
@@ -54,26 +54,26 @@ func Setup(ctx context.Context, entClient *ent.Client) (*SetupResult, error) {
 		log.Println("[*] Admin scope set already exists, skipping creation")
 	}
 
-	// Check if new-user scope set already exists
-	newUserScopeSet, err := entClient.ScopeSet.Query().
-		Where(scopeset.SlugEQ(useraccount.NewUserScopeSetSlug)).
+	// Check if the student scope set already exists
+	studentScopeSet, err := entClient.ScopeSet.Query().
+		Where(scopeset.SlugEQ(useraccount.StudentScopeSetSlug)).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
 
-	if newUserScopeSet == nil {
-		log.Println("[*] Creating the 'new-user' scope set…")
-		newUserScopeSet, err = entClient.ScopeSet.Create().
-			SetSlug(useraccount.NewUserScopeSetSlug).
-			SetDescription("New users can only read and write their own data.").
-			SetScopes([]string{"me:*"}).
+	if studentScopeSet == nil {
+		log.Println("[*] Creating the 'student' scope set…")
+		studentScopeSet, err = entClient.ScopeSet.Create().
+			SetSlug(useraccount.StudentScopeSetSlug).
+			SetDescription("The necessary permissions for using the main app").
+			SetScopes([]string{"me:*", "question:read", "database:read", "ai"}).
 			Save(ctx)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		log.Println("[*] New-user scope set already exists, skipping creation")
+		log.Println("[*] Student scope set already exists, skipping creation")
 	}
 
 	// Check if unverified scope set already exists
@@ -87,8 +87,8 @@ func Setup(ctx context.Context, entClient *ent.Client) (*SetupResult, error) {
 		log.Println("[*] Creating the 'unverified' scope set…")
 		unverifiedScopeSet, err = entClient.ScopeSet.Create().
 			SetSlug(useraccount.UnverifiedScopeSetSlug).
-			SetDescription("Unverified users can only verify their account and read their own initial data.").
-			SetScopes([]string{"verification:*", "me:read"}).
+			SetDescription("Unverified users can only read their own initial data, and must be manually verified by an administrator.").
+			SetScopes([]string{"me:read"}).
 			Save(ctx)
 		if err != nil {
 			return nil, err
@@ -119,26 +119,26 @@ func Setup(ctx context.Context, entClient *ent.Client) (*SetupResult, error) {
 		log.Println("[*] Admin group already exists, skipping creation")
 	}
 
-	// Check if new-user group already exists
-	newUserGroup, err := entClient.Group.Query().
-		Where(group.NameEQ(useraccount.NewUserGroupSlug)).
+	// Check if student group already exists
+	studentGroup, err := entClient.Group.Query().
+		Where(group.NameEQ(useraccount.StudentGroupSlug)).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
 
-	if newUserGroup == nil {
-		log.Println("[*] Creating the 'new-user' group…")
-		newUserGroup, err = entClient.Group.Create().
-			SetName(useraccount.NewUserGroupSlug).
-			SetDescription("New users that is not yet verified.").
-			AddScopeSetIDs(newUserScopeSet.ID).
+	if studentGroup == nil {
+		log.Println("[*] Creating the 'student' group…")
+		studentGroup, err = entClient.Group.Create().
+			SetName(useraccount.StudentGroupSlug).
+			SetDescription("The group that has the minimum permissions for accessing this system.").
+			AddScopeSetIDs(studentScopeSet.ID).
 			Save(ctx)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		log.Println("[*] New-user group already exists, skipping creation")
+		log.Println("[*] Student group already exists, skipping creation")
 	}
 
 	// Check if unverified group already exists
@@ -165,9 +165,9 @@ func Setup(ctx context.Context, entClient *ent.Client) (*SetupResult, error) {
 
 	return &SetupResult{
 		AdminScopeSet:      adminScopeSet,
-		NewUserScopeSet:    newUserScopeSet,
 		AdminGroup:         adminGroup,
-		NewUserGroup:       newUserGroup,
+		StudentScopeSet:    studentScopeSet,
+		StudentGroup:       studentGroup,
 		UnverifiedScopeSet: unverifiedScopeSet,
 		UnverifiedGroup:    unverifiedGroup,
 	}, nil

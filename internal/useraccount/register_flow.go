@@ -76,7 +76,7 @@ func (c *Context) Verify(ctx context.Context, userID int) error {
 		return ErrUserVerified
 	}
 
-	newUserGroup, err := c.entClient.Group.Query().Where(group.NameEQ(NewUserGroupSlug)).Only(ctx)
+	studentGroup, err := c.entClient.Group.Query().Where(group.NameEQ(StudentGroupSlug)).Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return ErrIncompleteSetup
@@ -86,7 +86,7 @@ func (c *Context) Verify(ctx context.Context, userID int) error {
 	}
 
 	// update user's group to the new user group
-	if _, err := user.Update().SetGroup(newUserGroup).Save(ctx); err != nil {
+	if _, err := user.Update().SetGroup(studentGroup).Save(ctx); err != nil {
 		return fmt.Errorf("update user group: %w", err)
 	}
 

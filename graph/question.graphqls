@@ -61,7 +61,7 @@ extend type Mutation {
 }
 
 extend type Question {
-  referenceAnswerResult: SQLExecutionResult! @scope(scope: "question:read")
+  referenceAnswerResult: SQLExecutionResult!
 
   """
   List of your submissions for this question, ordered by submitted at descending.

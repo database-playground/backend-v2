@@ -8,6 +8,7 @@ import (
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/user"
 	"github.com/database-playground/backend-v2/internal/testhelper"
+	"github.com/database-playground/backend-v2/internal/useraccount"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -24,17 +25,17 @@ func TestPromoteAdmin(t *testing.T) {
 			t.Fatalf("Setup failed: %v", err)
 		}
 
-		// Get the new-user group to assign to the user initially
-		newUserGroup, err := entClient.Group.Query().Where(group.Name("new-user")).Only(ctx)
+		// Get the student group to assign to the user initially
+		studentGroup, err := entClient.Group.Query().Where(group.Name(useraccount.StudentGroupSlug)).Only(ctx)
 		if err != nil {
-			t.Fatalf("Failed to get new-user group: %v", err)
+			t.Fatalf("Failed to get student group: %v", err)
 		}
 
 		// Create a test user
 		testUser, err := entClient.User.Create().
 			SetEmail("test@example.com").
 			SetName("Test User").
-			SetGroup(newUserGroup).
+			SetGroup(studentGroup).
 			Save(ctx)
 		if err != nil {
 			t.Fatalf("Failed to create test user: %v", err)
@@ -148,17 +149,17 @@ func TestPromoteAdmin(t *testing.T) {
 			t.Fatalf("Setup failed: %v", err)
 		}
 
-		// Get the new-user group to assign to the user initially
-		newUserGroup, err := entClient.Group.Query().Where(group.Name("new-user")).Only(ctx)
+		// Get the student group to assign to the user initially
+		studentGroup, err := entClient.Group.Query().Where(group.Name(useraccount.StudentGroupSlug)).Only(ctx)
 		if err != nil {
-			t.Fatalf("Failed to get new-user group: %v", err)
+			t.Fatalf("Failed to get student group: %v", err)
 		}
 
 		// Create a test user
 		_, err = entClient.User.Create().
 			SetEmail("test@example.com").
 			SetName("Test User").
-			SetGroup(newUserGroup).
+			SetGroup(studentGroup).
 			Save(ctx)
 		if err != nil {
 			t.Fatalf("Failed to create test user: %v", err)
@@ -188,17 +189,17 @@ func TestPromoteAdmin(t *testing.T) {
 			t.Fatalf("Setup failed: %v", err)
 		}
 
-		// Get the new-user group to assign to users initially
-		newUserGroup, err := entClient.Group.Query().Where(group.Name("new-user")).Only(ctx)
+		// Get the student group to assign to users initially
+		studentGroup, err := entClient.Group.Query().Where(group.Name(useraccount.StudentGroupSlug)).Only(ctx)
 		if err != nil {
-			t.Fatalf("Failed to get new-user group: %v", err)
+			t.Fatalf("Failed to get student group: %v", err)
 		}
 
 		// Create multiple test users
 		user1, err := entClient.User.Create().
 			SetEmail("user1@example.com").
 			SetName("User 1").
-			SetGroup(newUserGroup).
+			SetGroup(studentGroup).
 			Save(ctx)
 		if err != nil {
 			t.Fatalf("Failed to create user1: %v", err)
@@ -207,7 +208,7 @@ func TestPromoteAdmin(t *testing.T) {
 		user2, err := entClient.User.Create().
 			SetEmail("user2@example.com").
 			SetName("User 2").
-			SetGroup(newUserGroup).
+			SetGroup(studentGroup).
 			Save(ctx)
 		if err != nil {
 			t.Fatalf("Failed to create user2: %v", err)
@@ -271,17 +272,17 @@ func TestPromoteAdmin(t *testing.T) {
 			t.Fatalf("Setup failed: %v", err)
 		}
 
-		// Get the new-user group to assign to the user initially
-		newUserGroup, err := entClient.Group.Query().Where(group.Name("new-user")).Only(ctx)
+		// Get the student group to assign to the user initially
+		studentGroup, err := entClient.Group.Query().Where(group.Name(useraccount.StudentGroupSlug)).Only(ctx)
 		if err != nil {
-			t.Fatalf("Failed to get new-user group: %v", err)
+			t.Fatalf("Failed to get student group: %v", err)
 		}
 
 		// Create a test user with lowercase email
 		_, err = entClient.User.Create().
 			SetEmail("test@example.com").
 			SetName("Test User").
-			SetGroup(newUserGroup).
+			SetGroup(studentGroup).
 			Save(ctx)
 		if err != nil {
 			t.Fatalf("Failed to create test user: %v", err)
