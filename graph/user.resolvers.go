@@ -209,26 +209,6 @@ func (r *mutationResolver) LogoutAll(ctx context.Context) (bool, error) {
 	return r.LogoutUser(ctx, user.UserID)
 }
 
-// VerifyRegistration is the resolver for the verifyRegistration field.
-func (r *mutationResolver) VerifyRegistration(ctx context.Context) (bool, error) {
-	tokenInfo, ok := auth.GetUser(ctx)
-	if !ok {
-		// this should never happen since we have set proper scope
-		return false, defs.ErrUnauthorized
-	}
-
-	err := r.useraccount.Verify(ctx, tokenInfo.UserID)
-	if err != nil {
-		if errors.Is(err, useraccount.ErrUserVerified) {
-			return false, defs.ErrVerified
-		}
-
-		return false, err
-	}
-
-	return true, nil
-}
-
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
 	tokenInfo, ok := auth.GetUser(ctx)
@@ -342,3 +322,30 @@ func (r *userResolver) TotalPoints(ctx context.Context, obj *ent.User) (int, err
 
 	return totalPoints, nil
 }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *mutationResolver) VerifyRegistration(ctx context.Context) (bool, error) {
+	tokenInfo, ok := auth.GetUser(ctx)
+	if !ok {
+		// this should never happen since we have set proper scope
+		return false, defs.ErrUnauthorized
+	}
+
+	err := r.useraccount.Verify(ctx, tokenInfo.UserID)
+	if err != nil {
+		if errors.Is(err, useraccount.ErrUserVerified) {
+			return false, defs.ErrVerified
+		}
+
+		return false, err
+	}
+
+	return true, nil
+}
+*/
