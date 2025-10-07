@@ -124,7 +124,7 @@ func TestGrantToken_NewUserScopes(t *testing.T) {
 	context := context.Background()
 
 	// Create a user in new-user group
-	newUserGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.NewUserGroupSlug)).Only(context)
+	newUserGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.StudentGroupSlug)).Only(context)
 	require.NoError(t, err)
 
 	user, err := client.User.Create().

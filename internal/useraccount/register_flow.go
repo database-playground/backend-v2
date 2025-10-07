@@ -76,7 +76,7 @@ func (c *Context) Verify(ctx context.Context, userID int) error {
 		return ErrUserVerified
 	}
 
-	newUserGroup, err := c.entClient.Group.Query().Where(group.NameEQ(NewUserGroupSlug)).Only(ctx)
+	newUserGroup, err := c.entClient.Group.Query().Where(group.NameEQ(StudentGroupSlug)).Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return ErrIncompleteSetup

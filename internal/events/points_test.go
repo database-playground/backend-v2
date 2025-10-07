@@ -31,7 +31,7 @@ func setupTestData(t *testing.T, client *ent.Client) int {
 	user, err := client.User.Create().
 		SetName("Test User").
 		SetEmail("test@example.com").
-		SetGroup(setupResult.NewUserGroup).
+		SetGroup(setupResult.StudentGroup).
 		Save(ctx)
 	require.NoError(t, err)
 
@@ -798,7 +798,7 @@ func TestGrantFirstPlacePoints_NotFirstPlace(t *testing.T) {
 	user2, err := client.User.Create().
 		SetName("Test User 2").
 		SetEmail("test2@example.com").
-		SetGroup(setupResult.NewUserGroup).
+		SetGroup(setupResult.StudentGroup).
 		Save(ctx)
 	require.NoError(t, err)
 	userID2 := user2.ID

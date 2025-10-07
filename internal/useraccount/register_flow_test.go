@@ -134,7 +134,7 @@ func TestGetOrRegister_UpdateNameAndAvatar_VerifiedUser(t *testing.T) {
 	context := context.Background()
 
 	// Create an existing verified user (in new-user group)
-	newUserGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.NewUserGroupSlug)).Only(context)
+	newUserGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.StudentGroupSlug)).Only(context)
 	require.NoError(t, err)
 
 	originalName := "Verified User Original"
@@ -168,7 +168,7 @@ func TestGetOrRegister_UpdateNameAndAvatar_VerifiedUser(t *testing.T) {
 	// Verify user is still in the verified group
 	group, err := user.QueryGroup().Only(context)
 	require.NoError(t, err)
-	assert.Equal(t, useraccount.NewUserGroupSlug, group.Name, "group should not change")
+	assert.Equal(t, useraccount.StudentGroupSlug, group.Name, "group should not change")
 }
 
 func TestGetOrRegister_UpdateWithEmptyAvatar(t *testing.T) {
@@ -253,7 +253,7 @@ func TestVerify_Success(t *testing.T) {
 
 	group, err := updatedUser.QueryGroup().Only(context)
 	require.NoError(t, err)
-	assert.Equal(t, useraccount.NewUserGroupSlug, group.Name)
+	assert.Equal(t, useraccount.StudentGroupSlug, group.Name)
 
 	// Verify user has new-user scopes
 	scopeSets, err := updatedUser.QueryGroup().QueryScopeSets().All(context)
@@ -282,7 +282,7 @@ func TestVerify_UserAlreadyVerified(t *testing.T) {
 	context := context.Background()
 
 	// Create a user in new-user group (already verified)
-	newUserGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.NewUserGroupSlug)).Only(context)
+	newUserGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.StudentGroupSlug)).Only(context)
 	require.NoError(t, err)
 
 	user, err := client.User.Create().
@@ -298,7 +298,7 @@ func TestVerify_UserAlreadyVerified(t *testing.T) {
 	assert.ErrorIs(t, err, useraccount.ErrUserVerified)
 }
 
-func TestVerify_MissingNewUserGroup(t *testing.T) {
+func TestVerify_MissingStudentGroup(t *testing.T) {
 	// Create a fresh database without setup
 	client := testhelper.NewEntSqliteClient(t)
 	authStorage := newMockAuthStorage()
@@ -365,7 +365,7 @@ func TestRegistrationFlow_Complete(t *testing.T) {
 
 	updatedGroup, err := updatedUser.QueryGroup().Only(context)
 	require.NoError(t, err)
-	assert.Equal(t, useraccount.NewUserGroupSlug, updatedGroup.Name)
+	assert.Equal(t, useraccount.StudentGroupSlug, updatedGroup.Name)
 
 	// Step 5: Grant token for verified user
 	newToken, err := ctx.GrantToken(context, updatedUser, "web", useraccount.WithFlow("login"))
@@ -384,7 +384,7 @@ func TestRegistrationFlow_ExistingUser(t *testing.T) {
 	context := context.Background()
 
 	// Create an existing verified user
-	newUserGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.NewUserGroupSlug)).Only(context)
+	newUserGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.StudentGroupSlug)).Only(context)
 	require.NoError(t, err)
 
 	existingUser, err := client.User.Create().
@@ -443,7 +443,7 @@ func TestRegistrationFlow_ErrorCases(t *testing.T) {
 		context := context.Background()
 
 		// Create verified user
-		newUserGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.NewUserGroupSlug)).Only(context)
+		newUserGroup, err := client.Group.Query().Where(group.NameEQ(useraccount.StudentGroupSlug)).Only(context)
 		require.NoError(t, err)
 
 		user, err := client.User.Create().

@@ -42,7 +42,7 @@ func newSetupCommand(clictx *dpcli.Context) *cli.Command {
 			fmt.Printf("a default new-user scope set (%s) with the minimal scope set,\n", result.NewUserScopeSet.Slug)
 			fmt.Printf("and a default unverified scope set (%s) with the minimal scope set.\n", result.UnverifiedScopeSet.Slug)
 			fmt.Printf("Besides, we also created a default administrator group (%s, ID #%d) with the admin scope set,\n", result.AdminGroup.Name, result.AdminGroup.ID)
-			fmt.Printf("a default new-user group (%s, ID #%d) with the minimal scope set,\n", result.NewUserGroup.Name, result.NewUserGroup.ID)
+			fmt.Printf("a default new-user group (%s, ID #%d) with the minimal scope set,\n", result.StudentGroup.Name, result.StudentGroup.ID)
 			fmt.Printf("and a default unverified group (%s, ID #%d) with the minimal scope set.\n", result.UnverifiedGroup.Name, result.UnverifiedGroup.ID)
 			fmt.Println()
 			fmt.Println("You can then use the following commands to complete the setup:")
