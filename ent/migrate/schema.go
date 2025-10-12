@@ -117,6 +117,18 @@ var (
 				OnDelete:   schema.NoAction,
 			},
 		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "question_category",
+				Unique:  false,
+				Columns: []*schema.Column{QuestionsColumns[1]},
+			},
+			{
+				Name:    "question_difficulty",
+				Unique:  false,
+				Columns: []*schema.Column{QuestionsColumns[2]},
+			},
+		},
 	}
 	// ScopeSetsColumns holds the columns for the "scope_sets" table.
 	ScopeSetsColumns = []*schema.Column{
