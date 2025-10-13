@@ -77,6 +77,7 @@ func (ss *SubmissionService) SubmitAnswer(ctx context.Context, input SubmitAnswe
 		Payload: map[string]any{
 			"submission_id": submission.ID,
 			"question_id":   input.QuestionID,
+			"status":        submission.Status,
 		},
 		UserID: input.SubmitterID,
 	})
