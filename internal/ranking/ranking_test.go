@@ -79,7 +79,7 @@ func TestService_GetRanking_ByPoints_Daily(t *testing.T) {
 		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 
 		// Create points for users (today)
-		// User 0: 150 points, User 1: 200 points, User 2: 100 points, User 3: 50 points, User 4: 0 points
+		// users[0] (User 1): 150 points, users[1] (User 2): 200 points, users[2] (User 3): 100 points, users[3] (User 4): 50 points
 		pointsData := []struct {
 			userIdx int
 			points  int
@@ -116,7 +116,7 @@ func TestService_GetRanking_ByPoints_Daily(t *testing.T) {
 		assert.False(t, result.PageInfo.HasNextPage)
 		assert.False(t, result.PageInfo.HasPreviousPage)
 
-		// Check order: User 1 (200), User 0 (150), User 2 (100), User 3 (50)
+		// Check order: User 2 (200), User 1 (150), User 3 (100), User 4 (50)
 		assert.Equal(t, "User 2", result.Edges[0].Node.Name)
 		assert.Equal(t, "User 1", result.Edges[1].Node.Name)
 		assert.Equal(t, "User 3", result.Edges[2].Node.Name)
@@ -165,7 +165,7 @@ func TestService_GetRanking_ByPoints_Daily(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 3, result.TotalCount)
 
-		// Check order: User 2 (100), User 0 (150), User 1 (200)
+		// Check order: User 3 (100), User 1 (150), User 2 (200)
 		assert.Equal(t, "User 3", result.Edges[0].Node.Name)
 		assert.Equal(t, "User 1", result.Edges[1].Node.Name)
 		assert.Equal(t, "User 2", result.Edges[2].Node.Name)
@@ -276,7 +276,7 @@ func TestService_GetRanking_ByPoints_Weekly(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 2, result.TotalCount)
 
-		// User 1 (200), User 0 (150 = 100 + 50)
+		// User 2 (200), User 1 (150 = 100 + 50)
 		assert.Equal(t, "User 2", result.Edges[0].Node.Name)
 		assert.Equal(t, "User 1", result.Edges[1].Node.Name)
 	})
@@ -293,7 +293,7 @@ func TestService_GetRanking_ByCompletedQuestions(t *testing.T) {
 		now := time.Now()
 		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 
-		// User 0: 2 successful submissions (questions 0, 1)
+		// users[0] (User 1): 2 successful submissions (questions 0, 1)
 		_, err := entClient.Submission.Create().
 			SetUser(users[0]).
 			SetQuestion(questions[0]).
@@ -312,7 +312,7 @@ func TestService_GetRanking_ByCompletedQuestions(t *testing.T) {
 			Save(ctx)
 		require.NoError(t, err)
 
-		// User 1: 1 successful submission (question 0)
+		// users[1] (User 2): 1 successful submission (question 0)
 		_, err = entClient.Submission.Create().
 			SetUser(users[1]).
 			SetQuestion(questions[0]).
@@ -322,7 +322,7 @@ func TestService_GetRanking_ByCompletedQuestions(t *testing.T) {
 			Save(ctx)
 		require.NoError(t, err)
 
-		// User 1: 1 failed submission (should not count)
+		// users[1] (User 2): 1 failed submission (should not count)
 		_, err = entClient.Submission.Create().
 			SetUser(users[1]).
 			SetQuestion(questions[1]).
@@ -332,7 +332,7 @@ func TestService_GetRanking_ByCompletedQuestions(t *testing.T) {
 			Save(ctx)
 		require.NoError(t, err)
 
-		// User 2: 3 successful submissions (all questions)
+		// users[2] (User 3): 3 successful submissions (all questions)
 		for _, q := range questions {
 			_, err = entClient.Submission.Create().
 				SetUser(users[2]).
@@ -357,7 +357,7 @@ func TestService_GetRanking_ByCompletedQuestions(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 3, result.TotalCount)
 
-		// Check order: User 2 (3), User 0 (2), User 1 (1)
+		// Check order: User 3 (3), User 1 (2), User 2 (1)
 		assert.Equal(t, "User 3", result.Edges[0].Node.Name)
 		assert.Equal(t, "User 1", result.Edges[1].Node.Name)
 		assert.Equal(t, "User 2", result.Edges[2].Node.Name)
@@ -373,7 +373,7 @@ func TestService_GetRanking_ByCompletedQuestions(t *testing.T) {
 		now := time.Now()
 		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 
-		// User 0: multiple successful submissions for the same question (should count as 1)
+		// users[0] (User 1): multiple successful submissions for the same question (should count as 1)
 		for i := 0; i < 3; i++ {
 			_, err := entClient.Submission.Create().
 				SetUser(users[0]).
