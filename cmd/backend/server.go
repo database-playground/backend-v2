@@ -20,6 +20,7 @@ func main() {
 			EventService,
 			SubmissionService,
 			ApqCache,
+			RankingService,
 			PostHogClient,
 			AnnotateService(AuthService),
 			GqlgenHandler,

@@ -24,6 +24,7 @@ import (
 	"github.com/database-playground/backend-v2/internal/events"
 	"github.com/database-playground/backend-v2/internal/graphql/apq"
 	"github.com/database-playground/backend-v2/internal/httputils"
+	"github.com/database-playground/backend-v2/internal/ranking"
 	"github.com/database-playground/backend-v2/internal/sqlrunner"
 	"github.com/database-playground/backend-v2/internal/submission"
 	"github.com/database-playground/backend-v2/internal/useraccount"
@@ -84,9 +85,10 @@ func GqlgenHandler(
 	useraccount *useraccount.Context,
 	eventService *events.EventService,
 	submissionService *submission.SubmissionService,
+	rankingService *ranking.Service,
 	apqCache graphql.Cache[string],
 ) *handler.Server {
-	srv := handler.New(graph.NewSchema(entClient, storage, sqlrunner, useraccount, eventService, submissionService))
+	srv := handler.New(graph.NewSchema(entClient, storage, sqlrunner, useraccount, eventService, submissionService, rankingService))
 
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
@@ -118,6 +120,11 @@ func EventService(entClient *ent.Client, posthogClient posthog.Client) *events.E
 // SubmissionService creates a submission.SubmissionService.
 func SubmissionService(entClient *ent.Client, eventService *events.EventService, sqlrunner *sqlrunner.SqlRunner) *submission.SubmissionService {
 	return submission.NewSubmissionService(entClient, eventService, sqlrunner)
+}
+
+// RankingService creates a ranking.Service.
+func RankingService(entClient *ent.Client) *ranking.Service {
+	return ranking.NewService(entClient)
 }
 
 // AuthService creates an auth service.

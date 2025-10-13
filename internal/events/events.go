@@ -50,12 +50,15 @@ func (s *EventService) TriggerEvent(ctx context.Context, event Event) {
 
 	if s.posthogClient != nil {
 		slog.Debug("sending event to PostHog", "event_type", event.Type, "user_id", event.UserID)
-		s.posthogClient.Enqueue(posthog.Capture{
+		err = s.posthogClient.Enqueue(posthog.Capture{
 			DistinctId: strconv.Itoa(event.UserID),
 			Event:      string(event.Type),
 			Timestamp:  time.Now(),
 			Properties: event.Payload,
 		})
+		if err != nil {
+			slog.Error("failed to send event to PostHog", "error", err)
+		}
 	}
 }
 
