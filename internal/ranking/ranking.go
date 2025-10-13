@@ -165,7 +165,6 @@ func (s *Service) getUserScoresByPoints(ctx context.Context, since time.Time) ([
 			return sql.As(sql.Sum(point.FieldPoints), "total_score")
 		}).
 		Scan(ctx, &results)
-
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +199,6 @@ func (s *Service) getUserScoresByCompletedQuestions(ctx context.Context, since t
 			return sql.As(fmt.Sprintf("COUNT(DISTINCT %s)", "question_submissions"), "completed_quests")
 		}).
 		Scan(ctx, &results)
-
 	if err != nil {
 		return nil, err
 	}
