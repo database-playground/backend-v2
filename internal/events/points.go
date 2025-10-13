@@ -398,10 +398,13 @@ func (d *PointsGranter) grantPoint(ctx context.Context, userID int, questionID i
 		Exec(ctx)
 	if err != nil {
 		if d.posthogClient != nil {
-			d.posthogClient.Enqueue(posthog.NewDefaultException(
+			err = d.posthogClient.Enqueue(posthog.NewDefaultException(
 				time.Now(), strconv.Itoa(userID),
 				"failed to grant point", err.Error(),
 			))
+			if err != nil {
+				slog.Error("failed to send event to PostHog", "error", err)
+			}
 		}
 
 		return err
@@ -418,12 +421,15 @@ func (d *PointsGranter) grantPoint(ctx context.Context, userID int, questionID i
 
 		slog.Debug("sending event to PostHog", "event_type", EventTypeGrantPoint, "user_id", userID)
 
-		d.posthogClient.Enqueue(posthog.Capture{
+		err = d.posthogClient.Enqueue(posthog.Capture{
 			DistinctId: strconv.Itoa(userID),
 			Event:      string(EventTypeGrantPoint),
 			Timestamp:  time.Now(),
 			Properties: properties,
 		})
+		if err != nil {
+			slog.Error("failed to send event to PostHog", "error", err)
+		}
 	}
 
 	return nil
