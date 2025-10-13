@@ -33,7 +33,7 @@ type RankingConnection {
 }
 
 type RankingEdge {
-    # User in the ranking
     node: User!
+    score: Int!
     cursor: Cursor!
 }
