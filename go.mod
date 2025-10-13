@@ -149,10 +149,12 @@ require (
 	google.golang.org/grpc v1.76.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	mvdan.cc/gofumpt v0.9.1 // indirect
 )
 
 tool (
 	entgo.io/ent/cmd/ent
 	github.com/99designs/gqlgen
 	github.com/99designs/gqlgen/graphql/introspection
+	mvdan.cc/gofumpt
 )

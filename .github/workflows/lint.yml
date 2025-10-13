@@ -20,10 +20,8 @@ jobs:
           go-version-file: "go.mod"
           cache: true
 
-      - name: Install dependencies and tools
-        run: |
-          go mod download
-          go install mvdan.cc/gofumpt@latest
+      - name: Install dependencies
+        run: go mod download
 
       - name: Generate GraphQL code
         run: go generate .
@@ -34,4 +32,4 @@ jobs:
           version: latest
 
       - name: Run gofumpt
-        run: gofumpt -d .
+        run: go tool gofumpt -d -l .
