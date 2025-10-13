@@ -25,6 +25,9 @@ jobs:
           go mod download
           go install mvdan.cc/gofumpt@latest
 
+      - name: Generate GraphQL code
+        run: go generate .
+
       - name: Lint with golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
