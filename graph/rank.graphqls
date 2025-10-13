@@ -1,0 +1,39 @@
+extend type Query {
+  """
+  Get the ranking.
+  """
+  ranking(first: Int, after: Cursor, filter: RankingFilter!): RankingConnection! @scope(scope: "user:read")
+}
+
+input RankingFilter {
+    by: RankingBy!
+    order: RankingOrder!
+    period: RankingPeriod!
+}
+
+enum RankingBy {
+    POINTS
+    COMPLETED_QUESTIONS
+}
+
+enum RankingOrder {
+    ASC
+    DESC
+}
+
+enum RankingPeriod {
+    DAILY
+    WEEKLY
+}
+
+type RankingConnection {
+    edges: [RankingEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type RankingEdge {
+    # User in the ranking
+    node: User!
+    cursor: Cursor!
+}

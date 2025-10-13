@@ -14,6 +14,7 @@ import (
 	"github.com/database-playground/backend-v2/graph/directive"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/events"
+	"github.com/database-playground/backend-v2/internal/ranking"
 	"github.com/database-playground/backend-v2/internal/submission"
 	"github.com/database-playground/backend-v2/internal/testhelper"
 	"github.com/database-playground/backend-v2/internal/useraccount"
@@ -57,8 +58,9 @@ func NewTestResolver(t *testing.T, entClient *ent.Client, authStorage auth.Stora
 
 	submissionService := submission.NewSubmissionService(entClient, eventService, sqlrunner)
 	useraccountCtx := useraccount.NewContext(entClient, authStorage, eventService)
+	rankingService := ranking.NewService(entClient)
 
-	return NewResolver(entClient, authStorage, sqlrunner, useraccountCtx, eventService, submissionService)
+	return NewResolver(entClient, authStorage, sqlrunner, useraccountCtx, eventService, submissionService, rankingService)
 }
 
 func TestMutationResolver_LogoutAll(t *testing.T) {

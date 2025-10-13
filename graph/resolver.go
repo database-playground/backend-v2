@@ -10,6 +10,7 @@ import (
 	"github.com/database-playground/backend-v2/graph/directive"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/events"
+	"github.com/database-playground/backend-v2/internal/ranking"
 	"github.com/database-playground/backend-v2/internal/sqlrunner"
 	"github.com/database-playground/backend-v2/internal/submission"
 	"github.com/database-playground/backend-v2/internal/useraccount"
@@ -29,11 +30,12 @@ type Resolver struct {
 
 	eventService      *events.EventService
 	submissionService *submission.SubmissionService
+	rankingService    *ranking.Service
 }
 
 // NewResolver creates a new resolver.
-func NewResolver(ent *ent.Client, auth auth.Storage, sqlrunner *sqlrunner.SqlRunner, useraccount *useraccount.Context, eventService *events.EventService, submissionService *submission.SubmissionService) *Resolver {
-	return &Resolver{ent, auth, sqlrunner, useraccount, eventService, submissionService}
+func NewResolver(ent *ent.Client, auth auth.Storage, sqlrunner *sqlrunner.SqlRunner, useraccount *useraccount.Context, eventService *events.EventService, submissionService *submission.SubmissionService, rankingService *ranking.Service) *Resolver {
+	return &Resolver{ent, auth, sqlrunner, useraccount, eventService, submissionService, rankingService}
 }
 
 // NewSchema creates a graphql executable schema.
@@ -44,9 +46,10 @@ func NewSchema(
 	useraccount *useraccount.Context,
 	eventService *events.EventService,
 	submissionService *submission.SubmissionService,
+	rankingService *ranking.Service,
 ) graphql.ExecutableSchema {
 	return NewExecutableSchema(Config{
-		Resolvers: NewResolver(ent, auth, sqlrunner, useraccount, eventService, submissionService),
+		Resolvers: NewResolver(ent, auth, sqlrunner, useraccount, eventService, submissionService, rankingService),
 		Directives: DirectiveRoot{
 			Scope: directive.ScopeDirective,
 		},

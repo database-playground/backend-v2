@@ -3,6 +3,13 @@
 package model
 
 import (
+	"bytes"
+	"fmt"
+	"io"
+	"strconv"
+
+	"entgo.io/contrib/entgql"
+	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/models"
 )
@@ -14,6 +21,23 @@ type DatabaseStructure struct {
 type DatabaseTable struct {
 	Name    string   `json:"name"`
 	Columns []string `json:"columns"`
+}
+
+type RankingConnection struct {
+	Edges      []*RankingEdge        `json:"edges"`
+	PageInfo   *entgql.PageInfo[int] `json:"pageInfo"`
+	TotalCount int                   `json:"totalCount"`
+}
+
+type RankingEdge struct {
+	Node   *ent.User          `json:"node"`
+	Cursor entgql.Cursor[int] `json:"cursor"`
+}
+
+type RankingFilter struct {
+	By     RankingBy     `json:"by"`
+	Order  RankingOrder  `json:"order"`
+	Period RankingPeriod `json:"period"`
 }
 
 // Filter for scope sets.
@@ -41,4 +65,169 @@ type SubmissionStatistics struct {
 	AttemptedQuestions         int                           `json:"attemptedQuestions"`
 	SolvedQuestions            int                           `json:"solvedQuestions"`
 	SolvedQuestionByDifficulty []*SolvedQuestionByDifficulty `json:"solvedQuestionByDifficulty"`
+}
+
+type RankingBy string
+
+const (
+	RankingByPoints             RankingBy = "POINTS"
+	RankingByCompletedQuestions RankingBy = "COMPLETED_QUESTIONS"
+)
+
+var AllRankingBy = []RankingBy{
+	RankingByPoints,
+	RankingByCompletedQuestions,
+}
+
+func (e RankingBy) IsValid() bool {
+	switch e {
+	case RankingByPoints, RankingByCompletedQuestions:
+		return true
+	}
+	return false
+}
+
+func (e RankingBy) String() string {
+	return string(e)
+}
+
+func (e *RankingBy) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = RankingBy(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid RankingBy", str)
+	}
+	return nil
+}
+
+func (e RankingBy) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *RankingBy) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e RankingBy) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type RankingOrder string
+
+const (
+	RankingOrderAsc  RankingOrder = "ASC"
+	RankingOrderDesc RankingOrder = "DESC"
+)
+
+var AllRankingOrder = []RankingOrder{
+	RankingOrderAsc,
+	RankingOrderDesc,
+}
+
+func (e RankingOrder) IsValid() bool {
+	switch e {
+	case RankingOrderAsc, RankingOrderDesc:
+		return true
+	}
+	return false
+}
+
+func (e RankingOrder) String() string {
+	return string(e)
+}
+
+func (e *RankingOrder) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = RankingOrder(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid RankingOrder", str)
+	}
+	return nil
+}
+
+func (e RankingOrder) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *RankingOrder) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e RankingOrder) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type RankingPeriod string
+
+const (
+	RankingPeriodDaily  RankingPeriod = "DAILY"
+	RankingPeriodWeekly RankingPeriod = "WEEKLY"
+)
+
+var AllRankingPeriod = []RankingPeriod{
+	RankingPeriodDaily,
+	RankingPeriodWeekly,
+}
+
+func (e RankingPeriod) IsValid() bool {
+	switch e {
+	case RankingPeriodDaily, RankingPeriodWeekly:
+		return true
+	}
+	return false
+}
+
+func (e RankingPeriod) String() string {
+	return string(e)
+}
+
+func (e *RankingPeriod) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = RankingPeriod(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid RankingPeriod", str)
+	}
+	return nil
+}
+
+func (e RankingPeriod) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *RankingPeriod) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e RankingPeriod) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
