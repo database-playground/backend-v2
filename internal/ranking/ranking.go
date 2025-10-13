@@ -105,6 +105,7 @@ func (s *Service) GetRanking(ctx context.Context, first *int, after *entgql.Curs
 			cursor := entgql.Cursor[int]{ID: us.UserID}
 			edges = append(edges, &model.RankingEdge{
 				Node:   user,
+				Score:  us.Score,
 				Cursor: cursor,
 			})
 		}

@@ -546,3 +546,346 @@ func TestService_GetRanking_EdgeCases(t *testing.T) {
 		assert.Equal(t, "User 1", result.Edges[0].Node.Name)
 	})
 }
+
+func TestService_GetRanking_ScoreValues(t *testing.T) {
+	t.Run("score reflects correct points for each user", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+		service := NewService(entClient)
+
+		users, _, _ := setupTestRankingData(t, entClient)
+
+		ctx := context.Background()
+		now := time.Now()
+		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+		// Create points for users with specific values
+		pointsData := []struct {
+			userIdx int
+			points  int
+		}{
+			{0, 150},
+			{1, 200},
+			{2, 75},
+		}
+
+		for _, data := range pointsData {
+			_, err := entClient.Point.Create().
+				SetUser(users[data.userIdx]).
+				SetPoints(data.points).
+				SetGrantedAt(today.Add(time.Hour)).
+				Save(ctx)
+			require.NoError(t, err)
+		}
+
+		// Get ranking
+		filter := model.RankingFilter{
+			By:     model.RankingByPoints,
+			Order:  model.RankingOrderDesc,
+			Period: model.RankingPeriodDaily,
+		}
+		first := 10
+		result, err := service.GetRanking(ctx, &first, nil, filter)
+
+		// Verify response
+		require.NoError(t, err)
+		assert.Equal(t, 3, result.TotalCount)
+
+		// Check scores match expected values
+		// Order: User 2 (200), User 1 (150), User 3 (75)
+		assert.Equal(t, "User 2", result.Edges[0].Node.Name)
+		assert.Equal(t, 200, result.Edges[0].Score)
+
+		assert.Equal(t, "User 1", result.Edges[1].Node.Name)
+		assert.Equal(t, 150, result.Edges[1].Score)
+
+		assert.Equal(t, "User 3", result.Edges[2].Node.Name)
+		assert.Equal(t, 75, result.Edges[2].Score)
+	})
+
+	t.Run("score aggregates multiple point entries for same user", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+		service := NewService(entClient)
+
+		users, _, _ := setupTestRankingData(t, entClient)
+
+		ctx := context.Background()
+		now := time.Now()
+		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+		// Create multiple point entries for the same user
+		pointEntries := []int{50, 75, 25, 100} // Total: 250
+		for i, points := range pointEntries {
+			_, err := entClient.Point.Create().
+				SetUser(users[0]).
+				SetPoints(points).
+				SetGrantedAt(today.Add(time.Duration(i) * time.Hour)).
+				SetDescription("Entry " + strconv.Itoa(i)).
+				Save(ctx)
+			require.NoError(t, err)
+		}
+
+		// Get ranking
+		filter := model.RankingFilter{
+			By:     model.RankingByPoints,
+			Order:  model.RankingOrderDesc,
+			Period: model.RankingPeriodDaily,
+		}
+		first := 10
+		result, err := service.GetRanking(ctx, &first, nil, filter)
+
+		// Verify response
+		require.NoError(t, err)
+		assert.Equal(t, 1, result.TotalCount)
+		assert.Equal(t, "User 1", result.Edges[0].Node.Name)
+		assert.Equal(t, 250, result.Edges[0].Score) // Sum of all entries
+	})
+
+	t.Run("score reflects correct completed questions count", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+		service := NewService(entClient)
+
+		users, _, questions := setupTestRankingData(t, entClient)
+
+		ctx := context.Background()
+		now := time.Now()
+		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+		// users[0] (User 1): 2 successful submissions
+		_, err := entClient.Submission.Create().
+			SetUser(users[0]).
+			SetQuestion(questions[0]).
+			SetSubmittedCode("SELECT 1").
+			SetStatus(entSubmission.StatusSuccess).
+			SetSubmittedAt(today.Add(time.Hour)).
+			Save(ctx)
+		require.NoError(t, err)
+
+		_, err = entClient.Submission.Create().
+			SetUser(users[0]).
+			SetQuestion(questions[1]).
+			SetSubmittedCode("SELECT 2").
+			SetStatus(entSubmission.StatusSuccess).
+			SetSubmittedAt(today.Add(2 * time.Hour)).
+			Save(ctx)
+		require.NoError(t, err)
+
+		// users[1] (User 2): 3 successful submissions
+		for _, q := range questions {
+			_, err = entClient.Submission.Create().
+				SetUser(users[1]).
+				SetQuestion(q).
+				SetSubmittedCode("SELECT 1").
+				SetStatus(entSubmission.StatusSuccess).
+				SetSubmittedAt(today.Add(time.Hour)).
+				Save(ctx)
+			require.NoError(t, err)
+		}
+
+		// Get ranking
+		filter := model.RankingFilter{
+			By:     model.RankingByCompletedQuestions,
+			Order:  model.RankingOrderDesc,
+			Period: model.RankingPeriodDaily,
+		}
+		first := 10
+		result, err := service.GetRanking(ctx, &first, nil, filter)
+
+		// Verify response
+		require.NoError(t, err)
+		assert.Equal(t, 2, result.TotalCount)
+
+		// Check scores match completed questions count
+		// Order: User 2 (3), User 1 (2)
+		assert.Equal(t, "User 2", result.Edges[0].Node.Name)
+		assert.Equal(t, 3, result.Edges[0].Score)
+
+		assert.Equal(t, "User 1", result.Edges[1].Node.Name)
+		assert.Equal(t, 2, result.Edges[1].Score)
+	})
+
+	t.Run("score correctly counts only successful submissions", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+		service := NewService(entClient)
+
+		users, _, questions := setupTestRankingData(t, entClient)
+
+		ctx := context.Background()
+		now := time.Now()
+		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+		// Create 1 successful submission
+		_, err := entClient.Submission.Create().
+			SetUser(users[0]).
+			SetQuestion(questions[0]).
+			SetSubmittedCode("SELECT 1").
+			SetStatus(entSubmission.StatusSuccess).
+			SetSubmittedAt(today.Add(time.Hour)).
+			Save(ctx)
+		require.NoError(t, err)
+
+		// Create multiple failed submissions (should not count)
+		_, err = entClient.Submission.Create().
+			SetUser(users[0]).
+			SetQuestion(questions[1]).
+			SetSubmittedCode("SELECT wrong").
+			SetStatus(entSubmission.StatusFailed).
+			SetSubmittedAt(today.Add(2 * time.Hour)).
+			Save(ctx)
+		require.NoError(t, err)
+
+		_, err = entClient.Submission.Create().
+			SetUser(users[0]).
+			SetQuestion(questions[2]).
+			SetSubmittedCode("SELECT wrong").
+			SetStatus(entSubmission.StatusFailed).
+			SetSubmittedAt(today.Add(3 * time.Hour)).
+			Save(ctx)
+		require.NoError(t, err)
+
+		// Get ranking
+		filter := model.RankingFilter{
+			By:     model.RankingByCompletedQuestions,
+			Order:  model.RankingOrderDesc,
+			Period: model.RankingPeriodDaily,
+		}
+		first := 10
+		result, err := service.GetRanking(ctx, &first, nil, filter)
+
+		// Verify response - only 1 successful submission should count
+		require.NoError(t, err)
+		assert.Equal(t, 1, result.TotalCount)
+		assert.Equal(t, "User 1", result.Edges[0].Node.Name)
+		assert.Equal(t, 1, result.Edges[0].Score) // Only successful submissions
+	})
+
+	t.Run("score persists correctly through pagination", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+		service := NewService(entClient)
+
+		users, _, _ := setupTestRankingData(t, entClient)
+
+		ctx := context.Background()
+		now := time.Now()
+		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+		// Create points for all users
+		expectedScores := map[string]int{
+			"User 1": 500,
+			"User 2": 400,
+			"User 3": 300,
+			"User 4": 200,
+			"User 5": 100,
+		}
+
+		for i, user := range users {
+			_, err := entClient.Point.Create().
+				SetUser(user).
+				SetPoints((5 - i) * 100).
+				SetGrantedAt(today.Add(time.Hour)).
+				Save(ctx)
+			require.NoError(t, err)
+		}
+
+		// Get first page
+		filter := model.RankingFilter{
+			By:     model.RankingByPoints,
+			Order:  model.RankingOrderDesc,
+			Period: model.RankingPeriodDaily,
+		}
+		first := 2
+		result1, err := service.GetRanking(ctx, &first, nil, filter)
+
+		require.NoError(t, err)
+		assert.Equal(t, 2, len(result1.Edges))
+
+		// Verify first page scores
+		for _, edge := range result1.Edges {
+			expectedScore := expectedScores[edge.Node.Name]
+			assert.Equal(t, expectedScore, edge.Score, "Score mismatch for %s", edge.Node.Name)
+		}
+
+		// Get second page
+		cursor := result1.PageInfo.EndCursor
+		result2, err := service.GetRanking(ctx, &first, cursor, filter)
+
+		require.NoError(t, err)
+		assert.Equal(t, 2, len(result2.Edges))
+
+		// Verify second page scores
+		for _, edge := range result2.Edges {
+			expectedScore := expectedScores[edge.Node.Name]
+			assert.Equal(t, expectedScore, edge.Score, "Score mismatch for %s", edge.Node.Name)
+		}
+	})
+
+	t.Run("score values match between ascending and descending order", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+		service := NewService(entClient)
+
+		users, _, _ := setupTestRankingData(t, entClient)
+
+		ctx := context.Background()
+		now := time.Now()
+		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+		// Create points for users
+		pointsData := []struct {
+			userIdx int
+			points  int
+		}{
+			{0, 150},
+			{1, 200},
+			{2, 100},
+		}
+
+		for _, data := range pointsData {
+			_, err := entClient.Point.Create().
+				SetUser(users[data.userIdx]).
+				SetPoints(data.points).
+				SetGrantedAt(today.Add(time.Hour)).
+				Save(ctx)
+			require.NoError(t, err)
+		}
+
+		first := 10
+
+		// Get descending ranking
+		filterDesc := model.RankingFilter{
+			By:     model.RankingByPoints,
+			Order:  model.RankingOrderDesc,
+			Period: model.RankingPeriodDaily,
+		}
+		resultDesc, err := service.GetRanking(ctx, &first, nil, filterDesc)
+		require.NoError(t, err)
+
+		// Get ascending ranking
+		filterAsc := model.RankingFilter{
+			By:     model.RankingByPoints,
+			Order:  model.RankingOrderAsc,
+			Period: model.RankingPeriodDaily,
+		}
+		resultAsc, err := service.GetRanking(ctx, &first, nil, filterAsc)
+		require.NoError(t, err)
+
+		// Build map of scores from each result
+		scoresDesc := make(map[string]int)
+		for _, edge := range resultDesc.Edges {
+			scoresDesc[edge.Node.Name] = edge.Score
+		}
+
+		scoresAsc := make(map[string]int)
+		for _, edge := range resultAsc.Edges {
+			scoresAsc[edge.Node.Name] = edge.Score
+		}
+
+		// Verify same users have same scores regardless of order
+		assert.Equal(t, 150, scoresDesc["User 1"])
+		assert.Equal(t, 150, scoresAsc["User 1"])
+
+		assert.Equal(t, 200, scoresDesc["User 2"])
+		assert.Equal(t, 200, scoresAsc["User 2"])
+
+		assert.Equal(t, 100, scoresDesc["User 3"])
+		assert.Equal(t, 100, scoresAsc["User 3"])
+	})
+}

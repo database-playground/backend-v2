@@ -31,6 +31,7 @@ type RankingConnection struct {
 
 type RankingEdge struct {
 	Node   *ent.User          `json:"node"`
+	Score  int                `json:"score"`
 	Cursor entgql.Cursor[int] `json:"cursor"`
 }
 
