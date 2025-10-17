@@ -40,12 +40,6 @@ var ErrForbidden = GqlError{
 	Code:    CodeForbidden,
 }
 
-// ErrVerified is the error for "user already verified".
-var ErrVerified = GqlError{
-	Message: "user already verified",
-	Code:    CodeUserVerified,
-}
-
 // ErrNotImplemented is the error for "not implemented".
 var ErrNotImplemented = GqlError{
 	Message: "not implemented",
@@ -67,8 +61,6 @@ const (
 	CodeNotFound = "NOT_FOUND"
 	// CodeUnauthorized is the error code for "require authentication".
 	CodeUnauthorized = "UNAUTHORIZED"
-	// CodeUserVerified is the error code for "user already verified".
-	CodeUserVerified = "USER_VERIFIED"
 	// CodeNotImplemented is the error code for "not implemented".
 	CodeNotImplemented = "NOT_IMPLEMENTED"
 	// CodeForbidden is the error code for "forbidden".
