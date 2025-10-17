@@ -67,7 +67,14 @@ func Setup(ctx context.Context, entClient *ent.Client) (*SetupResult, error) {
 		studentScopeSet, err = entClient.ScopeSet.Create().
 			SetSlug(useraccount.StudentScopeSetSlug).
 			SetDescription("The necessary permissions for using the main app").
-			SetScopes([]string{"me:*", "question:read", "database:read", "ai"}).
+			SetScopes([]string{
+				"me:*",
+				"question:read",
+				"database:read",
+				"ai",
+				"submission:write",
+				"user:read",
+			}).
 			Save(ctx)
 		if err != nil {
 			return nil, err
