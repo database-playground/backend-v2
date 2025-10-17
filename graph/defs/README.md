@@ -5,5 +5,7 @@
 ## 錯誤碼
 
 - `NOT_FOUND`：找不到指定的實體。
-- `UNAUTHORIZED`：這個 API 需要認證或授權後才能運作。如果權限 (scope) 不足也會顯示這個錯誤。
-- `USER_VERIFIED`：使用者已經驗證過，不用重複驗證。目前只用於 `verifyRegistration` mutation。
+- `UNAUTHORIZED`：這個 API 需要認證或授權後才能運作。
+- `NOT_IMPLEMENTED`：這個 API 尚未實作，請先不要呼叫。
+- `FORBIDDEN`：使用者的權限 (scope) 不足以執行這個操作。
+- `INVALID_INPUT`：輸入有誤。
