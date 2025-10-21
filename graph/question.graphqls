@@ -16,6 +16,11 @@ extend type Query {
   otherwise, you can only get your own submissions.
   """
   submission(id: ID!): Submission!
+
+  """
+  Get the list of question categories.
+  """
+  questionCategories: [String!]! @scope(scope: "question:read")
 }
 
 extend type Mutation {

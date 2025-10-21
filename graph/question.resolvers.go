@@ -179,6 +179,21 @@ func (r *queryResolver) Submission(ctx context.Context, id int) (*ent.Submission
 	return submission, nil
 }
 
+// QuestionCategories is the resolver for the questionCategories field.
+func (r *queryResolver) QuestionCategories(ctx context.Context) ([]string, error) {
+	entClient := r.EntClient(ctx)
+
+	categories, err := entClient.Question.Query().
+		Unique(true).
+		Select(entQuestion.FieldCategory).
+		Strings(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return categories, nil
+}
+
 // ReferenceAnswerResult is the resolver for the referenceAnswerResult field.
 func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Question) (*models.SQLExecutionResult, error) {
 	database, err := obj.QueryDatabase().Only(ctx)
