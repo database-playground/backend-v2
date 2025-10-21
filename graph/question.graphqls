@@ -87,6 +87,11 @@ extend type Question {
   Have you solved the question?
   """
   solved: Boolean!
+
+  """
+  The statistics of the question, e.g. pass rate.
+  """
+  statistics: QuestionStatistics!
 }
 
 extend type User {
@@ -99,6 +104,28 @@ type SubmissionStatistics {
   solvedQuestions: Int!
 
   solvedQuestionByDifficulty: [SolvedQuestionByDifficulty!]!
+}
+
+type QuestionStatistics {
+  """
+  Number of correct submissions
+  """
+  correctSubmissionCount: Int!
+
+  """
+  Total number of submissions
+  """
+  submissionCount: Int!
+
+  """
+  Number of users who attempted
+  """
+  attemptedUsers: Int!
+
+  """
+  Number of users who passed
+  """
+  passedUsers: Int!
 }
 
 type SolvedQuestionByDifficulty {
