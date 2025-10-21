@@ -23,11 +23,13 @@ import (
 // createTestDatabase creates a test database entity
 func createTestDatabase(t *testing.T, entClient *ent.Client) *ent.Database {
 	t.Helper()
+	// Generate unique slug and relation figure to avoid UNIQUE constraint violations
+	uniqueID := strconv.FormatInt(time.Now().UnixNano(), 10)
 	database, err := entClient.Database.Create().
-		SetSlug("test-db").
+		SetSlug("test-db-" + uniqueID).
 		SetDescription("Test Database").
 		SetSchema("CREATE TABLE test (id INT, name VARCHAR(255));").
-		SetRelationFigure("test-relation-figure").
+		SetRelationFigure("test-relation-figure-" + uniqueID).
 		Save(context.Background())
 	require.NoError(t, err)
 	return database
@@ -682,6 +684,216 @@ func TestQuestionResolver_Solved(t *testing.T) {
 			}
 		}
 		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { solved } }`
+
+		err := gqlClient.Post(query, &resp)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+	})
+}
+
+func TestQueryResolver_QuestionCategories(t *testing.T) {
+	entClient := testhelper.NewEntSqliteClient(t)
+	resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+	cfg := Config{
+		Resolvers:  resolver,
+		Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+	}
+	srv := handler.New(NewExecutableSchema(cfg))
+	srv.AddTransport(transport.POST{})
+	gqlClient := client.New(srv)
+
+	// Create test group and user
+	group, err := createTestGroup(t, entClient)
+	require.NoError(t, err)
+
+	testUser, err := entClient.User.Create().
+		SetName("testUser").
+		SetEmail("test@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	t.Run("success - returns empty array when no questions", func(t *testing.T) {
+		var resp struct {
+			QuestionCategories []string
+		}
+		query := `query { questionCategories }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp.QuestionCategories)
+		require.Len(t, resp.QuestionCategories, 0)
+	})
+
+	t.Run("success - returns single category", func(t *testing.T) {
+		// Create test database
+		database := createTestDatabase(t, entClient)
+
+		// Create question with category
+		_, err := entClient.Question.Create().
+			SetCategory("basic-select").
+			SetDifficulty("easy").
+			SetTitle("Test Query 1").
+			SetDescription("Write a SELECT query").
+			SetReferenceAnswer("SELECT * FROM test;").
+			SetDatabase(database).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		var resp struct {
+			QuestionCategories []string
+		}
+		query := `query { questionCategories }`
+
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Len(t, resp.QuestionCategories, 1)
+		require.Contains(t, resp.QuestionCategories, "basic-select")
+	})
+
+	t.Run("success - returns unique categories when questions have duplicate categories", func(t *testing.T) {
+		// Create test database
+		database := createTestDatabase(t, entClient)
+
+		// Create multiple questions with same category
+		_, err := entClient.Question.Create().
+			SetCategory("joins").
+			SetDifficulty("medium").
+			SetTitle("Join Query 1").
+			SetDescription("Write a JOIN query").
+			SetReferenceAnswer("SELECT * FROM test t1 JOIN test t2 ON t1.id = t2.id;").
+			SetDatabase(database).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		_, err = entClient.Question.Create().
+			SetCategory("joins").
+			SetDifficulty("medium").
+			SetTitle("Join Query 2").
+			SetDescription("Write another JOIN query").
+			SetReferenceAnswer("SELECT * FROM test t1 LEFT JOIN test t2 ON t1.id = t2.id;").
+			SetDatabase(database).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		var resp struct {
+			QuestionCategories []string
+		}
+		query := `query { questionCategories }`
+
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		// Should have at least one category (joins)
+		require.GreaterOrEqual(t, len(resp.QuestionCategories), 1)
+		require.Contains(t, resp.QuestionCategories, "joins")
+
+		// Count occurrences of "joins" - should only appear once
+		joinCount := 0
+		for _, cat := range resp.QuestionCategories {
+			if cat == "joins" {
+				joinCount++
+			}
+		}
+		require.Equal(t, 1, joinCount, "Category 'joins' should appear exactly once")
+	})
+
+	t.Run("success - returns multiple different categories", func(t *testing.T) {
+		// Create test database
+		database := createTestDatabase(t, entClient)
+
+		// Create questions with different categories
+		_, err := entClient.Question.Create().
+			SetCategory("aggregation").
+			SetDifficulty("easy").
+			SetTitle("Aggregation Query").
+			SetDescription("Use aggregation functions").
+			SetReferenceAnswer("SELECT COUNT(*) FROM test;").
+			SetDatabase(database).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		_, err = entClient.Question.Create().
+			SetCategory("subqueries").
+			SetDifficulty("hard").
+			SetTitle("Subquery Challenge").
+			SetDescription("Use subqueries").
+			SetReferenceAnswer("SELECT * FROM test WHERE id IN (SELECT id FROM test);").
+			SetDatabase(database).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		var resp struct {
+			QuestionCategories []string
+		}
+		query := `query { questionCategories }`
+
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.GreaterOrEqual(t, len(resp.QuestionCategories), 2)
+		require.Contains(t, resp.QuestionCategories, "aggregation")
+		require.Contains(t, resp.QuestionCategories, "subqueries")
+	})
+
+	t.Run("success - works with wildcard scope", func(t *testing.T) {
+		var resp struct {
+			QuestionCategories []string
+		}
+		query := `query { questionCategories }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"*"},
+			}))
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp.QuestionCategories)
+		// At this point we should have at least categories from previous tests in this run
+		// Since we don't clean up between tests in the same test function, we expect at least 1
+		require.GreaterOrEqual(t, len(resp.QuestionCategories), 1)
+	})
+
+	t.Run("forbidden - user without question:read scope", func(t *testing.T) {
+		var resp struct {
+			QuestionCategories []string
+		}
+		query := `query { questionCategories }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"submission:read"}, // Wrong scope
+			}))
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeForbidden)
+	})
+
+	t.Run("unauthorized - no authentication", func(t *testing.T) {
+		var resp struct {
+			QuestionCategories []string
+		}
+		query := `query { questionCategories }`
 
 		err := gqlClient.Post(query, &resp)
 		require.Error(t, err)
