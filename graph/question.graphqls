@@ -108,22 +108,22 @@ type SubmissionStatistics {
 
 type QuestionStatistics {
   """
-  答案正確的提交數
+  Number of correct submissions
   """
   correctSubmissionCount: Int!
 
   """
-  所有提交數
+  Total number of submissions
   """
   submissionCount: Int!
 
   """
-  嘗試人數
+  Number of users who attempted
   """
   attemptedUsers: Int!
 
   """
-  通過的學生數
+  Number of users who passed
   """
   passedUsers: Int!
 }
