@@ -900,3 +900,542 @@ func TestQueryResolver_QuestionCategories(t *testing.T) {
 		require.Contains(t, err.Error(), defs.CodeUnauthorized)
 	})
 }
+
+func TestQuestionResolver_Statistics(t *testing.T) {
+	entClient := testhelper.NewEntSqliteClient(t)
+	resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+	cfg := Config{
+		Resolvers:  resolver,
+		Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+	}
+	srv := handler.New(NewExecutableSchema(cfg))
+	srv.AddTransport(transport.POST{})
+	gqlClient := client.New(srv)
+
+	// Create test group
+	group, err := createTestGroup(t, entClient)
+	require.NoError(t, err)
+
+	// Create test user for authentication
+	testUser, err := entClient.User.Create().
+		SetName("testUser").
+		SetEmail("test@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	t.Run("success - no submissions returns all zeros", func(t *testing.T) {
+		// Create test database and question
+		database := createTestDatabase(t, entClient)
+		question := createTestQuestion(t, entClient, database)
+
+		var resp struct {
+			Question struct {
+				Statistics struct {
+					CorrectSubmissionCount int
+					SubmissionCount        int
+					AttemptedUsers         int
+					PassedUsers            int
+				}
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { 
+			statistics { 
+				correctSubmissionCount 
+				submissionCount 
+				attemptedUsers 
+				passedUsers 
+			} 
+		} }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Equal(t, 0, resp.Question.Statistics.CorrectSubmissionCount)
+		require.Equal(t, 0, resp.Question.Statistics.SubmissionCount)
+		require.Equal(t, 0, resp.Question.Statistics.AttemptedUsers)
+		require.Equal(t, 0, resp.Question.Statistics.PassedUsers)
+	})
+
+	t.Run("success - single user with single successful submission", func(t *testing.T) {
+		// Create test database and question
+		database := createTestDatabase(t, entClient)
+		question := createTestQuestion(t, entClient, database)
+
+		// Create user
+		user1, err := entClient.User.Create().
+			SetName("user1").
+			SetEmail("user1@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create successful submission
+		createTestSubmission(t, entClient, user1, question, "SELECT * FROM test;", submission.StatusSuccess, time.Now())
+
+		var resp struct {
+			Question struct {
+				Statistics struct {
+					CorrectSubmissionCount int
+					SubmissionCount        int
+					AttemptedUsers         int
+					PassedUsers            int
+				}
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { 
+			statistics { 
+				correctSubmissionCount 
+				submissionCount 
+				attemptedUsers 
+				passedUsers 
+			} 
+		} }`
+
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Equal(t, 1, resp.Question.Statistics.CorrectSubmissionCount)
+		require.Equal(t, 1, resp.Question.Statistics.SubmissionCount)
+		require.Equal(t, 1, resp.Question.Statistics.AttemptedUsers)
+		require.Equal(t, 1, resp.Question.Statistics.PassedUsers)
+	})
+
+	t.Run("success - single user with single failed submission", func(t *testing.T) {
+		// Create test database and question
+		database := createTestDatabase(t, entClient)
+		question := createTestQuestion(t, entClient, database)
+
+		// Create user
+		user1, err := entClient.User.Create().
+			SetName("user1").
+			SetEmail("user1_failed@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create failed submission
+		createTestSubmission(t, entClient, user1, question, "SELECT * FROM invalid;", submission.StatusFailed, time.Now())
+
+		var resp struct {
+			Question struct {
+				Statistics struct {
+					CorrectSubmissionCount int
+					SubmissionCount        int
+					AttemptedUsers         int
+					PassedUsers            int
+				}
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { 
+			statistics { 
+				correctSubmissionCount 
+				submissionCount 
+				attemptedUsers 
+				passedUsers 
+			} 
+		} }`
+
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Equal(t, 0, resp.Question.Statistics.CorrectSubmissionCount)
+		require.Equal(t, 1, resp.Question.Statistics.SubmissionCount)
+		require.Equal(t, 1, resp.Question.Statistics.AttemptedUsers)
+		require.Equal(t, 0, resp.Question.Statistics.PassedUsers)
+	})
+
+	t.Run("success - single user with multiple submissions (mixed success and failure)", func(t *testing.T) {
+		// Create test database and question
+		database := createTestDatabase(t, entClient)
+		question := createTestQuestion(t, entClient, database)
+
+		// Create user
+		user1, err := entClient.User.Create().
+			SetName("user1").
+			SetEmail("user1_mixed@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create multiple submissions
+		createTestSubmission(t, entClient, user1, question, "SELECT * FROM invalid;", submission.StatusFailed, time.Now().Add(-3*time.Hour))
+		createTestSubmission(t, entClient, user1, question, "SELECT id FROM test;", submission.StatusFailed, time.Now().Add(-2*time.Hour))
+		createTestSubmission(t, entClient, user1, question, "SELECT * FROM test;", submission.StatusSuccess, time.Now().Add(-1*time.Hour))
+		createTestSubmission(t, entClient, user1, question, "SELECT name FROM test;", submission.StatusSuccess, time.Now())
+
+		var resp struct {
+			Question struct {
+				Statistics struct {
+					CorrectSubmissionCount int
+					SubmissionCount        int
+					AttemptedUsers         int
+					PassedUsers            int
+				}
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { 
+			statistics { 
+				correctSubmissionCount 
+				submissionCount 
+				attemptedUsers 
+				passedUsers 
+			} 
+		} }`
+
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Equal(t, 2, resp.Question.Statistics.CorrectSubmissionCount, "should count 2 successful submissions")
+		require.Equal(t, 4, resp.Question.Statistics.SubmissionCount, "should count all 4 submissions")
+		require.Equal(t, 1, resp.Question.Statistics.AttemptedUsers, "should count only 1 unique user")
+		require.Equal(t, 1, resp.Question.Statistics.PassedUsers, "should count 1 user who passed")
+	})
+
+	t.Run("success - multiple users with different submission statuses", func(t *testing.T) {
+		// Create test database and question
+		database := createTestDatabase(t, entClient)
+		question := createTestQuestion(t, entClient, database)
+
+		// Create users
+		userPassed1, err := entClient.User.Create().
+			SetName("userPassed1").
+			SetEmail("userPassed1@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		userPassed2, err := entClient.User.Create().
+			SetName("userPassed2").
+			SetEmail("userPassed2@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		userFailed, err := entClient.User.Create().
+			SetName("userFailed").
+			SetEmail("userFailed@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		userMixed, err := entClient.User.Create().
+			SetName("userMixed").
+			SetEmail("userMixed@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// userPassed1: 1 successful submission
+		createTestSubmission(t, entClient, userPassed1, question, "SELECT * FROM test;", submission.StatusSuccess, time.Now())
+
+		// userPassed2: 2 successful submissions
+		createTestSubmission(t, entClient, userPassed2, question, "SELECT * FROM test;", submission.StatusSuccess, time.Now().Add(-1*time.Hour))
+		createTestSubmission(t, entClient, userPassed2, question, "SELECT id FROM test;", submission.StatusSuccess, time.Now())
+
+		// userFailed: 2 failed submissions
+		createTestSubmission(t, entClient, userFailed, question, "SELECT * FROM invalid;", submission.StatusFailed, time.Now().Add(-1*time.Hour))
+		createTestSubmission(t, entClient, userFailed, question, "INVALID SQL;", submission.StatusFailed, time.Now())
+
+		// userMixed: 1 failed, 1 successful
+		createTestSubmission(t, entClient, userMixed, question, "SELECT * FROM invalid;", submission.StatusFailed, time.Now().Add(-1*time.Hour))
+		createTestSubmission(t, entClient, userMixed, question, "SELECT * FROM test;", submission.StatusSuccess, time.Now())
+
+		var resp struct {
+			Question struct {
+				Statistics struct {
+					CorrectSubmissionCount int
+					SubmissionCount        int
+					AttemptedUsers         int
+					PassedUsers            int
+				}
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { 
+			statistics { 
+				correctSubmissionCount 
+				submissionCount 
+				attemptedUsers 
+				passedUsers 
+			} 
+		} }`
+
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Equal(t, 4, resp.Question.Statistics.CorrectSubmissionCount, "should count 4 successful submissions (1+2+0+1)")
+		require.Equal(t, 7, resp.Question.Statistics.SubmissionCount, "should count all 7 submissions")
+		require.Equal(t, 4, resp.Question.Statistics.AttemptedUsers, "should count 4 unique users")
+		require.Equal(t, 3, resp.Question.Statistics.PassedUsers, "should count 3 users who passed (userPassed1, userPassed2, userMixed)")
+	})
+
+	t.Run("success - multiple users attempted but none passed", func(t *testing.T) {
+		// Create test database and question
+		database := createTestDatabase(t, entClient)
+		question := createTestQuestion(t, entClient, database)
+
+		// Create users with only failed submissions
+		user1, err := entClient.User.Create().
+			SetName("user1").
+			SetEmail("user1_nopassed@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		user2, err := entClient.User.Create().
+			SetName("user2").
+			SetEmail("user2_nopassed@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		user3, err := entClient.User.Create().
+			SetName("user3").
+			SetEmail("user3_nopassed@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// All users have failed submissions
+		createTestSubmission(t, entClient, user1, question, "INVALID SQL;", submission.StatusFailed, time.Now())
+		createTestSubmission(t, entClient, user2, question, "SELECT * FROM invalid;", submission.StatusFailed, time.Now())
+		createTestSubmission(t, entClient, user3, question, "WRONG QUERY;", submission.StatusFailed, time.Now())
+
+		var resp struct {
+			Question struct {
+				Statistics struct {
+					CorrectSubmissionCount int
+					SubmissionCount        int
+					AttemptedUsers         int
+					PassedUsers            int
+				}
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { 
+			statistics { 
+				correctSubmissionCount 
+				submissionCount 
+				attemptedUsers 
+				passedUsers 
+			} 
+		} }`
+
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Equal(t, 0, resp.Question.Statistics.CorrectSubmissionCount)
+		require.Equal(t, 3, resp.Question.Statistics.SubmissionCount)
+		require.Equal(t, 3, resp.Question.Statistics.AttemptedUsers)
+		require.Equal(t, 0, resp.Question.Statistics.PassedUsers)
+	})
+
+	t.Run("success - works with wildcard scope", func(t *testing.T) {
+		// Create test database and question
+		database := createTestDatabase(t, entClient)
+		question := createTestQuestion(t, entClient, database)
+
+		// Create user and submission
+		user1, err := entClient.User.Create().
+			SetName("user1").
+			SetEmail("user1_wildcard@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		createTestSubmission(t, entClient, user1, question, "SELECT * FROM test;", submission.StatusSuccess, time.Now())
+
+		var resp struct {
+			Question struct {
+				Statistics struct {
+					CorrectSubmissionCount int
+					SubmissionCount        int
+					AttemptedUsers         int
+					PassedUsers            int
+				}
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { 
+			statistics { 
+				correctSubmissionCount 
+				submissionCount 
+				attemptedUsers 
+				passedUsers 
+			} 
+		} }`
+
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"*"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Equal(t, 1, resp.Question.Statistics.CorrectSubmissionCount)
+		require.Equal(t, 1, resp.Question.Statistics.SubmissionCount)
+		require.Equal(t, 1, resp.Question.Statistics.AttemptedUsers)
+		require.Equal(t, 1, resp.Question.Statistics.PassedUsers)
+	})
+
+	t.Run("success - statistics are isolated per question", func(t *testing.T) {
+		// Create test database
+		database := createTestDatabase(t, entClient)
+
+		// Create two different questions
+		question1 := createTestQuestion(t, entClient, database)
+		question2 := createTestQuestion(t, entClient, database)
+
+		// Create user
+		user1, err := entClient.User.Create().
+			SetName("user1").
+			SetEmail("user1_isolated@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create submissions for question1
+		createTestSubmission(t, entClient, user1, question1, "SELECT * FROM test;", submission.StatusSuccess, time.Now())
+		createTestSubmission(t, entClient, user1, question1, "SELECT id FROM test;", submission.StatusSuccess, time.Now().Add(1*time.Hour))
+
+		// Create submissions for question2
+		createTestSubmission(t, entClient, user1, question2, "SELECT * FROM invalid;", submission.StatusFailed, time.Now())
+
+		// Query question1 statistics
+		var resp1 struct {
+			Question struct {
+				Statistics struct {
+					CorrectSubmissionCount int
+					SubmissionCount        int
+					AttemptedUsers         int
+					PassedUsers            int
+				}
+			}
+		}
+		query1 := `query { question(id: ` + strconv.Itoa(question1.ID) + `) { 
+			statistics { 
+				correctSubmissionCount 
+				submissionCount 
+				attemptedUsers 
+				passedUsers 
+			} 
+		} }`
+
+		err = gqlClient.Post(query1, &resp1, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Equal(t, 2, resp1.Question.Statistics.CorrectSubmissionCount, "question1 should have 2 correct submissions")
+		require.Equal(t, 2, resp1.Question.Statistics.SubmissionCount, "question1 should have 2 total submissions")
+		require.Equal(t, 1, resp1.Question.Statistics.AttemptedUsers, "question1 should have 1 attempted user")
+		require.Equal(t, 1, resp1.Question.Statistics.PassedUsers, "question1 should have 1 passed user")
+
+		// Query question2 statistics
+		var resp2 struct {
+			Question struct {
+				Statistics struct {
+					CorrectSubmissionCount int
+					SubmissionCount        int
+					AttemptedUsers         int
+					PassedUsers            int
+				}
+			}
+		}
+		query2 := `query { question(id: ` + strconv.Itoa(question2.ID) + `) { 
+			statistics { 
+				correctSubmissionCount 
+				submissionCount 
+				attemptedUsers 
+				passedUsers 
+			} 
+		} }`
+
+		err = gqlClient.Post(query2, &resp2, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Equal(t, 0, resp2.Question.Statistics.CorrectSubmissionCount, "question2 should have 0 correct submissions")
+		require.Equal(t, 1, resp2.Question.Statistics.SubmissionCount, "question2 should have 1 total submission")
+		require.Equal(t, 1, resp2.Question.Statistics.AttemptedUsers, "question2 should have 1 attempted user")
+		require.Equal(t, 0, resp2.Question.Statistics.PassedUsers, "question2 should have 0 passed users")
+	})
+
+	t.Run("forbidden - user without question:read scope", func(t *testing.T) {
+		// Create test database and question
+		database := createTestDatabase(t, entClient)
+		question := createTestQuestion(t, entClient, database)
+
+		var resp struct {
+			Question struct {
+				Statistics struct {
+					CorrectSubmissionCount int
+				}
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { 
+			statistics { 
+				correctSubmissionCount 
+			} 
+		} }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"submission:read"}, // Wrong scope
+			}))
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeForbidden)
+	})
+
+	t.Run("unauthorized - no authentication", func(t *testing.T) {
+		// Create test database and question
+		database := createTestDatabase(t, entClient)
+		question := createTestQuestion(t, entClient, database)
+
+		var resp struct {
+			Question struct {
+				Statistics struct {
+					CorrectSubmissionCount int
+				}
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(question.ID) + `) { 
+			statistics { 
+				correctSubmissionCount 
+			} 
+		} }`
+
+		err := gqlClient.Post(query, &resp)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+	})
+}

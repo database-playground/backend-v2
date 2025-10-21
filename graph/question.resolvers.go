@@ -285,6 +285,48 @@ func (r *questionResolver) Solved(ctx context.Context, obj *ent.Question) (bool,
 	return exists, nil
 }
 
+// Statistics is the resolver for the statistics field.
+func (r *questionResolver) Statistics(ctx context.Context, obj *ent.Question) (*models.QuestionStatistics, error) {
+	entClient := r.EntClient(ctx)
+
+	correctSubmissionCount, err := entClient.Submission.Query().Where(
+		entSubmission.HasQuestionWith(entQuestion.ID(obj.ID)),
+		entSubmission.StatusEQ(entSubmission.StatusSuccess),
+	).Count(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving correct submission count: %w", err)
+	}
+
+	submissionCount, err := entClient.Submission.Query().Where(
+		entSubmission.HasQuestionWith(entQuestion.ID(obj.ID)),
+	).Count(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving submission count: %w", err)
+	}
+
+	attemptedUsers, err := entClient.Submission.Query().Where(
+		entSubmission.HasQuestionWith(entQuestion.ID(obj.ID)),
+	).Select(entSubmission.UserColumn).Unique(true).Count(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving attempted users: %w", err)
+	}
+
+	passedUsers, err := entClient.Submission.Query().Where(
+		entSubmission.HasQuestionWith(entQuestion.ID(obj.ID)),
+		entSubmission.StatusEQ(entSubmission.StatusSuccess),
+	).Select(entSubmission.UserColumn).Unique(true).Count(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving passed users: %w", err)
+	}
+
+	return &models.QuestionStatistics{
+		CorrectSubmissionCount: correctSubmissionCount,
+		SubmissionCount:        submissionCount,
+		AttemptedUsers:         attemptedUsers,
+		PassedUsers:            passedUsers,
+	}, nil
+}
+
 // SubmissionStatistics is the resolver for the submissionStatistics field.
 func (r *userResolver) SubmissionStatistics(ctx context.Context, obj *ent.User) (*model.SubmissionStatistics, error) {
 	entClient := r.EntClient(ctx)

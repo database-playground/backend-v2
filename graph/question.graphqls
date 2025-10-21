@@ -87,6 +87,11 @@ extend type Question {
   Have you solved the question?
   """
   solved: Boolean!
+
+  """
+  The statistics of the question, e.g. pass rate.
+  """
+  statistics: QuestionStatistics!
 }
 
 extend type User {
@@ -99,6 +104,28 @@ type SubmissionStatistics {
   solvedQuestions: Int!
 
   solvedQuestionByDifficulty: [SolvedQuestionByDifficulty!]!
+}
+
+type QuestionStatistics {
+  """
+  答案正確的提交數
+  """
+  correctSubmissionCount: Int!
+
+  """
+  所有提交數
+  """
+  submissionCount: Int!
+
+  """
+  嘗試人數
+  """
+  attemptedUsers: Int!
+
+  """
+  通過的學生數
+  """
+  passedUsers: Int!
 }
 
 type SolvedQuestionByDifficulty {
