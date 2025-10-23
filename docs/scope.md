@@ -11,6 +11,7 @@
 - `question`：題庫操作
   - `answer`：解答（只有 `read` 動作，`answer:write` 被 `question:write` 涵蓋）
 - `submission`：提交紀錄操作（做題）
+- `point`：點數操作（只有 `write` 操作）
 
 ## 動作
 
