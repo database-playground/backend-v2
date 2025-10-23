@@ -39,5 +39,8 @@ func (Point) Annotations() []schema.Annotation {
 			ScopeDirective("user:read"),
 		),
 		entgql.RelayConnection(),
+		entgql.Mutations(
+			entgql.MutationCreate(),
+		),
 	}
 }

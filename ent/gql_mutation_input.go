@@ -3,6 +3,8 @@
 package ent
 
 import (
+	"time"
+
 	"github.com/database-playground/backend-v2/ent/question"
 )
 
@@ -146,6 +148,34 @@ func (c *GroupUpdate) SetInput(i UpdateGroupInput) *GroupUpdate {
 
 // SetInput applies the change-set in the UpdateGroupInput on the GroupUpdateOne builder.
 func (c *GroupUpdateOne) SetInput(i UpdateGroupInput) *GroupUpdateOne {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// CreatePointInput represents a mutation input for creating points.
+type CreatePointInput struct {
+	Points      *int
+	GrantedAt   *time.Time
+	Description *string
+	UserID      int
+}
+
+// Mutate applies the CreatePointInput on the PointMutation builder.
+func (i *CreatePointInput) Mutate(m *PointMutation) {
+	if v := i.Points; v != nil {
+		m.SetPoints(*v)
+	}
+	if v := i.GrantedAt; v != nil {
+		m.SetGrantedAt(*v)
+	}
+	if v := i.Description; v != nil {
+		m.SetDescription(*v)
+	}
+	m.SetUserID(i.UserID)
+}
+
+// SetInput applies the change-set in the CreatePointInput on the PointCreate builder.
+func (c *PointCreate) SetInput(i CreatePointInput) *PointCreate {
 	i.Mutate(c.Mutation())
 	return c
 }
