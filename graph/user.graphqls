@@ -105,4 +105,9 @@ extend type Mutation {
   Logout from all the devices of the current user.
   """
   logoutAll: Boolean! @scope(scope: "me:write")
+
+  """
+  Create a new point record for a user.
+  """
+  createPoint(input: CreatePointInput!): Point @scope(scope: "point:write")
 }

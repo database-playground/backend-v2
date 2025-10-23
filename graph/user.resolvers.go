@@ -209,6 +209,18 @@ func (r *mutationResolver) LogoutAll(ctx context.Context) (bool, error) {
 	return r.LogoutUser(ctx, user.UserID)
 }
 
+// CreatePoint is the resolver for the createPoint field.
+func (r *mutationResolver) CreatePoint(ctx context.Context, input ent.CreatePointInput) (*ent.Point, error) {
+	entClient := r.EntClient(ctx)
+
+	point, err := entClient.Point.Create().SetInput(input).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return point, nil
+}
+
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
 	tokenInfo, ok := auth.GetUser(ctx)
