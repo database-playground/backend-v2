@@ -26,6 +26,8 @@ const (
 	FieldDescription = "description"
 	// FieldReferenceAnswer holds the string denoting the reference_answer field in the database.
 	FieldReferenceAnswer = "reference_answer"
+	// FieldVisibleScope holds the string denoting the visible_scope field in the database.
+	FieldVisibleScope = "visible_scope"
 	// EdgeDatabase holds the string denoting the database edge name in mutations.
 	EdgeDatabase = "database"
 	// EdgeSubmissions holds the string denoting the submissions edge name in mutations.
@@ -56,6 +58,7 @@ var Columns = []string{
 	FieldTitle,
 	FieldDescription,
 	FieldReferenceAnswer,
+	FieldVisibleScope,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "questions"
@@ -143,6 +146,11 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 // ByReferenceAnswer orders the results by the reference_answer field.
 func ByReferenceAnswer(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldReferenceAnswer, opts...).ToFunc()
+}
+
+// ByVisibleScope orders the results by the visible_scope field.
+func ByVisibleScope(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldVisibleScope, opts...).ToFunc()
 }
 
 // ByDatabaseField orders the results by database field.

@@ -187,6 +187,7 @@ type CreateQuestionInput struct {
 	Title           string
 	Description     string
 	ReferenceAnswer string
+	VisibleScope    *string
 	DatabaseID      int
 	SubmissionIDs   []int
 }
@@ -200,6 +201,9 @@ func (i *CreateQuestionInput) Mutate(m *QuestionMutation) {
 	m.SetTitle(i.Title)
 	m.SetDescription(i.Description)
 	m.SetReferenceAnswer(i.ReferenceAnswer)
+	if v := i.VisibleScope; v != nil {
+		m.SetVisibleScope(*v)
+	}
 	m.SetDatabaseID(i.DatabaseID)
 	if v := i.SubmissionIDs; len(v) > 0 {
 		m.AddSubmissionIDs(v...)
@@ -219,6 +223,8 @@ type UpdateQuestionInput struct {
 	Title               *string
 	Description         *string
 	ReferenceAnswer     *string
+	ClearVisibleScope   bool
+	VisibleScope        *string
 	DatabaseID          *int
 	ClearSubmissions    bool
 	AddSubmissionIDs    []int
@@ -241,6 +247,12 @@ func (i *UpdateQuestionInput) Mutate(m *QuestionMutation) {
 	}
 	if v := i.ReferenceAnswer; v != nil {
 		m.SetReferenceAnswer(*v)
+	}
+	if i.ClearVisibleScope {
+		m.ClearVisibleScope()
+	}
+	if v := i.VisibleScope; v != nil {
+		m.SetVisibleScope(*v)
 	}
 	if v := i.DatabaseID; v != nil {
 		m.SetDatabaseID(*v)

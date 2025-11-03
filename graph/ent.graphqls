@@ -61,6 +61,10 @@ input CreateQuestionInput {
   Reference answer
   """
   referenceAnswer: String!
+  """
+  Only the users with this scope set can see the question. Empty means visible to everyone.
+  """
+  visibleScope: String
   databaseID: ID!
   submissionIDs: [ID!]
 }
@@ -786,6 +790,10 @@ type Question implements Node {
   Reference answer
   """
   referenceAnswer: String! @scope(scope: "answer:read")
+  """
+  Only the users with this scope set can see the question. Empty means visible to everyone.
+  """
+  visibleScope: String
   database: Database!
   submissions(
     """
@@ -968,6 +976,24 @@ input QuestionWhereInput {
   referenceAnswerHasSuffix: String
   referenceAnswerEqualFold: String
   referenceAnswerContainsFold: String
+  """
+  visible_scope field predicates
+  """
+  visibleScope: String
+  visibleScopeNEQ: String
+  visibleScopeIn: [String!]
+  visibleScopeNotIn: [String!]
+  visibleScopeGT: String
+  visibleScopeGTE: String
+  visibleScopeLT: String
+  visibleScopeLTE: String
+  visibleScopeContains: String
+  visibleScopeHasPrefix: String
+  visibleScopeHasSuffix: String
+  visibleScopeIsNil: Boolean
+  visibleScopeNotNil: Boolean
+  visibleScopeEqualFold: String
+  visibleScopeContainsFold: String
   """
   database edge predicates
   """
@@ -1254,6 +1280,11 @@ input UpdateQuestionInput {
   Reference answer
   """
   referenceAnswer: String
+  """
+  Only the users with this scope set can see the question. Empty means visible to everyone.
+  """
+  visibleScope: String
+  clearVisibleScope: Boolean
   databaseID: ID
   addSubmissionIDs: [ID!]
   removeSubmissionIDs: [ID!]

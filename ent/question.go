@@ -27,6 +27,8 @@ type Question struct {
 	Description string `json:"description,omitempty"`
 	// Reference answer
 	ReferenceAnswer string `json:"reference_answer,omitempty"`
+	// Only the users with this scope set can see the question. Empty means visible to everyone.
+	VisibleScope string `json:"visible_scope,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the QuestionQuery when eager-loading is set.
 	Edges              QuestionEdges `json:"edges"`
@@ -76,7 +78,7 @@ func (*Question) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case question.FieldID:
 			values[i] = new(sql.NullInt64)
-		case question.FieldCategory, question.FieldDifficulty, question.FieldTitle, question.FieldDescription, question.FieldReferenceAnswer:
+		case question.FieldCategory, question.FieldDifficulty, question.FieldTitle, question.FieldDescription, question.FieldReferenceAnswer, question.FieldVisibleScope:
 			values[i] = new(sql.NullString)
 		case question.ForeignKeys[0]: // database_questions
 			values[i] = new(sql.NullInt64)
@@ -130,6 +132,12 @@ func (_m *Question) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field reference_answer", values[i])
 			} else if value.Valid {
 				_m.ReferenceAnswer = value.String
+			}
+		case question.FieldVisibleScope:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field visible_scope", values[i])
+			} else if value.Valid {
+				_m.VisibleScope = value.String
 			}
 		case question.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -198,6 +206,9 @@ func (_m *Question) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("reference_answer=")
 	builder.WriteString(_m.ReferenceAnswer)
+	builder.WriteString(", ")
+	builder.WriteString("visible_scope=")
+	builder.WriteString(_m.VisibleScope)
 	builder.WriteByte(')')
 	return builder.String()
 }

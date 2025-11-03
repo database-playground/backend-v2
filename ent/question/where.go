@@ -73,6 +73,11 @@ func ReferenceAnswer(v string) predicate.Question {
 	return predicate.Question(sql.FieldEQ(FieldReferenceAnswer, v))
 }
 
+// VisibleScope applies equality check predicate on the "visible_scope" field. It's identical to VisibleScopeEQ.
+func VisibleScope(v string) predicate.Question {
+	return predicate.Question(sql.FieldEQ(FieldVisibleScope, v))
+}
+
 // CategoryEQ applies the EQ predicate on the "category" field.
 func CategoryEQ(v string) predicate.Question {
 	return predicate.Question(sql.FieldEQ(FieldCategory, v))
@@ -351,6 +356,81 @@ func ReferenceAnswerEqualFold(v string) predicate.Question {
 // ReferenceAnswerContainsFold applies the ContainsFold predicate on the "reference_answer" field.
 func ReferenceAnswerContainsFold(v string) predicate.Question {
 	return predicate.Question(sql.FieldContainsFold(FieldReferenceAnswer, v))
+}
+
+// VisibleScopeEQ applies the EQ predicate on the "visible_scope" field.
+func VisibleScopeEQ(v string) predicate.Question {
+	return predicate.Question(sql.FieldEQ(FieldVisibleScope, v))
+}
+
+// VisibleScopeNEQ applies the NEQ predicate on the "visible_scope" field.
+func VisibleScopeNEQ(v string) predicate.Question {
+	return predicate.Question(sql.FieldNEQ(FieldVisibleScope, v))
+}
+
+// VisibleScopeIn applies the In predicate on the "visible_scope" field.
+func VisibleScopeIn(vs ...string) predicate.Question {
+	return predicate.Question(sql.FieldIn(FieldVisibleScope, vs...))
+}
+
+// VisibleScopeNotIn applies the NotIn predicate on the "visible_scope" field.
+func VisibleScopeNotIn(vs ...string) predicate.Question {
+	return predicate.Question(sql.FieldNotIn(FieldVisibleScope, vs...))
+}
+
+// VisibleScopeGT applies the GT predicate on the "visible_scope" field.
+func VisibleScopeGT(v string) predicate.Question {
+	return predicate.Question(sql.FieldGT(FieldVisibleScope, v))
+}
+
+// VisibleScopeGTE applies the GTE predicate on the "visible_scope" field.
+func VisibleScopeGTE(v string) predicate.Question {
+	return predicate.Question(sql.FieldGTE(FieldVisibleScope, v))
+}
+
+// VisibleScopeLT applies the LT predicate on the "visible_scope" field.
+func VisibleScopeLT(v string) predicate.Question {
+	return predicate.Question(sql.FieldLT(FieldVisibleScope, v))
+}
+
+// VisibleScopeLTE applies the LTE predicate on the "visible_scope" field.
+func VisibleScopeLTE(v string) predicate.Question {
+	return predicate.Question(sql.FieldLTE(FieldVisibleScope, v))
+}
+
+// VisibleScopeContains applies the Contains predicate on the "visible_scope" field.
+func VisibleScopeContains(v string) predicate.Question {
+	return predicate.Question(sql.FieldContains(FieldVisibleScope, v))
+}
+
+// VisibleScopeHasPrefix applies the HasPrefix predicate on the "visible_scope" field.
+func VisibleScopeHasPrefix(v string) predicate.Question {
+	return predicate.Question(sql.FieldHasPrefix(FieldVisibleScope, v))
+}
+
+// VisibleScopeHasSuffix applies the HasSuffix predicate on the "visible_scope" field.
+func VisibleScopeHasSuffix(v string) predicate.Question {
+	return predicate.Question(sql.FieldHasSuffix(FieldVisibleScope, v))
+}
+
+// VisibleScopeIsNil applies the IsNil predicate on the "visible_scope" field.
+func VisibleScopeIsNil() predicate.Question {
+	return predicate.Question(sql.FieldIsNull(FieldVisibleScope))
+}
+
+// VisibleScopeNotNil applies the NotNil predicate on the "visible_scope" field.
+func VisibleScopeNotNil() predicate.Question {
+	return predicate.Question(sql.FieldNotNull(FieldVisibleScope))
+}
+
+// VisibleScopeEqualFold applies the EqualFold predicate on the "visible_scope" field.
+func VisibleScopeEqualFold(v string) predicate.Question {
+	return predicate.Question(sql.FieldEqualFold(FieldVisibleScope, v))
+}
+
+// VisibleScopeContainsFold applies the ContainsFold predicate on the "visible_scope" field.
+func VisibleScopeContainsFold(v string) predicate.Question {
+	return predicate.Question(sql.FieldContainsFold(FieldVisibleScope, v))
 }
 
 // HasDatabase applies the HasEdge predicate on the "database" edge.

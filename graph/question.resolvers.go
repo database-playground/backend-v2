@@ -39,7 +39,22 @@ func (r *mutationResolver) CreateQuestion(ctx context.Context, input ent.CreateQ
 func (r *mutationResolver) UpdateQuestion(ctx context.Context, id int, input ent.UpdateQuestionInput) (*ent.Question, error) {
 	entClient := r.EntClient(ctx)
 
-	question, err := entClient.Question.UpdateOneID(id).SetInput(input).Save(ctx)
+	// First, get the question to check visible_scope
+	question, err := entClient.Question.Get(ctx, id)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, defs.ErrNotFound
+		}
+		return nil, err
+	}
+
+	// Check if user has permission to access this question
+	if err := checkQuestionVisibleScope(ctx, question); err != nil {
+		return nil, err
+	}
+
+	// Update the question
+	question, err = entClient.Question.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +66,22 @@ func (r *mutationResolver) UpdateQuestion(ctx context.Context, id int, input ent
 func (r *mutationResolver) DeleteQuestion(ctx context.Context, id int) (bool, error) {
 	entClient := r.EntClient(ctx)
 
-	err := entClient.Question.DeleteOneID(id).Exec(ctx)
+	// First, get the question to check visible_scope
+	question, err := entClient.Question.Get(ctx, id)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return false, defs.ErrNotFound
+		}
+		return false, err
+	}
+
+	// Check if user has permission to access this question
+	if err := checkQuestionVisibleScope(ctx, question); err != nil {
+		return false, err
+	}
+
+	// Delete the question
+	err = entClient.Question.DeleteOneID(id).Exec(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -102,6 +132,20 @@ func (r *mutationResolver) SubmitAnswer(ctx context.Context, id int, answer stri
 		return nil, defs.ErrUnauthorized
 	}
 
+	// Check if user has permission to access this question based on visible_scope
+	entClient := r.EntClient(ctx)
+	question, err := entClient.Question.Get(ctx, id)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, defs.ErrNotFound
+		}
+		return nil, err
+	}
+
+	if err := checkQuestionVisibleScope(ctx, question); err != nil {
+		return nil, err
+	}
+
 	submissionResult, err := r.submissionService.SubmitAnswer(ctx, submission.SubmitAnswerInput{
 		SubmitterID: user.UserID,
 		QuestionID:  id,
@@ -127,6 +171,14 @@ func (r *queryResolver) Question(ctx context.Context, id int) (*ent.Question, er
 
 	question, err := entClient.Question.Get(ctx, id)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, defs.ErrNotFound
+		}
+		return nil, err
+	}
+
+	// Check if user has permission to access this question based on visible_scope
+	if err := checkQuestionVisibleScope(ctx, question); err != nil {
 		return nil, err
 	}
 
@@ -183,7 +235,10 @@ func (r *queryResolver) Submission(ctx context.Context, id int) (*ent.Submission
 func (r *queryResolver) QuestionCategories(ctx context.Context) ([]string, error) {
 	entClient := r.EntClient(ctx)
 
-	categories, err := entClient.Question.Query().
+	query := entClient.Question.Query()
+	query = applyQuestionVisibleScopeFilter(ctx, query)
+
+	categories, err := query.
 		Unique(true).
 		Select(entQuestion.FieldCategory).
 		Strings(ctx)
@@ -336,36 +391,45 @@ func (r *userResolver) SubmissionStatistics(ctx context.Context, obj *ent.User) 
 		Count      int                    `json:"count,omitempty"`
 	}
 
-	// total questions
-	totalQuestions, err := entClient.Question.Query().Count(ctx)
+	// total questions - filter by visible_scope
+	totalQuestionsQuery := entClient.Question.Query()
+	totalQuestionsQuery = applyQuestionVisibleScopeFilter(ctx, totalQuestionsQuery)
+	totalQuestions, err := totalQuestionsQuery.Count(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving total questions: %w", err)
 	}
 
-	// attempted
-	attemptedQuestions, err := entClient.Question.Query().Where(
-		entQuestion.HasSubmissionsWith(entSubmission.HasUserWith(user.ID(obj.ID))),
-	).Count(ctx)
+	// attempted - filter by visible_scope
+	attemptedQuestionsQuery := entClient.Question.Query().
+		Where(entQuestion.HasSubmissionsWith(entSubmission.HasUserWith(user.ID(obj.ID))))
+	attemptedQuestionsQuery = applyQuestionVisibleScopeFilter(ctx, attemptedQuestionsQuery)
+	attemptedQuestions, err := attemptedQuestionsQuery.Count(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving attempted questions: %w", err)
 	}
 
-	// solved
-	solvedQuestions, err := entClient.Question.Query().Where(
-		entQuestion.HasSubmissionsWith(entSubmission.HasUserWith(user.ID(obj.ID)), entSubmission.StatusEQ(entSubmission.StatusSuccess)),
-	).Count(ctx)
+	// solved - filter by visible_scope
+	solvedQuestionsQuery := entClient.Question.Query().
+		Where(
+			entQuestion.HasSubmissionsWith(entSubmission.HasUserWith(user.ID(obj.ID)), entSubmission.StatusEQ(entSubmission.StatusSuccess)),
+		)
+	solvedQuestionsQuery = applyQuestionVisibleScopeFilter(ctx, solvedQuestionsQuery)
+	solvedQuestions, err := solvedQuestionsQuery.Count(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving solved questions: %w", err)
 	}
 
-	// solved question by difficulty
+	// solved question by difficulty - filter by visible_scope
+	solvedByDifficultyQuery := entClient.Question.Query().
+		Where(
+			entQuestion.HasSubmissionsWith(
+				entSubmission.HasUserWith(user.ID(obj.ID)),
+				entSubmission.StatusEQ(entSubmission.StatusSuccess),
+			),
+		)
+	solvedByDifficultyQuery = applyQuestionVisibleScopeFilter(ctx, solvedByDifficultyQuery)
 	var solvedQuestionByDifficulty []tSQLSolvedQuestionByDifficulty
-	err = entClient.Question.Query().Where(
-		entQuestion.HasSubmissionsWith(
-			entSubmission.HasUserWith(user.ID(obj.ID)),
-			entSubmission.StatusEQ(entSubmission.StatusSuccess),
-		),
-	).
+	err = solvedByDifficultyQuery.
 		GroupBy(entQuestion.FieldDifficulty).
 		Aggregate(ent.Count()).
 		Scan(ctx, &solvedQuestionByDifficulty)

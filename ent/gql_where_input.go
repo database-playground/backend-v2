@@ -1371,6 +1371,23 @@ type QuestionWhereInput struct {
 	ReferenceAnswerEqualFold    *string  `json:"referenceAnswerEqualFold,omitempty"`
 	ReferenceAnswerContainsFold *string  `json:"referenceAnswerContainsFold,omitempty"`
 
+	// "visible_scope" field predicates.
+	VisibleScope             *string  `json:"visibleScope,omitempty"`
+	VisibleScopeNEQ          *string  `json:"visibleScopeNEQ,omitempty"`
+	VisibleScopeIn           []string `json:"visibleScopeIn,omitempty"`
+	VisibleScopeNotIn        []string `json:"visibleScopeNotIn,omitempty"`
+	VisibleScopeGT           *string  `json:"visibleScopeGT,omitempty"`
+	VisibleScopeGTE          *string  `json:"visibleScopeGTE,omitempty"`
+	VisibleScopeLT           *string  `json:"visibleScopeLT,omitempty"`
+	VisibleScopeLTE          *string  `json:"visibleScopeLTE,omitempty"`
+	VisibleScopeContains     *string  `json:"visibleScopeContains,omitempty"`
+	VisibleScopeHasPrefix    *string  `json:"visibleScopeHasPrefix,omitempty"`
+	VisibleScopeHasSuffix    *string  `json:"visibleScopeHasSuffix,omitempty"`
+	VisibleScopeIsNil        bool     `json:"visibleScopeIsNil,omitempty"`
+	VisibleScopeNotNil       bool     `json:"visibleScopeNotNil,omitempty"`
+	VisibleScopeEqualFold    *string  `json:"visibleScopeEqualFold,omitempty"`
+	VisibleScopeContainsFold *string  `json:"visibleScopeContainsFold,omitempty"`
+
 	// "database" edge predicates.
 	HasDatabase     *bool                 `json:"hasDatabase,omitempty"`
 	HasDatabaseWith []*DatabaseWhereInput `json:"hasDatabaseWith,omitempty"`
@@ -1642,6 +1659,51 @@ func (i *QuestionWhereInput) P() (predicate.Question, error) {
 	}
 	if i.ReferenceAnswerContainsFold != nil {
 		predicates = append(predicates, question.ReferenceAnswerContainsFold(*i.ReferenceAnswerContainsFold))
+	}
+	if i.VisibleScope != nil {
+		predicates = append(predicates, question.VisibleScopeEQ(*i.VisibleScope))
+	}
+	if i.VisibleScopeNEQ != nil {
+		predicates = append(predicates, question.VisibleScopeNEQ(*i.VisibleScopeNEQ))
+	}
+	if len(i.VisibleScopeIn) > 0 {
+		predicates = append(predicates, question.VisibleScopeIn(i.VisibleScopeIn...))
+	}
+	if len(i.VisibleScopeNotIn) > 0 {
+		predicates = append(predicates, question.VisibleScopeNotIn(i.VisibleScopeNotIn...))
+	}
+	if i.VisibleScopeGT != nil {
+		predicates = append(predicates, question.VisibleScopeGT(*i.VisibleScopeGT))
+	}
+	if i.VisibleScopeGTE != nil {
+		predicates = append(predicates, question.VisibleScopeGTE(*i.VisibleScopeGTE))
+	}
+	if i.VisibleScopeLT != nil {
+		predicates = append(predicates, question.VisibleScopeLT(*i.VisibleScopeLT))
+	}
+	if i.VisibleScopeLTE != nil {
+		predicates = append(predicates, question.VisibleScopeLTE(*i.VisibleScopeLTE))
+	}
+	if i.VisibleScopeContains != nil {
+		predicates = append(predicates, question.VisibleScopeContains(*i.VisibleScopeContains))
+	}
+	if i.VisibleScopeHasPrefix != nil {
+		predicates = append(predicates, question.VisibleScopeHasPrefix(*i.VisibleScopeHasPrefix))
+	}
+	if i.VisibleScopeHasSuffix != nil {
+		predicates = append(predicates, question.VisibleScopeHasSuffix(*i.VisibleScopeHasSuffix))
+	}
+	if i.VisibleScopeIsNil {
+		predicates = append(predicates, question.VisibleScopeIsNil())
+	}
+	if i.VisibleScopeNotNil {
+		predicates = append(predicates, question.VisibleScopeNotNil())
+	}
+	if i.VisibleScopeEqualFold != nil {
+		predicates = append(predicates, question.VisibleScopeEqualFold(*i.VisibleScopeEqualFold))
+	}
+	if i.VisibleScopeContainsFold != nil {
+		predicates = append(predicates, question.VisibleScopeContainsFold(*i.VisibleScopeContainsFold))
 	}
 
 	if i.HasDatabase != nil {

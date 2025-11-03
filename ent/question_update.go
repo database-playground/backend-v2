@@ -99,6 +99,26 @@ func (_u *QuestionUpdate) SetNillableReferenceAnswer(v *string) *QuestionUpdate 
 	return _u
 }
 
+// SetVisibleScope sets the "visible_scope" field.
+func (_u *QuestionUpdate) SetVisibleScope(v string) *QuestionUpdate {
+	_u.mutation.SetVisibleScope(v)
+	return _u
+}
+
+// SetNillableVisibleScope sets the "visible_scope" field if the given value is not nil.
+func (_u *QuestionUpdate) SetNillableVisibleScope(v *string) *QuestionUpdate {
+	if v != nil {
+		_u.SetVisibleScope(*v)
+	}
+	return _u
+}
+
+// ClearVisibleScope clears the value of the "visible_scope" field.
+func (_u *QuestionUpdate) ClearVisibleScope() *QuestionUpdate {
+	_u.mutation.ClearVisibleScope()
+	return _u
+}
+
 // SetDatabaseID sets the "database" edge to the Database entity by ID.
 func (_u *QuestionUpdate) SetDatabaseID(id int) *QuestionUpdate {
 	_u.mutation.SetDatabaseID(id)
@@ -228,6 +248,12 @@ func (_u *QuestionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.ReferenceAnswer(); ok {
 		_spec.SetField(question.FieldReferenceAnswer, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.VisibleScope(); ok {
+		_spec.SetField(question.FieldVisibleScope, field.TypeString, value)
+	}
+	if _u.mutation.VisibleScopeCleared() {
+		_spec.ClearField(question.FieldVisibleScope, field.TypeString)
 	}
 	if _u.mutation.DatabaseCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -393,6 +419,26 @@ func (_u *QuestionUpdateOne) SetNillableReferenceAnswer(v *string) *QuestionUpda
 	return _u
 }
 
+// SetVisibleScope sets the "visible_scope" field.
+func (_u *QuestionUpdateOne) SetVisibleScope(v string) *QuestionUpdateOne {
+	_u.mutation.SetVisibleScope(v)
+	return _u
+}
+
+// SetNillableVisibleScope sets the "visible_scope" field if the given value is not nil.
+func (_u *QuestionUpdateOne) SetNillableVisibleScope(v *string) *QuestionUpdateOne {
+	if v != nil {
+		_u.SetVisibleScope(*v)
+	}
+	return _u
+}
+
+// ClearVisibleScope clears the value of the "visible_scope" field.
+func (_u *QuestionUpdateOne) ClearVisibleScope() *QuestionUpdateOne {
+	_u.mutation.ClearVisibleScope()
+	return _u
+}
+
 // SetDatabaseID sets the "database" edge to the Database entity by ID.
 func (_u *QuestionUpdateOne) SetDatabaseID(id int) *QuestionUpdateOne {
 	_u.mutation.SetDatabaseID(id)
@@ -552,6 +598,12 @@ func (_u *QuestionUpdateOne) sqlSave(ctx context.Context) (_node *Question, err 
 	}
 	if value, ok := _u.mutation.ReferenceAnswer(); ok {
 		_spec.SetField(question.FieldReferenceAnswer, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.VisibleScope(); ok {
+		_spec.SetField(question.FieldVisibleScope, field.TypeString, value)
+	}
+	if _u.mutation.VisibleScopeCleared() {
+		_spec.ClearField(question.FieldVisibleScope, field.TypeString)
 	}
 	if _u.mutation.DatabaseCleared() {
 		edge := &sqlgraph.EdgeSpec{

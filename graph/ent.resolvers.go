@@ -58,7 +58,10 @@ func (r *queryResolver) Points(ctx context.Context, after *entgql.Cursor[int], f
 func (r *queryResolver) Questions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.QuestionOrder, where *ent.QuestionWhereInput) (*ent.QuestionConnection, error) {
 	entClient := r.EntClient(ctx)
 
-	return entClient.Question.Query().Paginate(ctx, after, first, before, last, ent.WithQuestionOrder(orderBy), ent.WithQuestionFilter(where.Filter))
+	query := entClient.Question.Query()
+	query = applyQuestionVisibleScopeFilter(ctx, query)
+
+	return query.Paginate(ctx, after, first, before, last, ent.WithQuestionOrder(orderBy), ent.WithQuestionFilter(where.Filter))
 }
 
 // ScopeSets is the resolver for the scopeSets field.

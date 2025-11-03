@@ -2458,6 +2458,7 @@ type QuestionMutation struct {
 	title              *string
 	description        *string
 	reference_answer   *string
+	visible_scope      *string
 	clearedFields      map[string]struct{}
 	database           *int
 	cleareddatabase    bool
@@ -2747,6 +2748,55 @@ func (m *QuestionMutation) ResetReferenceAnswer() {
 	m.reference_answer = nil
 }
 
+// SetVisibleScope sets the "visible_scope" field.
+func (m *QuestionMutation) SetVisibleScope(s string) {
+	m.visible_scope = &s
+}
+
+// VisibleScope returns the value of the "visible_scope" field in the mutation.
+func (m *QuestionMutation) VisibleScope() (r string, exists bool) {
+	v := m.visible_scope
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVisibleScope returns the old "visible_scope" field's value of the Question entity.
+// If the Question object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *QuestionMutation) OldVisibleScope(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVisibleScope is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVisibleScope requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVisibleScope: %w", err)
+	}
+	return oldValue.VisibleScope, nil
+}
+
+// ClearVisibleScope clears the value of the "visible_scope" field.
+func (m *QuestionMutation) ClearVisibleScope() {
+	m.visible_scope = nil
+	m.clearedFields[question.FieldVisibleScope] = struct{}{}
+}
+
+// VisibleScopeCleared returns if the "visible_scope" field was cleared in this mutation.
+func (m *QuestionMutation) VisibleScopeCleared() bool {
+	_, ok := m.clearedFields[question.FieldVisibleScope]
+	return ok
+}
+
+// ResetVisibleScope resets all changes to the "visible_scope" field.
+func (m *QuestionMutation) ResetVisibleScope() {
+	m.visible_scope = nil
+	delete(m.clearedFields, question.FieldVisibleScope)
+}
+
 // SetDatabaseID sets the "database" edge to the Database entity by id.
 func (m *QuestionMutation) SetDatabaseID(id int) {
 	m.database = &id
@@ -2874,7 +2924,7 @@ func (m *QuestionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *QuestionMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.category != nil {
 		fields = append(fields, question.FieldCategory)
 	}
@@ -2889,6 +2939,9 @@ func (m *QuestionMutation) Fields() []string {
 	}
 	if m.reference_answer != nil {
 		fields = append(fields, question.FieldReferenceAnswer)
+	}
+	if m.visible_scope != nil {
+		fields = append(fields, question.FieldVisibleScope)
 	}
 	return fields
 }
@@ -2908,6 +2961,8 @@ func (m *QuestionMutation) Field(name string) (ent.Value, bool) {
 		return m.Description()
 	case question.FieldReferenceAnswer:
 		return m.ReferenceAnswer()
+	case question.FieldVisibleScope:
+		return m.VisibleScope()
 	}
 	return nil, false
 }
@@ -2927,6 +2982,8 @@ func (m *QuestionMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldDescription(ctx)
 	case question.FieldReferenceAnswer:
 		return m.OldReferenceAnswer(ctx)
+	case question.FieldVisibleScope:
+		return m.OldVisibleScope(ctx)
 	}
 	return nil, fmt.Errorf("unknown Question field %s", name)
 }
@@ -2971,6 +3028,13 @@ func (m *QuestionMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetReferenceAnswer(v)
 		return nil
+	case question.FieldVisibleScope:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVisibleScope(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Question field %s", name)
 }
@@ -3000,7 +3064,11 @@ func (m *QuestionMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *QuestionMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(question.FieldVisibleScope) {
+		fields = append(fields, question.FieldVisibleScope)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -3013,6 +3081,11 @@ func (m *QuestionMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *QuestionMutation) ClearField(name string) error {
+	switch name {
+	case question.FieldVisibleScope:
+		m.ClearVisibleScope()
+		return nil
+	}
 	return fmt.Errorf("unknown Question nullable field %s", name)
 }
 
@@ -3034,6 +3107,9 @@ func (m *QuestionMutation) ResetField(name string) error {
 		return nil
 	case question.FieldReferenceAnswer:
 		m.ResetReferenceAnswer()
+		return nil
+	case question.FieldVisibleScope:
+		m.ResetVisibleScope()
 		return nil
 	}
 	return fmt.Errorf("unknown Question field %s", name)

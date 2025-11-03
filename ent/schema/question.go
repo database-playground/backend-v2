@@ -32,6 +32,7 @@ func (Question) Fields() []ent.Field {
 		field.Text("reference_answer").Annotations(
 			entgql.Directives(ScopeDirective("answer:read")),
 		).Comment("Reference answer"),
+		field.String("visible_scope").Optional().Comment("Only the users with this scope set can see the question. Empty means visible to everyone."),
 	}
 }
 

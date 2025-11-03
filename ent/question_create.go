@@ -59,6 +59,20 @@ func (_c *QuestionCreate) SetReferenceAnswer(v string) *QuestionCreate {
 	return _c
 }
 
+// SetVisibleScope sets the "visible_scope" field.
+func (_c *QuestionCreate) SetVisibleScope(v string) *QuestionCreate {
+	_c.mutation.SetVisibleScope(v)
+	return _c
+}
+
+// SetNillableVisibleScope sets the "visible_scope" field if the given value is not nil.
+func (_c *QuestionCreate) SetNillableVisibleScope(v *string) *QuestionCreate {
+	if v != nil {
+		_c.SetVisibleScope(*v)
+	}
+	return _c
+}
+
 // SetDatabaseID sets the "database" edge to the Database entity by ID.
 func (_c *QuestionCreate) SetDatabaseID(id int) *QuestionCreate {
 	_c.mutation.SetDatabaseID(id)
@@ -201,6 +215,10 @@ func (_c *QuestionCreate) createSpec() (*Question, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ReferenceAnswer(); ok {
 		_spec.SetField(question.FieldReferenceAnswer, field.TypeString, value)
 		_node.ReferenceAnswer = value
+	}
+	if value, ok := _c.mutation.VisibleScope(); ok {
+		_spec.SetField(question.FieldVisibleScope, field.TypeString, value)
+		_node.VisibleScope = value
 	}
 	if nodes := _c.mutation.DatabaseIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
