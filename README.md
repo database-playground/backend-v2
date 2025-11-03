@@ -55,13 +55,13 @@ go run ./cmd/backend
 您需要安裝 Docker 才能執行測試。
 
 ```shell
-go test -v ./...
+go test ./...
 ```
 
 如果您更動了 GraphQL 或 ent schema，也需要重新產生程式碼：
 
 ```shell
-go generate ./...
+go generate .
 ```
 
 Linting & Formatting:
