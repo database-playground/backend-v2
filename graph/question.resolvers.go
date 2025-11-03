@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/database-playground/backend-v2/ent"
@@ -22,6 +23,30 @@ import (
 	"github.com/database-playground/backend-v2/models"
 	"github.com/samber/lo"
 )
+
+// checkQuestionVisibleScope checks if the user has permission to access the question based on visible_scope.
+// Returns nil if the user has access, or an error (ErrNotFound) if they don't.
+func checkQuestionVisibleScope(ctx context.Context, question *ent.Question) error {
+	visibleScope := question.VisibleScope
+	// If visible_scope is empty, the question is visible to everyone
+	if strings.TrimSpace(visibleScope) == "" {
+		return nil
+	}
+
+	// Get user from context
+	tokenInfo, ok := auth.GetUser(ctx)
+	if !ok {
+		// If no user context, but question has visible_scope, return not found
+		return defs.ErrNotFound
+	}
+
+	// Check if user has the required scope
+	if !scope.ShouldAllow(visibleScope, tokenInfo.Scopes) {
+		return defs.ErrNotFound
+	}
+
+	return nil
+}
 
 // CreateQuestion is the resolver for the createQuestion field.
 func (r *mutationResolver) CreateQuestion(ctx context.Context, input ent.CreateQuestionInput) (*ent.Question, error) {
@@ -39,7 +64,22 @@ func (r *mutationResolver) CreateQuestion(ctx context.Context, input ent.CreateQ
 func (r *mutationResolver) UpdateQuestion(ctx context.Context, id int, input ent.UpdateQuestionInput) (*ent.Question, error) {
 	entClient := r.EntClient(ctx)
 
-	question, err := entClient.Question.UpdateOneID(id).SetInput(input).Save(ctx)
+	// First, get the question to check visible_scope
+	question, err := entClient.Question.Get(ctx, id)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, defs.ErrNotFound
+		}
+		return nil, err
+	}
+
+	// Check if user has permission to access this question
+	if err := checkQuestionVisibleScope(ctx, question); err != nil {
+		return nil, err
+	}
+
+	// Update the question
+	question, err = entClient.Question.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +91,22 @@ func (r *mutationResolver) UpdateQuestion(ctx context.Context, id int, input ent
 func (r *mutationResolver) DeleteQuestion(ctx context.Context, id int) (bool, error) {
 	entClient := r.EntClient(ctx)
 
-	err := entClient.Question.DeleteOneID(id).Exec(ctx)
+	// First, get the question to check visible_scope
+	question, err := entClient.Question.Get(ctx, id)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return false, defs.ErrNotFound
+		}
+		return false, err
+	}
+
+	// Check if user has permission to access this question
+	if err := checkQuestionVisibleScope(ctx, question); err != nil {
+		return false, err
+	}
+
+	// Delete the question
+	err = entClient.Question.DeleteOneID(id).Exec(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -102,6 +157,20 @@ func (r *mutationResolver) SubmitAnswer(ctx context.Context, id int, answer stri
 		return nil, defs.ErrUnauthorized
 	}
 
+	// Check if user has permission to access this question based on visible_scope
+	entClient := r.EntClient(ctx)
+	question, err := entClient.Question.Get(ctx, id)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, defs.ErrNotFound
+		}
+		return nil, err
+	}
+
+	if err := checkQuestionVisibleScope(ctx, question); err != nil {
+		return nil, err
+	}
+
 	submissionResult, err := r.submissionService.SubmitAnswer(ctx, submission.SubmitAnswerInput{
 		SubmitterID: user.UserID,
 		QuestionID:  id,
@@ -127,6 +196,14 @@ func (r *queryResolver) Question(ctx context.Context, id int) (*ent.Question, er
 
 	question, err := entClient.Question.Get(ctx, id)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, defs.ErrNotFound
+		}
+		return nil, err
+	}
+
+	// Check if user has permission to access this question based on visible_scope
+	if err := checkQuestionVisibleScope(ctx, question); err != nil {
 		return nil, err
 	}
 

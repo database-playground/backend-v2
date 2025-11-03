@@ -1439,3 +1439,395 @@ func TestQuestionResolver_Statistics(t *testing.T) {
 		require.Contains(t, err.Error(), defs.CodeUnauthorized)
 	})
 }
+
+func TestQuestionResolver_VisibleScope(t *testing.T) {
+	entClient := testhelper.NewEntSqliteClient(t)
+	resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+	cfg := Config{
+		Resolvers:  resolver,
+		Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+	}
+	srv := handler.New(NewExecutableSchema(cfg))
+	srv.AddTransport(transport.POST{})
+	gqlClient := client.New(srv)
+
+	// Create test group and users
+	group, err := createTestGroup(t, entClient)
+	require.NoError(t, err)
+
+	userWithScope, err := entClient.User.Create().
+		SetName("userWithScope").
+		SetEmail("userWithScope@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	userWithoutScope, err := entClient.User.Create().
+		SetName("userWithoutScope").
+		SetEmail("userWithoutScope@example.com").
+		SetGroup(group).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	// Create test database
+	database := createTestDatabase(t, entClient)
+
+	// Create question with visible_scope
+	questionWithScope, err := entClient.Question.Create().
+		SetCategory("test-query").
+		SetDifficulty("easy").
+		SetTitle("Restricted Question").
+		SetDescription("Write a SELECT query").
+		SetReferenceAnswer("SELECT * FROM test;").
+		SetVisibleScope("premium:read").
+		SetDatabase(database).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	// Create question without visible_scope (visible to everyone)
+	questionPublic, err := entClient.Question.Create().
+		SetCategory("test-query").
+		SetDifficulty("easy").
+		SetTitle("Public Question").
+		SetDescription("Write a SELECT query").
+		SetReferenceAnswer("SELECT * FROM test;").
+		SetDatabase(database).
+		Save(context.Background())
+	require.NoError(t, err)
+
+	t.Run("success - user with matching scope can access question", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				ID    string
+				Title string
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(questionWithScope.ID) + `) { id title } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithScope.ID,
+				Scopes: []string{"premium:read", "question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Equal(t, strconv.Itoa(questionWithScope.ID), resp.Question.ID)
+		require.Equal(t, "Restricted Question", resp.Question.Title)
+	})
+
+	t.Run("not found - user without matching scope cannot access question", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				ID string
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(questionWithScope.ID) + `) { id } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithoutScope.ID,
+				Scopes: []string{"question:read"}, // Has question:read but not premium:read
+			}))
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeNotFound)
+	})
+
+	t.Run("success - user can access public question without visible_scope", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				ID    string
+				Title string
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(questionPublic.ID) + `) { id title } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithoutScope.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Equal(t, strconv.Itoa(questionPublic.ID), resp.Question.ID)
+		require.Equal(t, "Public Question", resp.Question.Title)
+	})
+
+	t.Run("success - user with wildcard scope can access restricted question", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				ID    string
+				Title string
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(questionWithScope.ID) + `) { id title } }`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithoutScope.ID,
+				Scopes: []string{"*", "question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Equal(t, strconv.Itoa(questionWithScope.ID), resp.Question.ID)
+	})
+
+	t.Run("not found - unauthenticated user cannot access restricted question", func(t *testing.T) {
+		var resp struct {
+			Question struct {
+				ID string
+			}
+		}
+		query := `query { question(id: ` + strconv.Itoa(questionWithScope.ID) + `) { id } }`
+
+		err := gqlClient.Post(query, &resp)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+	})
+
+	t.Run("success - update question with visible_scope by authorized user", func(t *testing.T) {
+		var resp struct {
+			UpdateQuestion struct {
+				ID    string
+				Title string
+			}
+		}
+		query := `mutation { 
+			updateQuestion(id: ` + strconv.Itoa(questionWithScope.ID) + `, input: { title: "Updated Title" }) { 
+				id 
+				title 
+			} 
+		}`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithScope.ID,
+				Scopes: []string{"premium:read", "question:write"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Equal(t, strconv.Itoa(questionWithScope.ID), resp.UpdateQuestion.ID)
+		require.Equal(t, "Updated Title", resp.UpdateQuestion.Title)
+	})
+
+	t.Run("not found - update question with visible_scope by unauthorized user", func(t *testing.T) {
+		var resp struct {
+			UpdateQuestion struct {
+				ID string
+			}
+		}
+		query := `mutation { 
+			updateQuestion(id: ` + strconv.Itoa(questionWithScope.ID) + `, input: { title: "Updated Title" }) { 
+				id 
+			} 
+		}`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithoutScope.ID,
+				Scopes: []string{"question:write"}, // Has write scope but not premium:read
+			}))
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeNotFound)
+	})
+
+	t.Run("success - delete question with visible_scope by authorized user", func(t *testing.T) {
+		// Create a new question for deletion test
+		questionToDelete, err := entClient.Question.Create().
+			SetCategory("test-query").
+			SetDifficulty("easy").
+			SetTitle("Question To Delete").
+			SetDescription("Write a SELECT query").
+			SetReferenceAnswer("SELECT * FROM test;").
+			SetVisibleScope("premium:read").
+			SetDatabase(database).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		var resp struct {
+			DeleteQuestion bool
+		}
+		query := `mutation { deleteQuestion(id: ` + strconv.Itoa(questionToDelete.ID) + `) }`
+
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithScope.ID,
+				Scopes: []string{"premium:read", "question:write"},
+			}))
+		})
+		require.NoError(t, err)
+		require.True(t, resp.DeleteQuestion)
+	})
+
+	t.Run("not found - delete question with visible_scope by unauthorized user", func(t *testing.T) {
+		// Create a new question for deletion test
+		questionToDelete, err := entClient.Question.Create().
+			SetCategory("test-query").
+			SetDifficulty("easy").
+			SetTitle("Question To Delete").
+			SetDescription("Write a SELECT query").
+			SetReferenceAnswer("SELECT * FROM test;").
+			SetVisibleScope("premium:read").
+			SetDatabase(database).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		var resp struct {
+			DeleteQuestion bool
+		}
+		query := `mutation { deleteQuestion(id: ` + strconv.Itoa(questionToDelete.ID) + `) }`
+
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithoutScope.ID,
+				Scopes: []string{"question:write"}, // Has write scope but not premium:read
+			}))
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeNotFound)
+	})
+
+	t.Run("success - submit answer to question with visible_scope by authorized user", func(t *testing.T) {
+		var resp struct {
+			SubmitAnswer struct {
+				Result struct {
+					MatchAnswer bool
+				}
+			}
+		}
+		query := `mutation { 
+			submitAnswer(id: ` + strconv.Itoa(questionWithScope.ID) + `, answer: "SELECT * FROM test;") { 
+				result { 
+					matchAnswer 
+				} 
+			} 
+		}`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithScope.ID,
+				Scopes: []string{"premium:read", "submission:write"},
+			}))
+		})
+		require.NoError(t, err)
+		require.True(t, resp.SubmitAnswer.Result.MatchAnswer)
+	})
+
+	t.Run("not found - submit answer to question with visible_scope by unauthorized user", func(t *testing.T) {
+		var resp struct {
+			SubmitAnswer struct {
+				Result struct {
+					MatchAnswer bool
+				}
+			}
+		}
+		query := `mutation { 
+			submitAnswer(id: ` + strconv.Itoa(questionWithScope.ID) + `, answer: "SELECT * FROM test;") { 
+				result { 
+					matchAnswer 
+				} 
+			} 
+		}`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithoutScope.ID,
+				Scopes: []string{"submission:write"}, // Has write scope but not premium:read
+			}))
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeNotFound)
+	})
+
+	t.Run("success - questions list filters by visible_scope", func(t *testing.T) {
+		// Create another restricted question
+		questionRestricted2, err := entClient.Question.Create().
+			SetCategory("test-query").
+			SetDifficulty("easy").
+			SetTitle("Another Restricted Question").
+			SetDescription("Write a SELECT query").
+			SetReferenceAnswer("SELECT * FROM test;").
+			SetVisibleScope("premium:read").
+			SetDatabase(database).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		var resp struct {
+			Questions struct {
+				Edges []struct {
+					Node struct {
+						ID    string
+						Title string
+					}
+				}
+				TotalCount int
+			}
+		}
+		query := `query { 
+			questions(first: 10) { 
+				edges { 
+					node { 
+						id 
+						title 
+					} 
+				} 
+				totalCount 
+			} 
+		}`
+
+		// User with premium:read scope should see restricted questions
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithScope.ID,
+				Scopes: []string{"premium:read", "question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		// Should see public question and restricted questions
+		require.GreaterOrEqual(t, resp.Questions.TotalCount, 3) // questionPublic, questionWithScope, questionRestricted2
+
+		// User without premium:read scope should only see public questions
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithoutScope.ID,
+				Scopes: []string{"question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		// Should only see public question (and any other public questions from previous tests)
+		foundPublic := false
+		for _, edge := range resp.Questions.Edges {
+			if edge.Node.ID == strconv.Itoa(questionPublic.ID) {
+				foundPublic = true
+			}
+			// Should not see restricted questions
+			require.NotEqual(t, strconv.Itoa(questionWithScope.ID), edge.Node.ID)
+			require.NotEqual(t, strconv.Itoa(questionRestricted2.ID), edge.Node.ID)
+		}
+		require.True(t, foundPublic, "Should find public question")
+	})
+
+	t.Run("success - questions list shows all questions for user with wildcard scope", func(t *testing.T) {
+		var resp struct {
+			Questions struct {
+				TotalCount int
+			}
+		}
+		query := `query { 
+			questions(first: 10) { 
+				totalCount 
+			} 
+		}`
+
+		err := gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: userWithoutScope.ID,
+				Scopes: []string{"*", "question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		// User with wildcard scope should see all questions
+		require.GreaterOrEqual(t, resp.Questions.TotalCount, 3)
+	})
+}
