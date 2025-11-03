@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
@@ -46,6 +47,30 @@ func checkQuestionVisibleScope(ctx context.Context, question *ent.Question) erro
 	}
 
 	return nil
+}
+
+// applyQuestionVisibleScopeFilter applies visible_scope filtering to a question query.
+// If the user has wildcard scope "*", no filtering is applied.
+// Otherwise, only questions with nil visible_scope or visible_scope matching user's scopes are included.
+func applyQuestionVisibleScopeFilter(ctx context.Context, query *ent.QuestionQuery) *ent.QuestionQuery {
+	tokenInfo, ok := auth.GetUser(ctx)
+	if !ok {
+		// If no user context, only show questions without visible_scope
+		return query.Where(entQuestion.VisibleScopeIsNil())
+	}
+
+	// If user has full access, don't filter
+	if slices.Contains(tokenInfo.Scopes, "*") {
+		return query
+	}
+
+	// Filter to show only questions with nil visible_scope or visible_scope matching user's scopes
+	return query.Where(
+		entQuestion.Or(
+			entQuestion.VisibleScopeIsNil(),
+			entQuestion.VisibleScopeIn(tokenInfo.Scopes...),
+		),
+	)
 }
 
 // CreateQuestion is the resolver for the createQuestion field.
@@ -260,7 +285,10 @@ func (r *queryResolver) Submission(ctx context.Context, id int) (*ent.Submission
 func (r *queryResolver) QuestionCategories(ctx context.Context) ([]string, error) {
 	entClient := r.EntClient(ctx)
 
-	categories, err := entClient.Question.Query().
+	query := entClient.Question.Query()
+	query = applyQuestionVisibleScopeFilter(ctx, query)
+
+	categories, err := query.
 		Unique(true).
 		Select(entQuestion.FieldCategory).
 		Strings(ctx)
@@ -413,36 +441,45 @@ func (r *userResolver) SubmissionStatistics(ctx context.Context, obj *ent.User) 
 		Count      int                    `json:"count,omitempty"`
 	}
 
-	// total questions
-	totalQuestions, err := entClient.Question.Query().Count(ctx)
+	// total questions - filter by visible_scope
+	totalQuestionsQuery := entClient.Question.Query()
+	totalQuestionsQuery = applyQuestionVisibleScopeFilter(ctx, totalQuestionsQuery)
+	totalQuestions, err := totalQuestionsQuery.Count(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving total questions: %w", err)
 	}
 
-	// attempted
-	attemptedQuestions, err := entClient.Question.Query().Where(
-		entQuestion.HasSubmissionsWith(entSubmission.HasUserWith(user.ID(obj.ID))),
-	).Count(ctx)
+	// attempted - filter by visible_scope
+	attemptedQuestionsQuery := entClient.Question.Query().
+		Where(entQuestion.HasSubmissionsWith(entSubmission.HasUserWith(user.ID(obj.ID))))
+	attemptedQuestionsQuery = applyQuestionVisibleScopeFilter(ctx, attemptedQuestionsQuery)
+	attemptedQuestions, err := attemptedQuestionsQuery.Count(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving attempted questions: %w", err)
 	}
 
-	// solved
-	solvedQuestions, err := entClient.Question.Query().Where(
-		entQuestion.HasSubmissionsWith(entSubmission.HasUserWith(user.ID(obj.ID)), entSubmission.StatusEQ(entSubmission.StatusSuccess)),
-	).Count(ctx)
+	// solved - filter by visible_scope
+	solvedQuestionsQuery := entClient.Question.Query().
+		Where(
+			entQuestion.HasSubmissionsWith(entSubmission.HasUserWith(user.ID(obj.ID)), entSubmission.StatusEQ(entSubmission.StatusSuccess)),
+		)
+	solvedQuestionsQuery = applyQuestionVisibleScopeFilter(ctx, solvedQuestionsQuery)
+	solvedQuestions, err := solvedQuestionsQuery.Count(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving solved questions: %w", err)
 	}
 
-	// solved question by difficulty
+	// solved question by difficulty - filter by visible_scope
+	solvedByDifficultyQuery := entClient.Question.Query().
+		Where(
+			entQuestion.HasSubmissionsWith(
+				entSubmission.HasUserWith(user.ID(obj.ID)),
+				entSubmission.StatusEQ(entSubmission.StatusSuccess),
+			),
+		)
+	solvedByDifficultyQuery = applyQuestionVisibleScopeFilter(ctx, solvedByDifficultyQuery)
 	var solvedQuestionByDifficulty []tSQLSolvedQuestionByDifficulty
-	err = entClient.Question.Query().Where(
-		entQuestion.HasSubmissionsWith(
-			entSubmission.HasUserWith(user.ID(obj.ID)),
-			entSubmission.StatusEQ(entSubmission.StatusSuccess),
-		),
-	).
+	err = solvedByDifficultyQuery.
 		GroupBy(entQuestion.FieldDifficulty).
 		Aggregate(ent.Count()).
 		Scan(ctx, &solvedQuestionByDifficulty)

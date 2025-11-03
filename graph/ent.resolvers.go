@@ -6,13 +6,10 @@ package graph
 
 import (
 	"context"
-	"slices"
 
 	"entgo.io/contrib/entgql"
 	"github.com/database-playground/backend-v2/ent"
-	"github.com/database-playground/backend-v2/ent/question"
 	"github.com/database-playground/backend-v2/graph/defs"
-	"github.com/database-playground/backend-v2/internal/auth"
 )
 
 // Node is the resolver for the node field.
@@ -59,24 +56,10 @@ func (r *queryResolver) Points(ctx context.Context, after *entgql.Cursor[int], f
 
 // Questions is the resolver for the questions field.
 func (r *queryResolver) Questions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.QuestionOrder, where *ent.QuestionWhereInput) (*ent.QuestionConnection, error) {
-	tokenInfo, ok := auth.GetUser(ctx)
-	if !ok {
-		return nil, defs.ErrUnauthorized
-	}
-
 	entClient := r.EntClient(ctx)
 
 	query := entClient.Question.Query()
-
-	// If user does not have full access, filter questions by visible_scope
-	if !slices.Contains(tokenInfo.Scopes, "*") {
-		query = query.Where(
-			question.Or(
-				question.VisibleScopeIsNil(),
-				question.VisibleScopeIn(tokenInfo.Scopes...),
-			),
-		)
-	}
+	query = applyQuestionVisibleScopeFilter(ctx, query)
 
 	return query.Paginate(ctx, after, first, before, last, ent.WithQuestionOrder(orderBy), ent.WithQuestionFilter(where.Filter))
 }

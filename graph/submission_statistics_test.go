@@ -540,6 +540,231 @@ func TestUserResolver_SubmissionStatistics(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "retrieving total questions")
 	})
+
+	t.Run("filters by visible_scope - user without scope sees only public questions", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		gqlClient := client.New(srv)
+
+		// Create test group and user
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create test database
+		database := createTestDatabase(t, entClient)
+
+		// Create public question (no visible_scope)
+		publicQuestion := createTestQuestionWithDifficulty(t, entClient, database, question.DifficultyEasy)
+
+		// Create restricted question (with visible_scope)
+		restrictedQuestion, err := entClient.Question.Create().
+			SetCategory("premium-query").
+			SetDifficulty(question.DifficultyEasy).
+			SetTitle("Premium Question").
+			SetDescription("Premium question").
+			SetReferenceAnswer("SELECT * FROM test;").
+			SetVisibleScope("premium:read").
+			SetDatabase(database).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create submissions for both questions
+		createTestSubmission(t, entClient, user, publicQuestion, "SELECT * FROM test;", submission.StatusSuccess, time.Now())
+		createTestSubmission(t, entClient, user, restrictedQuestion, "SELECT * FROM test;", submission.StatusSuccess, time.Now())
+
+		// Query with user without premium:read scope
+		var resp struct {
+			User struct {
+				SubmissionStatistics struct {
+					TotalQuestions             int `json:"totalQuestions"`
+					AttemptedQuestions         int `json:"attemptedQuestions"`
+					SolvedQuestions            int `json:"solvedQuestions"`
+					SolvedQuestionByDifficulty []struct {
+						Difficulty      string `json:"difficulty"`
+						SolvedQuestions int    `json:"solvedQuestions"`
+					} `json:"solvedQuestionByDifficulty"`
+				} `json:"submissionStatistics"`
+			} `json:"user"`
+		}
+
+		query := `query { 
+			user(id: ` + strconv.Itoa(user.ID) + `) { 
+				submissionStatistics {
+					totalQuestions
+					attemptedQuestions
+					solvedQuestions
+					solvedQuestionByDifficulty {
+						difficulty
+						solvedQuestions
+					}
+				}
+			} 
+		}`
+
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read"}, // No premium:read
+			}))
+		})
+
+		require.NoError(t, err)
+		// Should only count public question
+		require.Equal(t, 1, resp.User.SubmissionStatistics.TotalQuestions)
+		require.Equal(t, 1, resp.User.SubmissionStatistics.AttemptedQuestions)
+		require.Equal(t, 1, resp.User.SubmissionStatistics.SolvedQuestions)
+	})
+
+	t.Run("filters by visible_scope - user with scope sees all questions", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		gqlClient := client.New(srv)
+
+		// Create test group and user
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create test database
+		database := createTestDatabase(t, entClient)
+
+		// Create public question (no visible_scope)
+		publicQuestion := createTestQuestionWithDifficulty(t, entClient, database, question.DifficultyEasy)
+
+		// Create restricted question (with visible_scope)
+		restrictedQuestion, err := entClient.Question.Create().
+			SetCategory("premium-query").
+			SetDifficulty(question.DifficultyEasy).
+			SetTitle("Premium Question").
+			SetDescription("Premium question").
+			SetReferenceAnswer("SELECT * FROM test;").
+			SetVisibleScope("premium:read").
+			SetDatabase(database).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create submissions for both questions
+		createTestSubmission(t, entClient, user, publicQuestion, "SELECT * FROM test;", submission.StatusSuccess, time.Now())
+		createTestSubmission(t, entClient, user, restrictedQuestion, "SELECT * FROM test;", submission.StatusSuccess, time.Now())
+
+		// Query with user with premium:read scope
+		var resp struct {
+			User struct {
+				SubmissionStatistics struct {
+					TotalQuestions             int `json:"totalQuestions"`
+					AttemptedQuestions         int `json:"attemptedQuestions"`
+					SolvedQuestions            int `json:"solvedQuestions"`
+					SolvedQuestionByDifficulty []struct {
+						Difficulty      string `json:"difficulty"`
+						SolvedQuestions int    `json:"solvedQuestions"`
+					} `json:"solvedQuestionByDifficulty"`
+				} `json:"submissionStatistics"`
+			} `json:"user"`
+		}
+
+		query := `query { 
+			user(id: ` + strconv.Itoa(user.ID) + `) { 
+				submissionStatistics {
+					totalQuestions
+					attemptedQuestions
+					solvedQuestions
+					solvedQuestionByDifficulty {
+						difficulty
+						solvedQuestions
+					}
+				}
+			} 
+		}`
+
+		err = gqlClient.Post(query, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read", "premium:read"}, // Has premium:read
+			}))
+		})
+
+		require.NoError(t, err)
+		// Should count both questions
+		require.Equal(t, 2, resp.User.SubmissionStatistics.TotalQuestions)
+		require.Equal(t, 2, resp.User.SubmissionStatistics.AttemptedQuestions)
+		require.Equal(t, 2, resp.User.SubmissionStatistics.SolvedQuestions)
+	})
+
+	t.Run("filters by visible_scope - user with wildcard scope sees all questions", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test group and user
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create test database
+		database := createTestDatabase(t, entClient)
+
+		// Create public question (no visible_scope)
+		publicQuestion := createTestQuestionWithDifficulty(t, entClient, database, question.DifficultyEasy)
+
+		// Create restricted question (with visible_scope)
+		restrictedQuestion, err := entClient.Question.Create().
+			SetCategory("premium-query").
+			SetDifficulty(question.DifficultyEasy).
+			SetTitle("Premium Question").
+			SetDescription("Premium question").
+			SetReferenceAnswer("SELECT * FROM test;").
+			SetVisibleScope("premium:read").
+			SetDatabase(database).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create submissions for both questions
+		createTestSubmission(t, entClient, user, publicQuestion, "SELECT * FROM test;", submission.StatusSuccess, time.Now())
+		createTestSubmission(t, entClient, user, restrictedQuestion, "SELECT * FROM test;", submission.StatusSuccess, time.Now())
+
+		// Test the resolver method directly with wildcard scope
+		userResolver := &userResolver{resolver}
+		stats, err := userResolver.SubmissionStatistics(auth.WithUser(context.Background(), auth.TokenInfo{
+			UserID: user.ID,
+			Scopes: []string{"*"},
+		}), user)
+
+		require.NoError(t, err)
+		// Should count both questions
+		require.Equal(t, 2, stats.TotalQuestions)
+		require.Equal(t, 2, stats.AttemptedQuestions)
+		require.Equal(t, 2, stats.SolvedQuestions)
+	})
 }
 
 // Helper function to create a question with specific difficulty

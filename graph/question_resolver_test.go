@@ -899,6 +899,78 @@ func TestQueryResolver_QuestionCategories(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), defs.CodeUnauthorized)
 	})
+
+	t.Run("success - filters categories by visible_scope", func(t *testing.T) {
+		// Create test database
+		database := createTestDatabase(t, entClient)
+
+		// Create public question (no visible_scope)
+		_, err := entClient.Question.Create().
+			SetCategory("public-category").
+			SetDifficulty("easy").
+			SetTitle("Public Question").
+			SetDescription("Public question").
+			SetReferenceAnswer("SELECT * FROM test;").
+			SetDatabase(database).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create restricted question (with visible_scope)
+		_, err = entClient.Question.Create().
+			SetCategory("premium-category").
+			SetDifficulty("easy").
+			SetTitle("Premium Question").
+			SetDescription("Premium question").
+			SetReferenceAnswer("SELECT * FROM test;").
+			SetVisibleScope("premium:read").
+			SetDatabase(database).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// User without premium:read scope should only see public category
+		var resp1 struct {
+			QuestionCategories []string
+		}
+		query := `query { questionCategories }`
+
+		err = gqlClient.Post(query, &resp1, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"question:read"}, // No premium:read
+			}))
+		})
+		require.NoError(t, err)
+		require.Contains(t, resp1.QuestionCategories, "public-category")
+		require.NotContains(t, resp1.QuestionCategories, "premium-category")
+
+		// User with premium:read scope should see both categories
+		var resp2 struct {
+			QuestionCategories []string
+		}
+		err = gqlClient.Post(query, &resp2, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"question:read", "premium:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Contains(t, resp2.QuestionCategories, "public-category")
+		require.Contains(t, resp2.QuestionCategories, "premium-category")
+
+		// User with wildcard scope should see all categories
+		var resp3 struct {
+			QuestionCategories []string
+		}
+		err = gqlClient.Post(query, &resp3, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: testUser.ID,
+				Scopes: []string{"*", "question:read"},
+			}))
+		})
+		require.NoError(t, err)
+		require.Contains(t, resp3.QuestionCategories, "public-category")
+		require.Contains(t, resp3.QuestionCategories, "premium-category")
+	})
 }
 
 func TestQuestionResolver_Statistics(t *testing.T) {
