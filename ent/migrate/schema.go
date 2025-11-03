@@ -102,6 +102,7 @@ var (
 		{Name: "title", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Size: 2147483647},
 		{Name: "reference_answer", Type: field.TypeString, Size: 2147483647},
+		{Name: "visible_scope", Type: field.TypeString, Nullable: true},
 		{Name: "database_questions", Type: field.TypeInt},
 	}
 	// QuestionsTable holds the schema information for the "questions" table.
@@ -112,7 +113,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "questions_databases_questions",
-				Columns:    []*schema.Column{QuestionsColumns[6]},
+				Columns:    []*schema.Column{QuestionsColumns[7]},
 				RefColumns: []*schema.Column{DatabasesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},

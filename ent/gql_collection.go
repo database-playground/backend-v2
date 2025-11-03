@@ -590,6 +590,11 @@ func (_q *QuestionQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 				selectedFields = append(selectedFields, question.FieldReferenceAnswer)
 				fieldSeen[question.FieldReferenceAnswer] = struct{}{}
 			}
+		case "visibleScope":
+			if _, ok := fieldSeen[question.FieldVisibleScope]; !ok {
+				selectedFields = append(selectedFields, question.FieldVisibleScope)
+				fieldSeen[question.FieldVisibleScope] = struct{}{}
+			}
 		case "id":
 		case "__typename":
 		default:
