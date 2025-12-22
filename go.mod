@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	entgo.io/contrib v0.7.0
 	entgo.io/ent v0.14.5
-	github.com/99designs/gqlgen v0.17.84
+	github.com/99designs/gqlgen v0.17.85
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/docker/go-connections v0.6.0
 	github.com/gin-contrib/cors v1.7.6
