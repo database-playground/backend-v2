@@ -23,7 +23,7 @@ require (
 	github.com/vektah/gqlparser/v2 v2.5.31
 	go.uber.org/fx v1.24.0
 	golang.org/x/oauth2 v0.34.0
-	google.golang.org/api v0.257.0
+	google.golang.org/api v0.258.0
 )
 
 require (
