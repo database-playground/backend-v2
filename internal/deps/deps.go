@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 	"github.com/redis/rueidis"
+	"github.com/redis/rueidis/rueidisotel"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 )
@@ -62,7 +63,7 @@ func EntClient(cfg config.Config) (*ent.Client, error) {
 
 // RedisClient creates a rueidis.Client.
 func RedisClient(cfg config.Config) (rueidis.Client, error) {
-	client, err := rueidis.NewClient(rueidis.ClientOption{
+	client, err := rueidisotel.NewClient(rueidis.ClientOption{
 		InitAddress: []string{
 			fmt.Sprintf("%s:%d", cfg.Redis.Host, cfg.Redis.Port),
 		},

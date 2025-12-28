@@ -19,6 +19,7 @@ require (
 	github.com/posthog/posthog-go v1.8.2
 	github.com/ravilushqa/otelgqlgen v0.19.0
 	github.com/redis/rueidis v1.0.69
+	github.com/redis/rueidis/rueidisotel v1.0.69
 	github.com/samber/lo v1.52.0
 	github.com/samber/slog-gin v1.18.0
 	github.com/stretchr/testify v1.11.1
