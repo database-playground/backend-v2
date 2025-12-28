@@ -67,3 +67,32 @@ PostHog 是一個產品統計平台。這個專案使用 [posthog-go](https://po
 - `POSTHOG_API_KEY`: PostHog 的 API key。可以在 PostHog 的 Settings > Project > General > Project API key 中取得。
 - `POSTHOG_HOST`: PostHog API 的主機。可以在 PostHog 的 Settings > Project > General > Web snippet 中的 `api_host` 取得。
   - e.g. `https://us.i.posthog.com`
+
+## OpenTelemetry 設定
+
+支援使用環境變數設定 OpenTelemetry（Tracing 與 Logging），詳細規範可參考 [官方文件](https://opentelemetry.io/docs/languages/sdk-configuration/general/)。
+
+以下是常用的設定變數：
+
+- `OTEL_SERVICE_NAME`：指定此服務的名稱，例如 `dbplay-backend-replica-1`。
+- `OTEL_TRACES_EXPORTER`：指定追蹤資料（Traces）的匯出方式。
+  - 支援值：`console`, `otlp`
+  - 預設值：`console`
+- `OTEL_LOGS_EXPORTER`：指定日誌資料（Logs）的匯出方式。
+  - 支援值：`console`, `otlp`
+  - 預設值：`console`
+- `OTEL_EXPORTER_OTLP_PROTOCOL`：指定 OTLP 的預設通訊協定。
+  - 支援值：`grpc`, `http/protobuf`
+  - 預設值：`grpc`
+- `OTEL_EXPORTER_OTLP_ENDPOINT`：指定 OTLP 的預設 Endpoint 位址。
+  - 舉例：`http://otlp-collector:4317`
+- `OTEL_EXPORTER_OTLP_TRACES_PROTOCOL`：指定追蹤資料專用的 OTLP 通訊協定。
+  - 支援值：`grpc`, `http/protobuf`
+  - 預設值：若未設定，則使用 `OTEL_EXPORTER_OTLP_PROTOCOL` 的值。
+- `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`：指定追蹤資料專用的 OTLP Endpoint 位址。
+  - 舉例：`http://victoriatraces:10428/insert/opentelemetry/v1/traces`
+- `OTEL_EXPORTER_OTLP_LOGS_PROTOCOL`：指定日誌資料專用的 OTLP 通訊協定。
+  - 支援值：`grpc`, `http/protobuf`
+  - 預設值：若未設定，則使用 `OTEL_EXPORTER_OTLP_PROTOCOL` 的值。
+- `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT`：指定日誌資料專用的 OTLP Endpoint 位址。
+  - 舉例：`http://victorialogs:9428/insert/opentelemetry/v1/logs`

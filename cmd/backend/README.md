@@ -53,4 +53,5 @@ flowchart BT
 
 - `/api/*`：HTTP API，請參見 [httpapi 文件](../../httpapi/README.md)。
 - `/query`：GraphQL API，開發手冊請參見 [graph 文件](../../graph/README.md)，使用手冊請參見 GraphQL Playground 的說明。
+- `/metrics`：backend server 的 Prometheus 格式 metrics。
 - `/`：GraphQL Playground。
