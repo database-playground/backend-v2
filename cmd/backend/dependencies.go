@@ -24,6 +24,7 @@ import (
 	"github.com/database-playground/backend-v2/internal/events"
 	"github.com/database-playground/backend-v2/internal/graphql/apq"
 	"github.com/database-playground/backend-v2/internal/httputils"
+	"github.com/database-playground/backend-v2/internal/otelprovider"
 	"github.com/database-playground/backend-v2/internal/ranking"
 	"github.com/database-playground/backend-v2/internal/sqlrunner"
 	"github.com/database-playground/backend-v2/internal/submission"
@@ -55,6 +56,18 @@ func SqlRunner(cfg config.Config) *sqlrunner.SqlRunner {
 
 func ApqCache(redisClient rueidis.Client) graphql.Cache[string] {
 	return apq.NewCache(redisClient, 24*time.Hour)
+}
+
+func OTelSDK(lifecycle fx.Lifecycle) {
+	shutdown, err := otelprovider.SetupOTelSDK(context.Background())
+	if err != nil {
+		slog.Error("failed to setup OTel SDK", "error", err)
+	}
+	lifecycle.Append(fx.StopHook(func() {
+		if err := shutdown(context.Background()); err != nil {
+			slog.Error("failed to shutdown OTel SDK", "error", err)
+		}
+	}))
 }
 
 func PostHogClient(lifecycle fx.Lifecycle, cfg config.Config) (posthog.Client, error) {
