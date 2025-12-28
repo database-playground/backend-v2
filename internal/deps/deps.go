@@ -2,7 +2,7 @@
 package deps
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"log/slog"
 
@@ -10,6 +10,9 @@ import (
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/internal/config"
+	"github.com/exaring/otelpgx"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 	"github.com/redis/rueidis"
 	"go.uber.org/fx"
@@ -39,11 +42,19 @@ func Config() (config.Config, error) {
 
 // EntClient creates an ent.Client.
 func EntClient(cfg config.Config) (*ent.Client, error) {
-	db, err := sql.Open("pgx", cfg.Database.URI)
+	pgxConfig, err := pgxpool.ParseConfig(cfg.Database.URI)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create connection pool: %w", err)
 	}
 
+	pgxConfig.ConnConfig.Tracer = otelpgx.NewTracer()
+
+	pool, err := pgxpool.NewWithConfig(context.Background(), pgxConfig)
+	if err != nil {
+		return nil, fmt.Errorf("connect to database: %w", err)
+	}
+
+	db := stdlib.OpenDBFromPool(pool)
 	drv := entsql.OpenDB(dialect.Postgres, db)
 
 	return ent.NewClient(ent.Driver(drv)), nil

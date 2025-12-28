@@ -9,6 +9,7 @@ require (
 	github.com/Depado/ginprom v1.8.2
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/docker/go-connections v0.6.0
+	github.com/exaring/otelpgx v0.9.4
 	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-gonic/gin v1.11.0
 	github.com/hashicorp/go-multierror v1.1.1
