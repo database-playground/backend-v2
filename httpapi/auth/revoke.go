@@ -6,17 +6,27 @@ import (
 
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel/attribute"
+	otelcodes "go.opentelemetry.io/otel/codes"
 )
 
 // RevokeToken implements OAuth 2.0 Token Revocation (RFC 7009)
 // POST /api/auth/v2/revoke
 func (s *AuthService) RevokeToken(c *gin.Context) {
+	ctx, span := tracer.Start(c.Request.Context(), "RevokeToken")
+	defer span.End()
+
 	// Parse form data
 	token := c.PostForm("token")
 	tokenTypeHint := c.PostForm("token_type_hint")
 
+	span.SetAttributes(
+		attribute.String("oauth2.token_type_hint", tokenTypeHint),
+	)
+
 	// Validate required parameters
 	if token == "" {
+		span.SetStatus(otelcodes.Error, "Missing token parameter")
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":             "invalid_request",
 			"error_description": "Missing required parameter: token",
@@ -26,6 +36,7 @@ func (s *AuthService) RevokeToken(c *gin.Context) {
 
 	// Validate token_type_hint if provided
 	if tokenTypeHint != "" && tokenTypeHint != "access_token" {
+		span.SetStatus(otelcodes.Error, "Unsupported token type")
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":             "unsupported_token_type",
 			"error_description": "Only access_token is supported for token_type_hint",
@@ -34,9 +45,12 @@ func (s *AuthService) RevokeToken(c *gin.Context) {
 	}
 
 	// Attempt to revoke the token
-	err := s.useraccount.RevokeToken(c.Request.Context(), token)
+	span.AddEvent("oauth2.token.revoke")
+	err := s.useraccount.RevokeToken(ctx, token)
 	if err != nil && !errors.Is(err, auth.ErrNotFound) {
 		// Internal server error - failed to revoke token
+		span.SetStatus(otelcodes.Error, "Revocation error")
+		span.RecordError(err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":             "server_error",
 			"error_description": err.Error(),
@@ -47,5 +61,6 @@ func (s *AuthService) RevokeToken(c *gin.Context) {
 	// Success - return 200 OK regardless of whether token existed
 	// This is per RFC 7009 section 2: "The client must not use the token again after revocation."
 	// "The authorization server responds with HTTP status code 200 if the revocation is successful"
+	span.SetStatus(otelcodes.Ok, "Token revocation completed successfully")
 	c.Status(http.StatusOK)
 }

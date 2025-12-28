@@ -20,6 +20,8 @@ import (
 	"github.com/database-playground/backend-v2/internal/httputils"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel/attribute"
+	otelcodes "go.opentelemetry.io/otel/codes"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	googleoauth2 "google.golang.org/api/oauth2/v2"
@@ -118,6 +120,9 @@ func redirectWithError(c *gin.Context, redirectURL *url.URL, errorCode, errorDes
 
 // Authorize handles the OAuth 2.0 authorization request (RFC 6749 Section 4.1.1)
 func (h *GauthHandler) Authorize(c *gin.Context) {
+	_, span := tracer.Start(c.Request.Context(), "Authorize")
+	defer span.End()
+
 	// Lax since we are using a cookie to store the verifier
 	// and the callback will be called by Google (not Strict).
 	c.SetSameSite(http.SameSiteLaxMode)
@@ -127,10 +132,17 @@ func (h *GauthHandler) Authorize(c *gin.Context) {
 	redirectURI := c.Query("redirect_uri")
 	state := c.Query("state")
 
+	span.SetAttributes(
+		attribute.String("oauth2.response_type", responseType),
+		attribute.String("oauth2.redirect_uri", redirectURI),
+		attribute.String("oauth2.state", state),
+	)
+
 	if redirectURI == "" {
+		span.SetStatus(otelcodes.Error, "Redirect_uri is required")
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "invalid_request",
-			ErrorDescription: "redirect_uri is required",
+			ErrorDescription: "Redirect_uri is required",
 			State:            state,
 		})
 		return
@@ -138,6 +150,8 @@ func (h *GauthHandler) Authorize(c *gin.Context) {
 
 	redirectURL, err := url.Parse(redirectURI)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Invalid redirect URI")
+		span.RecordError(err)
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "invalid_request",
 			ErrorDescription: "Invalid redirect URI",
@@ -147,7 +161,8 @@ func (h *GauthHandler) Authorize(c *gin.Context) {
 	}
 
 	if responseType != "code" {
-		redirectWithError(c, redirectURL, "invalid_request", "response_type must be 'code'", state)
+		span.SetStatus(otelcodes.Error, "Response_type must be 'code'")
+		redirectWithError(c, redirectURL, "invalid_request", "Response_type must be 'code'", state)
 		return
 	}
 
@@ -158,6 +173,7 @@ func (h *GauthHandler) Authorize(c *gin.Context) {
 
 	allowed := slices.Contains(h.redirectURIs, redirectURLWithoutQuery.String())
 	if !allowed {
+		span.SetStatus(otelcodes.Error, "Bad redirect URI")
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "invalid_request",
 			ErrorDescription: "Bad redirect URI.",
@@ -169,20 +185,30 @@ func (h *GauthHandler) Authorize(c *gin.Context) {
 	// Validate PKCE parameters (RFC 7636)
 	codeChallenge := c.Query("code_challenge")
 	codeChallengeMethod := c.Query("code_challenge_method")
+	span.SetAttributes(
+		attribute.String("oauth2.code_challenge_method", codeChallengeMethod),
+	)
 	if err := validatePKCE(codeChallenge, codeChallengeMethod); err != nil {
+		span.SetStatus(otelcodes.Error, "Invalid PKCE parameters")
+		span.RecordError(err)
 		redirectWithError(c, redirectURL, "invalid_request", err.Error(), state)
 		return
 	}
 
 	// Generate internal code verifier for Google OAuth
+	span.AddEvent("oauth2.code_verifier.generation")
 	verifier, err := generateCodeVerifier()
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to generate verifier")
+		span.RecordError(err)
 		redirectWithError(c, redirectURL, "server_error", "Failed to generate verifier", state)
 		return
 	}
 
 	callbackURL, err := url.Parse(h.oauthConfig.RedirectURL)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to parse redirect URL")
+		span.RecordError(err)
 		redirectWithError(c, redirectURL, "server_error", "Failed to parse redirect URL", state)
 		return
 	}
@@ -220,12 +246,14 @@ func (h *GauthHandler) Authorize(c *gin.Context) {
 	)
 
 	// Redirect to Google OAuth with PKCE
+	span.AddEvent("oauth2.google.redirect")
 	googleAuthURL := h.oauthConfig.AuthCodeURL(
 		state,
 		oauth2.AccessTypeOnline,
 		oauth2.S256ChallengeOption(verifier),
 	)
 
+	span.SetStatus(otelcodes.Ok, "Authorization request processed successfully")
 	c.Redirect(http.StatusFound, googleAuthURL)
 }
 
@@ -328,14 +356,24 @@ func (h *GauthHandler) decryptAuthCode(encryptedCode string) (*AuthorizationCode
 
 // Callback handles the OAuth callback from Google and generates authorization code for client
 func (h *GauthHandler) Callback(c *gin.Context) {
+	ctx, span := tracer.Start(c.Request.Context(), "Callback")
+	defer span.End()
+
 	c.SetSameSite(http.SameSiteStrictMode)
 
 	// Get stored parameters early for error handling
 	redirectURI, _ := c.Cookie(redirectCookieName)
 	state := c.Query("state")
 
+	span.SetAttributes(
+		attribute.String("oauth2.state", state),
+		attribute.String("oauth2.redirect_uri", redirectURI),
+	)
+
 	redirectURL, err := url.Parse(redirectURI)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Invalid redirect URI")
+		span.RecordError(err)
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "invalid_request",
 			ErrorDescription: "Invalid redirect URI",
@@ -347,46 +385,65 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 	// Get stored verifier for Google OAuth
 	verifier, err := c.Cookie(verifierCookieName)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Missing verifier cookie")
+		span.RecordError(err)
 		redirectWithError(c, redirectURL, "invalid_request", "Missing verifier cookie", state)
 		return
 	}
 
 	// Exchange Google authorization code for token
-	oauthToken, err := h.oauthConfig.Exchange(c.Request.Context(), c.Query("code"), oauth2.VerifierOption(verifier))
+	span.AddEvent("oauth2.google.token.exchange")
+	oauthToken, err := h.oauthConfig.Exchange(ctx, c.Query("code"), oauth2.VerifierOption(verifier))
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to exchange code with Google")
+		span.RecordError(err)
 		redirectWithError(c, redirectURL, "server_error", "Failed to exchange code with Google", state)
 		return
 	}
 
 	// Get user info from Google
+	span.AddEvent("oauth2.google.userinfo.get")
 	client, err := googleoauth2.NewService(
-		c.Request.Context(),
-		option.WithTokenSource(h.oauthConfig.TokenSource(c.Request.Context(), oauthToken)),
+		ctx,
+		option.WithTokenSource(h.oauthConfig.TokenSource(ctx, oauthToken)),
 	)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to create Google client")
+		span.RecordError(err)
 		redirectWithError(c, redirectURL, "server_error", "Failed to create Google client", state)
 		return
 	}
 
 	user, err := client.Userinfo.Get().Do()
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to get user info from Google")
+		span.RecordError(err)
 		redirectWithError(c, redirectURL, "server_error", "Failed to get user info from Google", state)
 		return
 	}
 
 	// Register or get existing user
-	entUser, err := h.useraccount.GetOrRegister(c.Request.Context(), useraccount.UserRegisterRequest{
+	span.AddEvent("user.registration")
+	entUser, err := h.useraccount.GetOrRegister(ctx, useraccount.UserRegisterRequest{
 		Email:  user.Email,
 		Name:   user.Name,
 		Avatar: user.Picture,
 	})
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to register user")
+		span.RecordError(err)
 		redirectWithError(c, redirectURL, "server_error", "Failed to register user", state)
 		return
 	}
 
+	span.SetAttributes(
+		attribute.Int("user.id", entUser.ID),
+		attribute.String("user.email", user.Email),
+	)
+
 	// Validate that we have the redirect URI (already retrieved at the beginning)
 	if redirectURI == "" {
+		span.SetStatus(otelcodes.Error, "Missing redirect URI")
 		c.JSON(http.StatusInternalServerError, OAuth2Error{
 			Error:            "server_error",
 			ErrorDescription: "Missing redirect URI",
@@ -397,11 +454,14 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 
 	codeChallenge, err := c.Cookie(codeCookieName)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Missing code challenge")
+		span.RecordError(err)
 		redirectWithError(c, redirectURL, "server_error", "Missing code challenge", state)
 		return
 	}
 
 	// Create authorization code data
+	span.AddEvent("oauth2.authorization_code.creation")
 	authCodeData := &AuthorizationCodeData{
 		UserID:        entUser.ID,
 		RedirectURI:   redirectURI,
@@ -413,11 +473,14 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 	// Encrypt authorization code
 	authCode, err := h.encryptAuthCode(authCodeData)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to generate authorization code")
+		span.RecordError(err)
 		redirectWithError(c, redirectURL, "server_error", "Failed to generate authorization code", state)
 		return
 	}
 
 	// Clear cookies
+	span.AddEvent("oauth2.cookies.clear")
 	c.SetCookie(verifierCookieName, "", -1, "/", "", true, true)
 	c.SetCookie(redirectCookieName, "", -1, "/", "", true, true)
 	c.SetCookie(codeCookieName, "", -1, "/", "", true, true)
@@ -430,13 +493,19 @@ func (h *GauthHandler) Callback(c *gin.Context) {
 	}
 	redirectURL.RawQuery = q.Encode()
 
+	span.SetStatus(otelcodes.Ok, "Callback processed successfully")
 	c.Redirect(http.StatusFound, redirectURL.String())
 }
 
 // Token handles the OAuth 2.0 token exchange (RFC 6749 Section 4.1.3)
 func (h *GauthHandler) Token(c *gin.Context) {
+	ctx, span := tracer.Start(c.Request.Context(), "Token")
+	defer span.End()
+
 	// Parse form data
 	if err := c.Request.ParseForm(); err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to parse form data")
+		span.RecordError(err)
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "invalid_request",
 			ErrorDescription: "Failed to parse form data",
@@ -446,10 +515,14 @@ func (h *GauthHandler) Token(c *gin.Context) {
 
 	// Validate grant_type
 	grantType := c.Request.FormValue("grant_type")
+	span.SetAttributes(
+		attribute.String("oauth2.grant_type", grantType),
+	)
 	if grantType != "authorization_code" {
+		span.SetStatus(otelcodes.Error, "Unsupported grant type")
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "unsupported_grant_type",
-			ErrorDescription: "grant_type must be 'authorization_code'",
+			ErrorDescription: "Grant_type must be 'authorization_code'",
 		})
 		return
 	}
@@ -460,32 +533,38 @@ func (h *GauthHandler) Token(c *gin.Context) {
 	codeVerifier := c.Request.FormValue("code_verifier")
 
 	if code == "" {
+		span.SetStatus(otelcodes.Error, "Code is required")
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "invalid_request",
-			ErrorDescription: "code is required",
+			ErrorDescription: "Code is required",
 		})
 		return
 	}
 
 	if redirectURI == "" {
+		span.SetStatus(otelcodes.Error, "Redirect_uri is required")
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "invalid_request",
-			ErrorDescription: "redirect_uri is required",
+			ErrorDescription: "Redirect_uri is required",
 		})
 		return
 	}
 
 	if codeVerifier == "" {
+		span.SetStatus(otelcodes.Error, "Code_verifier is required")
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "invalid_request",
-			ErrorDescription: "code_verifier is required",
+			ErrorDescription: "Code_verifier is required",
 		})
 		return
 	}
 
 	// Decrypt and validate authorization code
+	span.AddEvent("oauth2.authorization_code.decrypt")
 	authCodeData, err := h.decryptAuthCode(code)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Invalid or expired authorization code")
+		span.RecordError(err)
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "invalid_grant",
 			ErrorDescription: "Invalid or expired authorization code",
@@ -493,18 +572,26 @@ func (h *GauthHandler) Token(c *gin.Context) {
 		return
 	}
 
+	span.SetAttributes(
+		attribute.Int("user.id", authCodeData.UserID),
+		attribute.String("oauth2.redirect_uri", authCodeData.RedirectURI),
+	)
+
 	// Validate redirect URI
 	if authCodeData.RedirectURI != redirectURI {
+		span.SetStatus(otelcodes.Error, "Redirect_uri does not match")
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "invalid_grant",
-			ErrorDescription: "redirect_uri does not match",
+			ErrorDescription: "Redirect_uri does not match",
 		})
 		return
 	}
 
 	// Validate PKCE code verifier
+	span.AddEvent("oauth2.pkce.verification")
 	expectedChallenge := generateCodeChallenge(codeVerifier)
 	if authCodeData.CodeChallenge != expectedChallenge {
+		span.SetStatus(otelcodes.Error, "Invalid code verifier")
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "invalid_grant",
 			ErrorDescription: "Invalid code verifier",
@@ -513,8 +600,11 @@ func (h *GauthHandler) Token(c *gin.Context) {
 	}
 
 	// Get user from database
-	entUser, err := h.useraccount.GetUser(c.Request.Context(), authCodeData.UserID)
+	span.AddEvent("user.get")
+	entUser, err := h.useraccount.GetUser(ctx, authCodeData.UserID)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to get user")
+		span.RecordError(err)
 		c.JSON(http.StatusInternalServerError, OAuth2Error{
 			Error:            "server_error",
 			ErrorDescription: "Failed to get user",
@@ -523,9 +613,12 @@ func (h *GauthHandler) Token(c *gin.Context) {
 	}
 
 	// Generate access token
-	machineName := httputils.GetMachineName(c.Request.Context())
-	accessToken, err := h.useraccount.GrantToken(c.Request.Context(), entUser, machineName, useraccount.WithFlow("oauth2"))
+	span.AddEvent("oauth2.access_token.generation")
+	machineName := httputils.GetMachineName(ctx)
+	accessToken, err := h.useraccount.GrantToken(ctx, entUser, machineName, useraccount.WithFlow("oauth2"))
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to generate access token")
+		span.RecordError(err)
 		c.JSON(http.StatusInternalServerError, OAuth2Error{
 			Error:            "server_error",
 			ErrorDescription: "Failed to generate access token",
@@ -534,6 +627,7 @@ func (h *GauthHandler) Token(c *gin.Context) {
 	}
 
 	// Return token response
+	span.SetStatus(otelcodes.Ok, "Token exchange completed successfully")
 	c.JSON(http.StatusOK, OAuth2TokenResponse{
 		TokenType:   "Bearer",
 		AccessToken: accessToken,
