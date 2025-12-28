@@ -32,6 +32,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/posthog/posthog-go"
+	"github.com/ravilushqa/otelgqlgen"
 	"github.com/redis/rueidis"
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/fx"
@@ -92,6 +93,7 @@ func GqlgenHandler(
 ) *handler.Server {
 	srv := handler.New(graph.NewSchema(entClient, storage, sqlrunner, useraccount, eventService, submissionService, rankingService))
 
+	srv.Use(otelgqlgen.Middleware())
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})
