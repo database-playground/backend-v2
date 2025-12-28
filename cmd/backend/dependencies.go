@@ -36,7 +36,9 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/fx"
 
+	"github.com/Depado/ginprom"
 	_ "github.com/database-playground/backend-v2/internal/deps/logger"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 // AuthStorage creates an auth.Storage.
@@ -145,7 +147,15 @@ func GinEngine(
 		slog.Error("error setting trusted proxies", "error", err)
 	}
 
+	ginprom := ginprom.New(
+		ginprom.Engine(engine),
+		ginprom.Path("/metrics"),
+	)
+
 	engine.Use(gin.Recovery())
+	engine.Use(gin.ErrorLogger())
+	engine.Use(ginprom.Instrument())
+	engine.Use(otelgin.Middleware("dbplay.backend"))
 	engine.Use(httputils.MachineMiddleware())
 	engine.Use(cors.New(cors.Config{
 		AllowOrigins: cfg.AllowedOrigins,
