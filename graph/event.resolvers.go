@@ -14,14 +14,19 @@ import (
 	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/scope"
+	otelcodes "go.opentelemetry.io/otel/codes"
 )
 
 // Event is the resolver for the event field.
 func (r *queryResolver) Event(ctx context.Context, id int) (*ent.Event, error) {
+	ctx, span := tracer.Start(ctx, "Event")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	tokenInfo, ok := auth.GetUser(ctx)
 	if !ok {
+		span.SetStatus(otelcodes.Error, "Unauthorized")
 		return nil, defs.ErrUnauthorized
 	}
 
@@ -29,27 +34,36 @@ func (r *queryResolver) Event(ctx context.Context, id int) (*ent.Event, error) {
 		Where(event.ID(id)).
 		Only(ctx)
 	if ent.IsNotFound(err) {
+		span.SetStatus(otelcodes.Error, "Event not found")
 		return nil, defs.ErrNotFound
 	}
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to query event")
+		span.RecordError(err)
 		return nil, err
 	}
 
 	// Check if the user has the "event:read" scope
 	// If no, check if the event is owned by the user
 	if !scope.ShouldAllow("event:read", tokenInfo.Scopes) && event.UserID != tokenInfo.UserID {
+		span.SetStatus(otelcodes.Error, "Forbidden")
 		return nil, defs.ErrForbidden
 	}
 
+	span.SetStatus(otelcodes.Ok, "Event retrieved successfully")
 	return event, nil
 }
 
 // PointGrant is the resolver for the pointGrant field.
 func (r *queryResolver) PointGrant(ctx context.Context, id int) (*ent.Point, error) {
+	ctx, span := tracer.Start(ctx, "PointGrant")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	tokenInfo, ok := auth.GetUser(ctx)
 	if !ok {
+		span.SetStatus(otelcodes.Error, "Unauthorized")
 		return nil, defs.ErrUnauthorized
 	}
 
@@ -57,9 +71,12 @@ func (r *queryResolver) PointGrant(ctx context.Context, id int) (*ent.Point, err
 		Where(point.ID(id)).
 		Only(ctx)
 	if ent.IsNotFound(err) {
+		span.SetStatus(otelcodes.Error, "Point grant not found")
 		return nil, defs.ErrNotFound
 	}
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to query point grant")
+		span.RecordError(err)
 		return nil, err
 	}
 
@@ -68,14 +85,19 @@ func (r *queryResolver) PointGrant(ctx context.Context, id int) (*ent.Point, err
 	if !scope.ShouldAllow("point:read", tokenInfo.Scopes) {
 		user, err := point.User(ctx)
 		if err != nil {
+			span.SetStatus(otelcodes.Error, "Failed to get point user")
+			span.RecordError(err)
 			return nil, err
 		}
 		if user.ID != tokenInfo.UserID {
+			span.SetStatus(otelcodes.Error, "Forbidden")
 			return nil, defs.ErrForbidden
 		}
 
+		span.SetStatus(otelcodes.Ok, "Point grant retrieved successfully")
 		return point, nil
 	}
 
+	span.SetStatus(otelcodes.Ok, "Point grant retrieved successfully")
 	return point, nil
 }

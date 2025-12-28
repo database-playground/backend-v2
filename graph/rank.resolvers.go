@@ -10,9 +10,21 @@ import (
 
 	"entgo.io/contrib/entgql"
 	"github.com/database-playground/backend-v2/graph/model"
+	otelcodes "go.opentelemetry.io/otel/codes"
 )
 
 // Ranking is the resolver for the ranking field.
 func (r *queryResolver) Ranking(ctx context.Context, first *int, after *entgql.Cursor[int], filter model.RankingFilter) (*model.RankingConnection, error) {
-	return r.rankingService.GetRanking(ctx, first, after, filter)
+	ctx, span := tracer.Start(ctx, "Ranking")
+	defer span.End()
+
+	connection, err := r.rankingService.GetRanking(ctx, first, after, filter)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to get ranking")
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.SetStatus(otelcodes.Ok, "Ranking retrieved successfully")
+	return connection, nil
 }

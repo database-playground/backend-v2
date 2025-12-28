@@ -21,18 +21,24 @@ import (
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/httputils"
 	"github.com/database-playground/backend-v2/internal/useraccount"
+	otelcodes "go.opentelemetry.io/otel/codes"
 )
 
 // UpdateMe is the resolver for the updateMe field.
 func (r *mutationResolver) UpdateMe(ctx context.Context, input ent.UpdateUserInput) (*ent.User, error) {
+	ctx, span := tracer.Start(ctx, "UpdateMe")
+	defer span.End()
+
 	user, ok := auth.GetUser(ctx)
 	if !ok {
 		// this should never happen since we have set proper scope
+		span.SetStatus(otelcodes.Error, "Unauthorized")
 		return nil, defs.ErrUnauthorized
 	}
 
 	// users cannot update their group
 	if input.GroupID != nil {
+		span.SetStatus(otelcodes.Error, "Group update not allowed")
 		return nil, defs.ErrDisallowUpdateGroup
 	}
 
@@ -40,138 +46,202 @@ func (r *mutationResolver) UpdateMe(ctx context.Context, input ent.UpdateUserInp
 
 	updatedUser, err := entClient.User.UpdateOneID(user.UserID).SetInput(input).Save(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to update user")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "User updated successfully")
 	return updatedUser, nil
 }
 
 // UpdateUser is the resolver for the updateUser field.
 func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.UpdateUserInput) (*ent.User, error) {
+	ctx, span := tracer.Start(ctx, "UpdateUser")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	user, err := entClient.User.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
+			span.SetStatus(otelcodes.Error, "User not found")
 			return nil, defs.ErrNotFound
 		}
+		span.SetStatus(otelcodes.Error, "Failed to update user")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "User updated successfully")
 	return user, nil
 }
 
 // DeleteUser is the resolver for the deleteUser field.
 func (r *mutationResolver) DeleteUser(ctx context.Context, id int) (bool, error) {
+	ctx, span := tracer.Start(ctx, "DeleteUser")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	err := entClient.User.DeleteOneID(id).Exec(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
+			span.SetStatus(otelcodes.Error, "User not found")
 			return false, defs.ErrNotFound
 		}
+		span.SetStatus(otelcodes.Error, "Failed to delete user")
+		span.RecordError(err)
 		return false, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "User deleted successfully")
 	return true, nil
 }
 
 // CreateScopeSet is the resolver for the createScopeSet field.
 func (r *mutationResolver) CreateScopeSet(ctx context.Context, input ent.CreateScopeSetInput) (*ent.ScopeSet, error) {
+	ctx, span := tracer.Start(ctx, "CreateScopeSet")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	scopeSet, err := entClient.ScopeSet.Create().SetInput(input).Save(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to create scope set")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Scope set created successfully")
 	return scopeSet, nil
 }
 
 // UpdateScopeSet is the resolver for the updateScopeSet field.
 func (r *mutationResolver) UpdateScopeSet(ctx context.Context, id int, input ent.UpdateScopeSetInput) (*ent.ScopeSet, error) {
+	ctx, span := tracer.Start(ctx, "UpdateScopeSet")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	scopeSet, err := entClient.ScopeSet.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
+			span.SetStatus(otelcodes.Error, "Scope set not found")
 			return nil, defs.ErrNotFound
 		}
+		span.SetStatus(otelcodes.Error, "Failed to update scope set")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Scope set updated successfully")
 	return scopeSet, nil
 }
 
 // DeleteScopeSet is the resolver for the deleteScopeSet field.
 func (r *mutationResolver) DeleteScopeSet(ctx context.Context, id int) (bool, error) {
+	ctx, span := tracer.Start(ctx, "DeleteScopeSet")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	err := entClient.ScopeSet.DeleteOneID(id).Exec(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
+			span.SetStatus(otelcodes.Error, "Scope set not found")
 			return false, defs.ErrNotFound
 		}
+		span.SetStatus(otelcodes.Error, "Failed to delete scope set")
+		span.RecordError(err)
 		return false, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Scope set deleted successfully")
 	return true, nil
 }
 
 // CreateGroup is the resolver for the createGroup field.
 func (r *mutationResolver) CreateGroup(ctx context.Context, input ent.CreateGroupInput) (*ent.Group, error) {
+	ctx, span := tracer.Start(ctx, "CreateGroup")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	group, err := entClient.Group.Create().SetInput(input).Save(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
+			span.SetStatus(otelcodes.Error, "Group not found")
 			return nil, defs.ErrNotFound
 		}
+		span.SetStatus(otelcodes.Error, "Failed to create group")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Group created successfully")
 	return group, nil
 }
 
 // UpdateGroup is the resolver for the updateGroup field.
 func (r *mutationResolver) UpdateGroup(ctx context.Context, id int, input ent.UpdateGroupInput) (*ent.Group, error) {
+	ctx, span := tracer.Start(ctx, "UpdateGroup")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	group, err := entClient.Group.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
+			span.SetStatus(otelcodes.Error, "Group not found")
 			return nil, defs.ErrNotFound
 		}
+		span.SetStatus(otelcodes.Error, "Failed to update group")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Group updated successfully")
 	return group, nil
 }
 
 // DeleteGroup is the resolver for the deleteGroup field.
 func (r *mutationResolver) DeleteGroup(ctx context.Context, id int) (bool, error) {
+	ctx, span := tracer.Start(ctx, "DeleteGroup")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	err := entClient.Group.DeleteOneID(id).Exec(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
+			span.SetStatus(otelcodes.Error, "Group not found")
 			return false, defs.ErrNotFound
 		}
+		span.SetStatus(otelcodes.Error, "Failed to delete group")
+		span.RecordError(err)
 		return false, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Group deleted successfully")
 	return true, nil
 }
 
 // ImpersonateUser is the resolver for the impersonateUser field.
 func (r *mutationResolver) ImpersonateUser(ctx context.Context, userID int) (string, error) {
+	ctx, span := tracer.Start(ctx, "ImpersonateUser")
+	defer span.End()
+
 	// Get the user to impersonate.
 	user, err := r.useraccount.GetUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, useraccount.ErrUserNotFound) {
+			span.SetStatus(otelcodes.Error, "User not found")
 			return "", defs.ErrNotFound
 		}
 
+		span.SetStatus(otelcodes.Error, "Failed to get user")
+		span.RecordError(err)
 		return "", err
 	}
 
@@ -183,93 +253,144 @@ func (r *mutationResolver) ImpersonateUser(ctx context.Context, userID int) (str
 		useraccount.WithImpersonation(userID),
 	)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to grant impersonation token")
+		span.RecordError(err)
 		return "", err
 	}
 
+	span.SetStatus(otelcodes.Ok, "User impersonated successfully")
 	return token, nil
 }
 
 // LogoutUser is the resolver for the logoutUser field.
 func (r *mutationResolver) LogoutUser(ctx context.Context, userID int) (bool, error) {
+	ctx, span := tracer.Start(ctx, "LogoutUser")
+	defer span.End()
+
 	err := r.useraccount.RevokeAllTokens(ctx, userID)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to revoke user tokens")
+		span.RecordError(err)
 		return false, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "User logged out successfully")
 	return true, nil
 }
 
 // LogoutAll is the resolver for the logoutAll field.
 func (r *mutationResolver) LogoutAll(ctx context.Context) (bool, error) {
+	ctx, span := tracer.Start(ctx, "LogoutAll")
+	defer span.End()
+
 	user, ok := auth.GetUser(ctx)
 	if !ok {
 		// this should never happen since we have set proper scope
+		span.SetStatus(otelcodes.Error, "Unauthorized")
 		return false, defs.ErrUnauthorized
 	}
 
-	return r.LogoutUser(ctx, user.UserID)
+	result, err := r.LogoutUser(ctx, user.UserID)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to logout all sessions")
+		span.RecordError(err)
+		return false, err
+	}
+
+	span.SetStatus(otelcodes.Ok, "All sessions logged out successfully")
+	return result, nil
 }
 
 // CreatePoint is the resolver for the createPoint field.
 func (r *mutationResolver) CreatePoint(ctx context.Context, input ent.CreatePointInput) (*ent.Point, error) {
+	ctx, span := tracer.Start(ctx, "CreatePoint")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	point, err := entClient.Point.Create().SetInput(input).Save(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to create point")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Point created successfully")
 	return point, nil
 }
 
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
+	ctx, span := tracer.Start(ctx, "Me")
+	defer span.End()
+
 	tokenInfo, ok := auth.GetUser(ctx)
 	if !ok {
 		// this should never happen since we have set proper scope
+		span.SetStatus(otelcodes.Error, "Unauthorized")
 		return nil, defs.ErrUnauthorized
 	}
 
 	user, err := r.useraccount.GetUser(ctx, tokenInfo.UserID)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to get current user")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Current user retrieved successfully")
 	return user, nil
 }
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id int) (*ent.User, error) {
+	ctx, span := tracer.Start(ctx, "User")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	user, err := entClient.User.Query().Where(user.ID(id)).First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
+			span.SetStatus(otelcodes.Error, "User not found")
 			return nil, defs.ErrNotFound
 		}
+		span.SetStatus(otelcodes.Error, "Failed to query user")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "User retrieved successfully")
 	return user, nil
 }
 
 // Group is the resolver for the group field.
 func (r *queryResolver) Group(ctx context.Context, id int) (*ent.Group, error) {
+	ctx, span := tracer.Start(ctx, "Group")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	group, err := entClient.Group.Query().Where(group.ID(id)).First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
+			span.SetStatus(otelcodes.Error, "Group not found")
 			return nil, defs.ErrNotFound
 		}
+		span.SetStatus(otelcodes.Error, "Failed to query group")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Group retrieved successfully")
 	return group, nil
 }
 
 // ScopeSet is the resolver for the scopeSet field.
 func (r *queryResolver) ScopeSet(ctx context.Context, filter model.ScopeSetFilter) (*ent.ScopeSet, error) {
+	ctx, span := tracer.Start(ctx, "ScopeSet")
+	defer span.End()
+
 	var ps predicate.ScopeSet
 
 	if filter.ID != nil {
@@ -278,6 +399,7 @@ func (r *queryResolver) ScopeSet(ctx context.Context, filter model.ScopeSetFilte
 
 	if filter.Slug != nil {
 		if ps != nil {
+			span.SetStatus(otelcodes.Error, "Invalid filter")
 			return nil, defs.ErrInvalidFilter
 		}
 
@@ -285,6 +407,7 @@ func (r *queryResolver) ScopeSet(ctx context.Context, filter model.ScopeSetFilte
 	}
 
 	if ps == nil {
+		span.SetStatus(otelcodes.Error, "Invalid filter")
 		return nil, defs.ErrInvalidFilter
 	}
 
@@ -293,45 +416,71 @@ func (r *queryResolver) ScopeSet(ctx context.Context, filter model.ScopeSetFilte
 	scopeSet, err := entClient.ScopeSet.Query().Where(ps).First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
+			span.SetStatus(otelcodes.Error, "Scope set not found")
 			return nil, defs.ErrNotFound
 		}
+		span.SetStatus(otelcodes.Error, "Failed to query scope set")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Scope set retrieved successfully")
 	return scopeSet, nil
 }
 
 // ImpersonatedBy is the resolver for the impersonatedBy field.
 func (r *userResolver) ImpersonatedBy(ctx context.Context, obj *ent.User) (*ent.User, error) {
+	ctx, span := tracer.Start(ctx, "ImpersonatedBy")
+	defer span.End()
+
 	tokenInfo, ok := auth.GetUser(ctx)
 	if !ok {
 		// this should never happen since we have set proper scope
+		span.SetStatus(otelcodes.Error, "Unauthorized")
 		return nil, defs.ErrUnauthorized
 	}
 
 	impersonatedBy, err := strconv.Atoi(tokenInfo.Meta[useraccount.MetaImpersonation])
 	if err != nil {
+		span.SetStatus(otelcodes.Ok, "No impersonation found")
 		return nil, nil
 	}
 
-	return r.useraccount.GetUser(ctx, impersonatedBy)
+	user, err := r.useraccount.GetUser(ctx, impersonatedBy)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to get impersonating user")
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.SetStatus(otelcodes.Ok, "Impersonating user retrieved successfully")
+	return user, nil
 }
 
 // TotalPoints is the resolver for the totalPoints field.
 func (r *userResolver) TotalPoints(ctx context.Context, obj *ent.User) (int, error) {
+	ctx, span := tracer.Start(ctx, "TotalPoints")
+	defer span.End()
+
 	// Check if the user has points
 	hasPoints, err := obj.QueryPoints().Exist(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to check if user has points")
+		span.RecordError(err)
 		return 0, err
 	}
 	if !hasPoints {
+		span.SetStatus(otelcodes.Ok, "User has no points")
 		return 0, nil
 	}
 
 	totalPoints, err := obj.QueryPoints().Aggregate(ent.Sum(point.FieldPoints)).Int(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to calculate total points")
+		span.RecordError(err)
 		return 0, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Total points calculated successfully")
 	return totalPoints, nil
 }

@@ -11,79 +11,176 @@ import (
 	"entgo.io/contrib/entgql"
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/graph/defs"
+	otelcodes "go.opentelemetry.io/otel/codes"
 )
 
 // Node is the resolver for the node field.
 func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
+	ctx, span := tracer.Start(ctx, "Node")
+	defer span.End()
+
 	// FIXME: Do not implement the node resolver for now,
 	// since we can't do scope check in the node resolver.
+	span.SetStatus(otelcodes.Error, "Node resolver not implemented")
 	return nil, defs.ErrNotImplemented
 }
 
 // Nodes is the resolver for the nodes field.
 func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, error) {
+	ctx, span := tracer.Start(ctx, "Nodes")
+	defer span.End()
+
 	// FIXME: Do not implement the node resolver for now,
 	// since we can't do scope check in the node resolver.
+	span.SetStatus(otelcodes.Error, "Nodes resolver not implemented")
 	return nil, defs.ErrNotImplemented
 }
 
 // Databases is the resolver for the databases field.
 func (r *queryResolver) Databases(ctx context.Context) ([]*ent.Database, error) {
+	ctx, span := tracer.Start(ctx, "Databases")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
-	return entClient.Database.Query().All(ctx)
+	databases, err := entClient.Database.Query().All(ctx)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to query databases")
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.SetStatus(otelcodes.Ok, "Databases retrieved successfully")
+	return databases, nil
 }
 
 // Events is the resolver for the events field.
 func (r *queryResolver) Events(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventOrder, where *ent.EventWhereInput) (*ent.EventConnection, error) {
+	ctx, span := tracer.Start(ctx, "Events")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
-	return entClient.Event.Query().Paginate(ctx, after, first, before, last, ent.WithEventOrder(orderBy), ent.WithEventFilter(where.Filter))
+	connection, err := entClient.Event.Query().Paginate(ctx, after, first, before, last, ent.WithEventOrder(orderBy), ent.WithEventFilter(where.Filter))
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to query events")
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.SetStatus(otelcodes.Ok, "Events retrieved successfully")
+	return connection, nil
 }
 
 // Groups is the resolver for the groups field.
 func (r *queryResolver) Groups(ctx context.Context) ([]*ent.Group, error) {
+	ctx, span := tracer.Start(ctx, "Groups")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
-	return entClient.Group.Query().All(ctx)
+	groups, err := entClient.Group.Query().All(ctx)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to query groups")
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.SetStatus(otelcodes.Ok, "Groups retrieved successfully")
+	return groups, nil
 }
 
 // Points is the resolver for the points field.
 func (r *queryResolver) Points(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PointOrder, where *ent.PointWhereInput) (*ent.PointConnection, error) {
+	ctx, span := tracer.Start(ctx, "Points")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
-	return entClient.Point.Query().Paginate(ctx, after, first, before, last, ent.WithPointOrder(orderBy), ent.WithPointFilter(where.Filter))
+	connection, err := entClient.Point.Query().Paginate(ctx, after, first, before, last, ent.WithPointOrder(orderBy), ent.WithPointFilter(where.Filter))
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to query points")
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.SetStatus(otelcodes.Ok, "Points retrieved successfully")
+	return connection, nil
 }
 
 // Questions is the resolver for the questions field.
 func (r *queryResolver) Questions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.QuestionOrder, where *ent.QuestionWhereInput) (*ent.QuestionConnection, error) {
+	ctx, span := tracer.Start(ctx, "Questions")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	query := entClient.Question.Query()
 	query = applyQuestionVisibleScopeFilter(ctx, query)
 
-	return query.Paginate(ctx, after, first, before, last, ent.WithQuestionOrder(orderBy), ent.WithQuestionFilter(where.Filter))
+	connection, err := query.Paginate(ctx, after, first, before, last, ent.WithQuestionOrder(orderBy), ent.WithQuestionFilter(where.Filter))
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to query questions")
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.SetStatus(otelcodes.Ok, "Questions retrieved successfully")
+	return connection, nil
 }
 
 // ScopeSets is the resolver for the scopeSets field.
 func (r *queryResolver) ScopeSets(ctx context.Context) ([]*ent.ScopeSet, error) {
+	ctx, span := tracer.Start(ctx, "ScopeSets")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
-	return entClient.ScopeSet.Query().All(ctx)
+	scopeSets, err := entClient.ScopeSet.Query().All(ctx)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to query scope sets")
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.SetStatus(otelcodes.Ok, "Scope sets retrieved successfully")
+	return scopeSets, nil
 }
 
 // Submissions is the resolver for the submissions field.
 func (r *queryResolver) Submissions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.SubmissionOrder, where *ent.SubmissionWhereInput) (*ent.SubmissionConnection, error) {
+	ctx, span := tracer.Start(ctx, "Submissions")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
-	return entClient.Submission.Query().Paginate(ctx, after, first, before, last, ent.WithSubmissionOrder(orderBy), ent.WithSubmissionFilter(where.Filter))
+	connection, err := entClient.Submission.Query().Paginate(ctx, after, first, before, last, ent.WithSubmissionOrder(orderBy), ent.WithSubmissionFilter(where.Filter))
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to query submissions")
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.SetStatus(otelcodes.Ok, "Submissions retrieved successfully")
+	return connection, nil
 }
 
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.UserOrder, where *ent.UserWhereInput) (*ent.UserConnection, error) {
+	ctx, span := tracer.Start(ctx, "Users")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
-	return entClient.User.Query().Paginate(ctx, after, first, before, last, ent.WithUserOrder(orderBy), ent.WithUserFilter(where.Filter))
+	connection, err := entClient.User.Query().Paginate(ctx, after, first, before, last, ent.WithUserOrder(orderBy), ent.WithUserFilter(where.Filter))
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to query users")
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.SetStatus(otelcodes.Ok, "Users retrieved successfully")
+	return connection, nil
 }
 
 // Database returns DatabaseResolver implementation.

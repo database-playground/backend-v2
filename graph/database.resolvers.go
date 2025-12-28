@@ -12,15 +12,22 @@ import (
 	"github.com/database-playground/backend-v2/graph/model"
 	"github.com/database-playground/backend-v2/internal/sqlrunner"
 	"github.com/samber/lo"
+	otelcodes "go.opentelemetry.io/otel/codes"
 )
 
 // Structure is the resolver for the structure field.
 func (r *databaseResolver) Structure(ctx context.Context, obj *ent.Database) (*model.DatabaseStructure, error) {
+	ctx, span := tracer.Start(ctx, "Structure")
+	defer span.End()
+
 	structure, err := r.sqlrunner.GetDatabaseStructure(ctx, obj.Schema)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to get database structure")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Database structure retrieved successfully")
 	return &model.DatabaseStructure{
 		Tables: lo.Map(structure.Tables, func(table sqlrunner.DatabaseTable, _ int) *model.DatabaseTable {
 			return &model.DatabaseTable{

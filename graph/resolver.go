@@ -15,12 +15,15 @@ import (
 	"github.com/database-playground/backend-v2/internal/submission"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/vektah/gqlparser/v2/gqlerror"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 )
 
 // This file will not be regenerated automatically.
 //
 // It serves as dependency injection for your app, add any dependencies you require here.
+
+var tracer = otel.Tracer("dbplay.graphql")
 
 // Resolver is the resolver root.
 type Resolver struct {
