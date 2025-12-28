@@ -19,6 +19,7 @@ require (
 	github.com/ravilushqa/otelgqlgen v0.19.0
 	github.com/redis/rueidis v1.0.69
 	github.com/samber/lo v1.52.0
+	github.com/samber/slog-gin v1.18.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
 	github.com/urfave/cli/v3 v3.6.1
@@ -35,6 +36,7 @@ require (
 	go.opentelemetry.io/otel/log v0.15.0
 	go.opentelemetry.io/otel/sdk v1.39.0
 	go.opentelemetry.io/otel/sdk/log v0.15.0
+	go.opentelemetry.io/otel/trace v1.39.0
 	go.uber.org/fx v1.24.0
 	golang.org/x/oauth2 v0.34.0
 	google.golang.org/api v0.258.0
@@ -150,7 +152,6 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.64.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
-	go.opentelemetry.io/otel/trace v1.39.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.9.0 // indirect
 	go.uber.org/dig v1.19.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect

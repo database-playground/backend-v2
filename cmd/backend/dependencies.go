@@ -34,12 +34,14 @@ import (
 	"github.com/posthog/posthog-go"
 	"github.com/ravilushqa/otelgqlgen"
 	"github.com/redis/rueidis"
+	sloggin "github.com/samber/slog-gin"
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/fx"
 
 	"github.com/Depado/ginprom"
 	_ "github.com/database-playground/backend-v2/internal/deps/logger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // AuthStorage creates an auth.Storage.
@@ -165,6 +167,18 @@ func GinEngine(
 		AllowHeaders: []string{"Content-Type", "User-Agent", "Referer", "Authorization"},
 		MaxAge:       24 * time.Hour,
 	}))
+	engine.Use(sloggin.NewWithConfig(slog.Default(), sloggin.Config{
+		WithSpanID:    true,
+		WithTraceID:   true,
+		WithUserAgent: true,
+	}))
+
+	// Add a middleware to add the trace ID to the response header
+	engine.Use(func(c *gin.Context) {
+		traceID := trace.SpanContextFromContext(c.Request.Context()).TraceID().String()
+		c.Header("X-Trace-ID", traceID)
+		c.Next()
+	})
 
 	router := engine.Group("/")
 	router.Use(auth.Middleware(authStorage))
