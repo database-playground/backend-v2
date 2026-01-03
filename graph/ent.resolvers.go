@@ -16,7 +16,7 @@ import (
 
 // Node is the resolver for the node field.
 func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
-	ctx, span := tracer.Start(ctx, "Node")
+	_, span := tracer.Start(ctx, "Node")
 	defer span.End()
 
 	// FIXME: Do not implement the node resolver for now,
@@ -27,7 +27,7 @@ func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
 
 // Nodes is the resolver for the nodes field.
 func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, error) {
-	ctx, span := tracer.Start(ctx, "Nodes")
+	_, span := tracer.Start(ctx, "Nodes")
 	defer span.End()
 
 	// FIXME: Do not implement the node resolver for now,
