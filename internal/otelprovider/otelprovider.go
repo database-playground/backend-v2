@@ -66,7 +66,12 @@ func SetupOTelSDK(ctx context.Context) (func(context.Context) error, error) {
 	shutdownFuncs = append(shutdownFuncs, loggerProvider.Shutdown)
 	global.SetLoggerProvider(loggerProvider)
 
-	slog.SetDefault(slog.New(otelslog.NewHandler("sqlrunner")))
+	serviceName := os.Getenv("OTEL_SERVICE_NAME")
+	if serviceName == "" {
+		serviceName = "dbplay.backend"
+	}
+
+	slog.SetDefault(slog.New(otelslog.NewHandler(serviceName)))
 
 	return shutdown, err
 }
