@@ -139,10 +139,10 @@ func (h *GauthHandler) Authorize(c *gin.Context) {
 	)
 
 	if redirectURI == "" {
-		span.SetStatus(otelcodes.Error, "Redirect_uri is required")
+		span.SetStatus(otelcodes.Error, "redirect_uri is required")
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "invalid_request",
-			ErrorDescription: "Redirect_uri is required",
+			ErrorDescription: "redirect_uri is required",
 			State:            state,
 		})
 		return
@@ -161,8 +161,8 @@ func (h *GauthHandler) Authorize(c *gin.Context) {
 	}
 
 	if responseType != "code" {
-		span.SetStatus(otelcodes.Error, "Response_type must be 'code'")
-		redirectWithError(c, redirectURL, "invalid_request", "Response_type must be 'code'", state)
+		span.SetStatus(otelcodes.Error, "response_type must be 'code'")
+		redirectWithError(c, redirectURL, "invalid_request", "response_type must be 'code'", state)
 		return
 	}
 
@@ -522,7 +522,7 @@ func (h *GauthHandler) Token(c *gin.Context) {
 		span.SetStatus(otelcodes.Error, "Unsupported grant type")
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "unsupported_grant_type",
-			ErrorDescription: "Grant_type must be 'authorization_code'",
+			ErrorDescription: "grant_type must be 'authorization_code'",
 		})
 		return
 	}
@@ -533,28 +533,28 @@ func (h *GauthHandler) Token(c *gin.Context) {
 	codeVerifier := c.Request.FormValue("code_verifier")
 
 	if code == "" {
-		span.SetStatus(otelcodes.Error, "Code is required")
+		span.SetStatus(otelcodes.Error, "code is required")
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "invalid_request",
-			ErrorDescription: "Code is required",
+			ErrorDescription: "code is required",
 		})
 		return
 	}
 
 	if redirectURI == "" {
-		span.SetStatus(otelcodes.Error, "Redirect_uri is required")
+		span.SetStatus(otelcodes.Error, "redirect_uri is required")
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "invalid_request",
-			ErrorDescription: "Redirect_uri is required",
+			ErrorDescription: "redirect_uri is required",
 		})
 		return
 	}
 
 	if codeVerifier == "" {
-		span.SetStatus(otelcodes.Error, "Code_verifier is required")
+		span.SetStatus(otelcodes.Error, "code_verifier is required")
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "invalid_request",
-			ErrorDescription: "Code_verifier is required",
+			ErrorDescription: "code_verifier is required",
 		})
 		return
 	}
@@ -579,10 +579,10 @@ func (h *GauthHandler) Token(c *gin.Context) {
 
 	// Validate redirect URI
 	if authCodeData.RedirectURI != redirectURI {
-		span.SetStatus(otelcodes.Error, "Redirect_uri does not match")
+		span.SetStatus(otelcodes.Error, "redirect_uri does not match")
 		c.JSON(http.StatusBadRequest, OAuth2Error{
 			Error:            "invalid_grant",
-			ErrorDescription: "Redirect_uri does not match",
+			ErrorDescription: "redirect_uri does not match",
 		})
 		return
 	}
