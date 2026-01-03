@@ -15,11 +15,15 @@ import (
 	"github.com/database-playground/backend-v2/internal/submission"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 	"github.com/vektah/gqlparser/v2/gqlerror"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // This file will not be regenerated automatically.
 //
 // It serves as dependency injection for your app, add any dependencies you require here.
+
+var tracer = otel.Tracer("dbplay.graphql")
 
 // Resolver is the resolver root.
 type Resolver struct {
@@ -66,13 +70,16 @@ func (r *Resolver) EntClient(ctx context.Context) *ent.Client {
 
 func NewErrorPresenter() graphql.ErrorPresenterFunc {
 	return func(ctx context.Context, err error) *gqlerror.Error {
+		traceID := trace.SpanContextFromContext(ctx).TraceID().String()
+
 		var gqlErr defs.GqlError
 		if errors.As(err, &gqlErr) {
 			return &gqlerror.Error{
 				Message: gqlErr.Message,
 				Path:    graphql.GetPath(ctx),
 				Extensions: map[string]any{
-					"code": gqlErr.Code,
+					"code":     gqlErr.Code,
+					"trace_id": traceID,
 				},
 			}
 		}

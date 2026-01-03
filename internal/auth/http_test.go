@@ -116,17 +116,27 @@ var (
 	_ auth.Storage = &memoryTokenStorage{}
 )
 
+type testContextKeyType string
+
+const (
+	testContextKey testContextKeyType = "test"
+)
+
 func TestExtractToken(t *testing.T) {
 	t.Run("no token", func(t *testing.T) {
-		r := http.Request{}
+		mockCtx := context.WithValue(context.Background(), testContextKey, "test")
+
+		r := &http.Request{}
+		r = r.WithContext(mockCtx)
+
 		storage := &mockTokenStorage{}
-		ctx, err := auth.ExtractToken(&r, storage)
+		ctx, err := auth.ExtractToken(r, storage)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		if ctx != r.Context() {
-			t.Fatalf("expected context to be the same, got %v", ctx)
+		if ctx.Value(testContextKey) != "test" {
+			t.Fatalf("expected context to be the same, got %v", ctx.Value(testContextKey))
 		}
 	})
 
@@ -219,6 +229,8 @@ func TestExtractToken(t *testing.T) {
 	})
 
 	t.Run("revoked token should be treated like no token", func(t *testing.T) {
+		mockCtx := context.WithValue(context.Background(), testContextKey, "test")
+
 		storage := &memoryTokenStorage{
 			storage: map[string]auth.TokenInfo{},
 		}
@@ -237,10 +249,11 @@ func TestExtractToken(t *testing.T) {
 		}
 
 		// Verify token exists and works
-		r := http.Request{
+		r := &http.Request{
 			Header: http.Header{"Authorization": {"Bearer " + token}},
 		}
-		ctx, err := auth.ExtractToken(&r, storage)
+		r = r.WithContext(mockCtx)
+		ctx, err := auth.ExtractToken(r, storage)
 		if err != nil {
 			t.Fatalf("expected no error for valid token, got %v", err)
 		}
@@ -260,13 +273,13 @@ func TestExtractToken(t *testing.T) {
 		}
 
 		// Test that the revoked token is treated like no token
-		ctx, err = auth.ExtractToken(&r, storage)
+		ctx, err = auth.ExtractToken(r, storage)
 		if err != nil {
 			t.Fatalf("expected no error for revoked token, got %v", err)
 		}
 
 		// Should not have user context (same as no token)
-		if ctx != r.Context() {
+		if ctx.Value(testContextKey) != "test" {
 			t.Fatalf("expected context to be the same as original, got different context")
 		}
 

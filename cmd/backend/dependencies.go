@@ -24,6 +24,7 @@ import (
 	"github.com/database-playground/backend-v2/internal/events"
 	"github.com/database-playground/backend-v2/internal/graphql/apq"
 	"github.com/database-playground/backend-v2/internal/httputils"
+	"github.com/database-playground/backend-v2/internal/otelprovider"
 	"github.com/database-playground/backend-v2/internal/ranking"
 	"github.com/database-playground/backend-v2/internal/sqlrunner"
 	"github.com/database-playground/backend-v2/internal/submission"
@@ -32,11 +33,16 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/posthog/posthog-go"
+	"github.com/ravilushqa/otelgqlgen"
 	"github.com/redis/rueidis"
+	sloggin "github.com/samber/slog-gin"
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/fx"
 
+	"github.com/Depado/ginprom"
 	_ "github.com/database-playground/backend-v2/internal/deps/logger"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // AuthStorage creates an auth.Storage.
@@ -50,6 +56,18 @@ func SqlRunner(cfg config.Config) *sqlrunner.SqlRunner {
 
 func ApqCache(redisClient rueidis.Client) graphql.Cache[string] {
 	return apq.NewCache(redisClient, 24*time.Hour)
+}
+
+func OTelSDK(lifecycle fx.Lifecycle) {
+	shutdown, err := otelprovider.SetupOTelSDK(context.Background())
+	if err != nil {
+		slog.Error("failed to setup OTel SDK", "error", err)
+	}
+	lifecycle.Append(fx.StopHook(func() {
+		if err := shutdown(context.Background()); err != nil {
+			slog.Error("failed to shutdown OTel SDK", "error", err)
+		}
+	}))
 }
 
 func PostHogClient(lifecycle fx.Lifecycle, cfg config.Config) (posthog.Client, error) {
@@ -90,6 +108,7 @@ func GqlgenHandler(
 ) *handler.Server {
 	srv := handler.New(graph.NewSchema(entClient, storage, sqlrunner, useraccount, eventService, submissionService, rankingService))
 
+	srv.Use(otelgqlgen.Middleware())
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})
@@ -145,7 +164,15 @@ func GinEngine(
 		slog.Error("error setting trusted proxies", "error", err)
 	}
 
+	ginprom := ginprom.New(
+		ginprom.Engine(engine),
+		ginprom.Path("/metrics"),
+	)
+
 	engine.Use(gin.Recovery())
+	engine.Use(gin.ErrorLogger())
+	engine.Use(ginprom.Instrument())
+	engine.Use(otelgin.Middleware("dbplay.backend"))
 	engine.Use(httputils.MachineMiddleware())
 	engine.Use(cors.New(cors.Config{
 		AllowOrigins: cfg.AllowedOrigins,
@@ -153,6 +180,18 @@ func GinEngine(
 		AllowHeaders: []string{"Content-Type", "User-Agent", "Referer", "Authorization"},
 		MaxAge:       24 * time.Hour,
 	}))
+	engine.Use(sloggin.NewWithConfig(slog.Default(), sloggin.Config{
+		WithSpanID:    true,
+		WithTraceID:   true,
+		WithUserAgent: true,
+	}))
+
+	// Add a middleware to add the trace ID to the response header
+	engine.Use(func(c *gin.Context) {
+		traceID := trace.SpanContextFromContext(c.Request.Context()).TraceID().String()
+		c.Header("X-Trace-ID", traceID)
+		c.Next()
+	})
 
 	router := engine.Group("/")
 	router.Use(auth.Middleware(authStorage))

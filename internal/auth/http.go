@@ -9,6 +9,9 @@ import (
 
 	"github.com/database-playground/backend-v2/graph/defs"
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel/attribute"
+	otelcodes "go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Middleware decodes the Authorization header and packs the user information into context.
@@ -16,12 +19,22 @@ import (
 // It will return 401 if the token is invalid.
 func Middleware(storage Storage) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		newCtx, err := ExtractToken(c.Request, storage)
+		ctx, span := tracer.Start(c.Request.Context(), "Middleware",
+			trace.WithAttributes(
+				attribute.String("http.method", c.Request.Method),
+				attribute.String("http.route", c.FullPath()),
+			))
+		defer span.End()
+
+		newCtx, err := ExtractToken(c.Request.WithContext(ctx), storage)
 		if err != nil {
 			var badTokenInfoError BadTokenInfoError
 			if errors.As(err, &badTokenInfoError) {
+				span.AddEvent("token.revocation")
 				// We should revoke the invalid token here.
-				if err := storage.Delete(c.Request.Context(), badTokenInfoError.Token); err != nil {
+				if err := storage.Delete(ctx, badTokenInfoError.Token); err != nil {
+					span.SetStatus(otelcodes.Error, "Failed to revoke invalid token")
+					span.RecordError(err)
 					c.JSON(http.StatusInternalServerError, gin.H{
 						"error":  "failed to revoke the token",
 						"detail": err.Error(),
@@ -30,6 +43,9 @@ func Middleware(storage Storage) gin.HandlerFunc {
 				}
 			}
 
+			span.AddEvent("auth.failed")
+			span.SetStatus(otelcodes.Error, "Authentication failed")
+			span.RecordError(err)
 			// The standard format for GraphQL errors.
 			c.JSON(http.StatusOK, gin.H{
 				"errors": []gin.H{
@@ -47,6 +63,8 @@ func Middleware(storage Storage) gin.HandlerFunc {
 			return
 		}
 
+		span.AddEvent("auth.succeeded")
+		span.SetStatus(otelcodes.Ok, "Authentication successful")
 		c.Request = c.Request.WithContext(newCtx)
 		c.Next()
 	}
@@ -60,33 +78,55 @@ var ErrBadTokenFormat = errors.New("bad token format")
 // It will return an error if the token is invalid.
 // It adds nothing to the context if the token is not present.
 func ExtractToken(r *http.Request, storage Storage) (context.Context, error) {
+	ctx, span := tracer.Start(r.Context(), "ExtractToken")
+	defer span.End()
+
 	authHeaderContent := r.Header.Get("Authorization")
 	if authHeaderContent == "" {
-		return r.Context(), nil
+		span.SetStatus(otelcodes.Ok, "No authorization header present")
+		return ctx, nil
 	}
 
+	span.AddEvent("auth.header.found")
 	token, ok := strings.CutPrefix(authHeaderContent, "Bearer ")
 	if !ok {
+		span.SetStatus(otelcodes.Error, "Invalid token format")
 		return nil, ErrBadTokenFormat
 	}
 
-	tokenInfo, err := storage.Get(r.Context(), token)
+	span.AddEvent("token.storage.get")
+	tokenInfo, err := storage.Get(ctx, token)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
-			return r.Context(), nil
+			span.AddEvent("token.not_found")
+			span.SetStatus(otelcodes.Ok, "Token not found")
+			return ctx, nil
 		}
 
+		span.SetStatus(otelcodes.Error, "Failed to get token from storage")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.AddEvent("token.validation")
 	if err := tokenInfo.Validate(); err != nil {
+		span.AddEvent("token.validation.failed")
+		span.SetStatus(otelcodes.Error, "Token validation failed")
+		span.RecordError(err)
 		return nil, BadTokenInfoError{
 			Token: token,
 			Err:   err,
 		}
 	}
 
-	return WithUser(r.Context(), tokenInfo), nil
+	span.SetAttributes(
+		attribute.Int("auth.token.user_id", tokenInfo.UserID),
+		attribute.String("auth.token.user_email", tokenInfo.UserEmail),
+		attribute.String("auth.token.machine", tokenInfo.Machine),
+		attribute.Int("auth.token.scopes.count", len(tokenInfo.Scopes)),
+	)
+	span.SetStatus(otelcodes.Ok, "Token extracted and validated successfully")
+	return WithUser(ctx, tokenInfo), nil
 }
 
 // BadTokenInfoError is returned when the token info is invalid.

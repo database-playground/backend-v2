@@ -22,114 +22,165 @@ import (
 	"github.com/database-playground/backend-v2/internal/submission"
 	"github.com/database-playground/backend-v2/models"
 	"github.com/samber/lo"
+	otelcodes "go.opentelemetry.io/otel/codes"
 )
 
 // CreateQuestion is the resolver for the createQuestion field.
 func (r *mutationResolver) CreateQuestion(ctx context.Context, input ent.CreateQuestionInput) (*ent.Question, error) {
+	ctx, span := tracer.Start(ctx, "CreateQuestion")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	question, err := entClient.Question.Create().SetInput(input).Save(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to create question")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Question created successfully")
 	return question, nil
 }
 
 // UpdateQuestion is the resolver for the updateQuestion field.
 func (r *mutationResolver) UpdateQuestion(ctx context.Context, id int, input ent.UpdateQuestionInput) (*ent.Question, error) {
+	ctx, span := tracer.Start(ctx, "UpdateQuestion")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	// First, get the question to check visible_scope
 	question, err := entClient.Question.Get(ctx, id)
 	if err != nil {
 		if ent.IsNotFound(err) {
+			span.SetStatus(otelcodes.Error, "Question not found")
 			return nil, defs.ErrNotFound
 		}
+		span.SetStatus(otelcodes.Error, "Failed to get question")
+		span.RecordError(err)
 		return nil, err
 	}
 
 	// Check if user has permission to access this question
 	if err := checkQuestionVisibleScope(ctx, question); err != nil {
+		span.SetStatus(otelcodes.Error, "Permission denied")
+		span.RecordError(err)
 		return nil, err
 	}
 
 	// Update the question
 	question, err = entClient.Question.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to update question")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Question updated successfully")
 	return question, nil
 }
 
 // DeleteQuestion is the resolver for the deleteQuestion field.
 func (r *mutationResolver) DeleteQuestion(ctx context.Context, id int) (bool, error) {
+	ctx, span := tracer.Start(ctx, "DeleteQuestion")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	// First, get the question to check visible_scope
 	question, err := entClient.Question.Get(ctx, id)
 	if err != nil {
 		if ent.IsNotFound(err) {
+			span.SetStatus(otelcodes.Error, "Question not found")
 			return false, defs.ErrNotFound
 		}
+		span.SetStatus(otelcodes.Error, "Failed to get question")
+		span.RecordError(err)
 		return false, err
 	}
 
 	// Check if user has permission to access this question
 	if err := checkQuestionVisibleScope(ctx, question); err != nil {
+		span.SetStatus(otelcodes.Error, "Permission denied")
+		span.RecordError(err)
 		return false, err
 	}
 
 	// Delete the question
 	err = entClient.Question.DeleteOneID(id).Exec(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to delete question")
+		span.RecordError(err)
 		return false, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Question deleted successfully")
 	return true, nil
 }
 
 // CreateDatabase is the resolver for the createDatabase field.
 func (r *mutationResolver) CreateDatabase(ctx context.Context, input ent.CreateDatabaseInput) (*ent.Database, error) {
+	ctx, span := tracer.Start(ctx, "CreateDatabase")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	database, err := entClient.Database.Create().SetInput(input).Save(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to create database")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Database created successfully")
 	return database, nil
 }
 
 // UpdateDatabase is the resolver for the updateDatabase field.
 func (r *mutationResolver) UpdateDatabase(ctx context.Context, id int, input ent.UpdateDatabaseInput) (*ent.Database, error) {
+	ctx, span := tracer.Start(ctx, "UpdateDatabase")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	database, err := entClient.Database.UpdateOneID(id).SetInput(input).Save(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to update database")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Database updated successfully")
 	return database, nil
 }
 
 // DeleteDatabase is the resolver for the deleteDatabase field.
 func (r *mutationResolver) DeleteDatabase(ctx context.Context, id int) (bool, error) {
+	ctx, span := tracer.Start(ctx, "DeleteDatabase")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	err := entClient.Database.DeleteOneID(id).Exec(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to delete database")
+		span.RecordError(err)
 		return false, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Database deleted successfully")
 	return true, nil
 }
 
 // SubmitAnswer is the resolver for the submitAnswer field.
 func (r *mutationResolver) SubmitAnswer(ctx context.Context, id int, answer string) (*model.SubmissionResult, error) {
+	ctx, span := tracer.Start(ctx, "SubmitAnswer")
+	defer span.End()
+
 	user, ok := auth.GetUser(ctx)
 	if !ok {
+		span.SetStatus(otelcodes.Error, "Unauthorized")
 		return nil, defs.ErrUnauthorized
 	}
 
@@ -138,12 +189,17 @@ func (r *mutationResolver) SubmitAnswer(ctx context.Context, id int, answer stri
 	question, err := entClient.Question.Get(ctx, id)
 	if err != nil {
 		if ent.IsNotFound(err) {
+			span.SetStatus(otelcodes.Error, "Question not found")
 			return nil, defs.ErrNotFound
 		}
+		span.SetStatus(otelcodes.Error, "Failed to get question")
+		span.RecordError(err)
 		return nil, err
 	}
 
 	if err := checkQuestionVisibleScope(ctx, question); err != nil {
+		span.SetStatus(otelcodes.Error, "Permission denied")
+		span.RecordError(err)
 		return nil, err
 	}
 
@@ -154,12 +210,16 @@ func (r *mutationResolver) SubmitAnswer(ctx context.Context, id int, answer stri
 	})
 	if err != nil {
 		if errors.Is(err, submission.ErrQuestionNotFound) {
+			span.SetStatus(otelcodes.Error, "Question not found")
 			return nil, defs.ErrNotFound
 		}
 
+		span.SetStatus(otelcodes.Error, "Failed to submit answer")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Answer submitted successfully")
 	return &model.SubmissionResult{
 		Result: submissionResult.QueryResult,
 		Error:  submissionResult.Error,
@@ -168,50 +228,72 @@ func (r *mutationResolver) SubmitAnswer(ctx context.Context, id int, answer stri
 
 // Question is the resolver for the question field.
 func (r *queryResolver) Question(ctx context.Context, id int) (*ent.Question, error) {
+	ctx, span := tracer.Start(ctx, "Question")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	question, err := entClient.Question.Get(ctx, id)
 	if err != nil {
 		if ent.IsNotFound(err) {
+			span.SetStatus(otelcodes.Error, "Question not found")
 			return nil, defs.ErrNotFound
 		}
+		span.SetStatus(otelcodes.Error, "Failed to get question")
+		span.RecordError(err)
 		return nil, err
 	}
 
 	// Check if user has permission to access this question based on visible_scope
 	if err := checkQuestionVisibleScope(ctx, question); err != nil {
+		span.SetStatus(otelcodes.Error, "Permission denied")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Question retrieved successfully")
 	return question, nil
 }
 
 // Database is the resolver for the database field.
 func (r *queryResolver) Database(ctx context.Context, id int) (*ent.Database, error) {
+	ctx, span := tracer.Start(ctx, "Database")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	database, err := entClient.Database.Get(ctx, id)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to get database")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Database retrieved successfully")
 	return database, nil
 }
 
 // Submission is the resolver for the submission field.
 func (r *queryResolver) Submission(ctx context.Context, id int) (*ent.Submission, error) {
+	ctx, span := tracer.Start(ctx, "Submission")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	tokenInfo, ok := auth.GetUser(ctx)
 	if !ok {
+		span.SetStatus(otelcodes.Error, "Unauthorized")
 		return nil, defs.ErrUnauthorized
 	}
 
 	submission, err := entClient.Submission.Get(ctx, id)
 	if ent.IsNotFound(err) {
+		span.SetStatus(otelcodes.Error, "Submission not found")
 		return nil, defs.ErrNotFound
 	}
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to get submission")
+		span.RecordError(err)
 		return nil, err
 	}
 
@@ -220,20 +302,28 @@ func (r *queryResolver) Submission(ctx context.Context, id int) (*ent.Submission
 	if !scope.ShouldAllow("submission:read", tokenInfo.Scopes) {
 		user, err := submission.User(ctx)
 		if err != nil {
+			span.SetStatus(otelcodes.Error, "Failed to get submission user")
+			span.RecordError(err)
 			return nil, err
 		}
 		if user.ID != tokenInfo.UserID {
+			span.SetStatus(otelcodes.Error, "Forbidden")
 			return nil, defs.ErrForbidden
 		}
 
+		span.SetStatus(otelcodes.Ok, "Submission retrieved successfully")
 		return submission, nil
 	}
 
+	span.SetStatus(otelcodes.Ok, "Submission retrieved successfully")
 	return submission, nil
 }
 
 // QuestionCategories is the resolver for the questionCategories field.
 func (r *queryResolver) QuestionCategories(ctx context.Context) ([]string, error) {
+	ctx, span := tracer.Start(ctx, "QuestionCategories")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	query := entClient.Question.Query()
@@ -244,24 +334,35 @@ func (r *queryResolver) QuestionCategories(ctx context.Context) ([]string, error
 		Select(entQuestion.FieldCategory).
 		Strings(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to query question categories")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Question categories retrieved successfully")
 	return categories, nil
 }
 
 // ReferenceAnswerResult is the resolver for the referenceAnswerResult field.
 func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Question) (*models.SQLExecutionResult, error) {
+	ctx, span := tracer.Start(ctx, "ReferenceAnswerResult")
+	defer span.End()
+
 	database, err := obj.QueryDatabase().Only(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to get question database")
+		span.RecordError(err)
 		return nil, err
 	}
 
 	response, err := r.sqlrunner.Query(ctx, database.Schema, obj.ReferenceAnswer)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to execute reference answer query")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Reference answer result retrieved successfully")
 	return &models.SQLExecutionResult{
 		Columns: response.Columns,
 		Rows:    response.Rows,
@@ -270,8 +371,12 @@ func (r *questionResolver) ReferenceAnswerResult(ctx context.Context, obj *ent.Q
 
 // UserSubmissions is the resolver for the userSubmissions field.
 func (r *questionResolver) UserSubmissions(ctx context.Context, obj *ent.Question) ([]*ent.Submission, error) {
+	ctx, span := tracer.Start(ctx, "UserSubmissions")
+	defer span.End()
+
 	tokenInfo, ok := auth.GetUser(ctx)
 	if !ok {
+		span.SetStatus(otelcodes.Error, "Unauthorized")
 		return nil, defs.ErrUnauthorized
 	}
 
@@ -279,16 +384,23 @@ func (r *questionResolver) UserSubmissions(ctx context.Context, obj *ent.Questio
 		entSubmission.HasUserWith(user.ID(tokenInfo.UserID)),
 	).Order(entSubmission.BySubmittedAt(sql.OrderDesc())).All(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to query user submissions")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "User submissions retrieved successfully")
 	return submissions, nil
 }
 
 // LastSubmission is the resolver for the lastSubmission field.
 func (r *questionResolver) LastSubmission(ctx context.Context, obj *ent.Question) (*ent.Submission, error) {
+	ctx, span := tracer.Start(ctx, "LastSubmission")
+	defer span.End()
+
 	tokenInfo, ok := auth.GetUser(ctx)
 	if !ok {
+		span.SetStatus(otelcodes.Error, "Unauthorized")
 		return nil, defs.ErrUnauthorized
 	}
 
@@ -297,19 +409,27 @@ func (r *questionResolver) LastSubmission(ctx context.Context, obj *ent.Question
 	).Order(entSubmission.BySubmittedAt(sql.OrderDesc())).First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
+			span.SetStatus(otelcodes.Ok, "No submission found")
 			return nil, nil
 		}
 
+		span.SetStatus(otelcodes.Error, "Failed to query last submission")
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Last submission retrieved successfully")
 	return submission, nil
 }
 
 // Attempted is the resolver for the attempted field.
 func (r *questionResolver) Attempted(ctx context.Context, obj *ent.Question) (bool, error) {
+	ctx, span := tracer.Start(ctx, "Attempted")
+	defer span.End()
+
 	tokenInfo, ok := auth.GetUser(ctx)
 	if !ok {
+		span.SetStatus(otelcodes.Error, "Unauthorized")
 		return false, defs.ErrUnauthorized
 	}
 
@@ -317,16 +437,23 @@ func (r *questionResolver) Attempted(ctx context.Context, obj *ent.Question) (bo
 		entSubmission.HasUserWith(user.ID(tokenInfo.UserID)),
 	).Exist(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to check if question attempted")
+		span.RecordError(err)
 		return false, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Attempted status checked successfully")
 	return exists, nil
 }
 
 // Solved is the resolver for the solved field.
 func (r *questionResolver) Solved(ctx context.Context, obj *ent.Question) (bool, error) {
+	ctx, span := tracer.Start(ctx, "Solved")
+	defer span.End()
+
 	tokenInfo, ok := auth.GetUser(ctx)
 	if !ok {
+		span.SetStatus(otelcodes.Error, "Unauthorized")
 		return false, defs.ErrUnauthorized
 	}
 
@@ -335,14 +462,20 @@ func (r *questionResolver) Solved(ctx context.Context, obj *ent.Question) (bool,
 		entSubmission.StatusEQ(entSubmission.StatusSuccess),
 	).Exist(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to check if question solved")
+		span.RecordError(err)
 		return false, err
 	}
 
+	span.SetStatus(otelcodes.Ok, "Solved status checked successfully")
 	return exists, nil
 }
 
 // Statistics is the resolver for the statistics field.
 func (r *questionResolver) Statistics(ctx context.Context, obj *ent.Question) (*models.QuestionStatistics, error) {
+	ctx, span := tracer.Start(ctx, "Statistics")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	correctSubmissionCount, err := entClient.Submission.Query().Where(
@@ -350,6 +483,8 @@ func (r *questionResolver) Statistics(ctx context.Context, obj *ent.Question) (*
 		entSubmission.StatusEQ(entSubmission.StatusSuccess),
 	).Count(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to retrieve correct submission count")
+		span.RecordError(err)
 		return nil, fmt.Errorf("retrieving correct submission count: %w", err)
 	}
 
@@ -357,6 +492,8 @@ func (r *questionResolver) Statistics(ctx context.Context, obj *ent.Question) (*
 		entSubmission.HasQuestionWith(entQuestion.ID(obj.ID)),
 	).Count(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to retrieve submission count")
+		span.RecordError(err)
 		return nil, fmt.Errorf("retrieving submission count: %w", err)
 	}
 
@@ -364,6 +501,8 @@ func (r *questionResolver) Statistics(ctx context.Context, obj *ent.Question) (*
 		entSubmission.HasQuestionWith(entQuestion.ID(obj.ID)),
 	).Select(entSubmission.UserColumn).Unique(true).Count(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to retrieve attempted users")
+		span.RecordError(err)
 		return nil, fmt.Errorf("retrieving attempted users: %w", err)
 	}
 
@@ -372,9 +511,12 @@ func (r *questionResolver) Statistics(ctx context.Context, obj *ent.Question) (*
 		entSubmission.StatusEQ(entSubmission.StatusSuccess),
 	).Select(entSubmission.UserColumn).Unique(true).Count(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to retrieve passed users")
+		span.RecordError(err)
 		return nil, fmt.Errorf("retrieving passed users: %w", err)
 	}
 
+	span.SetStatus(otelcodes.Ok, "Question statistics retrieved successfully")
 	return &models.QuestionStatistics{
 		CorrectSubmissionCount: correctSubmissionCount,
 		SubmissionCount:        submissionCount,
@@ -385,6 +527,9 @@ func (r *questionResolver) Statistics(ctx context.Context, obj *ent.Question) (*
 
 // SubmissionStatistics is the resolver for the submissionStatistics field.
 func (r *userResolver) SubmissionStatistics(ctx context.Context, obj *ent.User) (*model.SubmissionStatistics, error) {
+	ctx, span := tracer.Start(ctx, "SubmissionStatistics")
+	defer span.End()
+
 	entClient := r.EntClient(ctx)
 
 	type tSQLSolvedQuestionByDifficulty struct {
@@ -397,6 +542,8 @@ func (r *userResolver) SubmissionStatistics(ctx context.Context, obj *ent.User) 
 	totalQuestionsQuery = applyQuestionVisibleScopeFilter(ctx, totalQuestionsQuery)
 	totalQuestions, err := totalQuestionsQuery.Count(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to retrieve total questions")
+		span.RecordError(err)
 		return nil, fmt.Errorf("retrieving total questions: %w", err)
 	}
 
@@ -406,6 +553,8 @@ func (r *userResolver) SubmissionStatistics(ctx context.Context, obj *ent.User) 
 	attemptedQuestionsQuery = applyQuestionVisibleScopeFilter(ctx, attemptedQuestionsQuery)
 	attemptedQuestions, err := attemptedQuestionsQuery.Count(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to retrieve attempted questions")
+		span.RecordError(err)
 		return nil, fmt.Errorf("retrieving attempted questions: %w", err)
 	}
 
@@ -417,6 +566,8 @@ func (r *userResolver) SubmissionStatistics(ctx context.Context, obj *ent.User) 
 	solvedQuestionsQuery = applyQuestionVisibleScopeFilter(ctx, solvedQuestionsQuery)
 	solvedQuestions, err := solvedQuestionsQuery.Count(ctx)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to retrieve solved questions")
+		span.RecordError(err)
 		return nil, fmt.Errorf("retrieving solved questions: %w", err)
 	}
 
@@ -435,9 +586,12 @@ func (r *userResolver) SubmissionStatistics(ctx context.Context, obj *ent.User) 
 		Aggregate(ent.Count()).
 		Scan(ctx, &solvedQuestionByDifficulty)
 	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to retrieve solved question by difficulty")
+		span.RecordError(err)
 		return nil, fmt.Errorf("retrieving solved question by difficulty: %w", err)
 	}
 
+	span.SetStatus(otelcodes.Ok, "Submission statistics retrieved successfully")
 	return &model.SubmissionStatistics{
 		TotalQuestions:     totalQuestions,
 		AttemptedQuestions: attemptedQuestions,
