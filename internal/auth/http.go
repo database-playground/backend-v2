@@ -91,7 +91,6 @@ func ExtractToken(r *http.Request, storage Storage) (context.Context, error) {
 	token, ok := strings.CutPrefix(authHeaderContent, "Bearer ")
 	if !ok {
 		span.SetStatus(otelcodes.Error, "Invalid token format")
-		span.RecordError(ErrBadTokenFormat)
 		return nil, ErrBadTokenFormat
 	}
 
