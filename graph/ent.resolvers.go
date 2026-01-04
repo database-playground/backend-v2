@@ -7,7 +7,6 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"entgo.io/contrib/entgql"
 	"github.com/database-playground/backend-v2/ent"
@@ -39,7 +38,20 @@ func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, erro
 
 // CheatRecords is the resolver for the cheatRecords field.
 func (r *queryResolver) CheatRecords(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.CheatRecordWhereInput) (*ent.CheatRecordConnection, error) {
-	panic(fmt.Errorf("not implemented: CheatRecords - cheatRecords"))
+	ctx, span := tracer.Start(ctx, "CheatRecords")
+	defer span.End()
+
+	entClient := r.EntClient(ctx)
+
+	connection, err := entClient.CheatRecord.Query().Paginate(ctx, after, first, before, last, ent.WithCheatRecordFilter(where.Filter))
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to query cheat records")
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.SetStatus(otelcodes.Ok, "Cheat records retrieved successfully")
+	return connection, nil
 }
 
 // Databases is the resolver for the databases field.
