@@ -15,6 +15,11 @@ extend type Query {
   Get a scope set by ID or slug.
   """
   scopeSet(filter: ScopeSetFilter!): ScopeSet! @scope(scope: "scopeset:read")
+
+  """
+  Get a cheat record by ID.
+  """
+  cheatRecord(id: ID!): CheatRecord! @scope(scope: "cheat_record:read")
 }
 
 """

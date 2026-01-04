@@ -501,6 +501,28 @@ func (r *queryResolver) ScopeSet(ctx context.Context, filter model.ScopeSetFilte
 	return scopeSet, nil
 }
 
+// CheatRecord is the resolver for the cheatRecord field.
+func (r *queryResolver) CheatRecord(ctx context.Context, id int) (*ent.CheatRecord, error) {
+	ctx, span := tracer.Start(ctx, "CheatRecord")
+	defer span.End()
+
+	entClient := r.EntClient(ctx)
+
+	cheatRecord, err := entClient.CheatRecord.Get(ctx, id)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			span.SetStatus(otelcodes.Error, "Cheat record not found")
+			return nil, defs.ErrNotFound
+		}
+		span.SetStatus(otelcodes.Error, "Failed to query cheat record")
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.SetStatus(otelcodes.Ok, "Cheat record retrieved successfully")
+	return cheatRecord, nil
+}
+
 // ImpersonatedBy is the resolver for the impersonatedBy field.
 func (r *userResolver) ImpersonatedBy(ctx context.Context, obj *ent.User) (*ent.User, error) {
 	ctx, span := tracer.Start(ctx, "ImpersonatedBy")
