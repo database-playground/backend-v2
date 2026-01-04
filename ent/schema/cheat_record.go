@@ -16,7 +16,6 @@ type CheatRecord struct {
 
 func (CheatRecord) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int("user_id"),
 		field.String("reason"),
 		field.String("resolved_reason").Optional(),
 		field.Time("resolved_at").Optional(),
@@ -28,7 +27,6 @@ func (CheatRecord) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("user", User.Type).
 			Ref("cheat_records").
-			Field("user_id").
 			Unique().
 			Required(),
 	}
