@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/ent/cheatrecord"
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/point"
 	"github.com/database-playground/backend-v2/ent/predicate"
@@ -483,4 +484,23 @@ func (r *userResolver) TotalPoints(ctx context.Context, obj *ent.User) (int, err
 
 	span.SetStatus(otelcodes.Ok, "Total points calculated successfully")
 	return totalPoints, nil
+}
+
+// Cheating is the resolver for the cheating field.
+func (r *userResolver) Cheating(ctx context.Context, obj *ent.User) (bool, error) {
+	ctx, span := tracer.Start(ctx, "Cheating")
+	defer span.End()
+
+	cheatRecordsCount, err := obj.QueryCheatRecords().Where(cheatrecord.ResolvedAtIsNil()).Count(ctx)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to query cheat records")
+		span.RecordError(err)
+		return false, err
+	}
+	if cheatRecordsCount > 0 {
+		span.SetStatus(otelcodes.Ok, "User has existing unresolved cheat records")
+		return true, nil
+	}
+	span.SetStatus(otelcodes.Ok, "User has no existing unresolved cheat records")
+	return false, nil
 }

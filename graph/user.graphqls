@@ -44,6 +44,11 @@ extend type User {
   The total points of the user.
   """
   totalPoints: Int!
+
+  """
+  Does this user have any existing unresolved cheat records?
+  """
+  cheating: Boolean!
 }
 
 extend type Mutation {
