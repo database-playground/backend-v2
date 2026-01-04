@@ -115,4 +115,19 @@ extend type Mutation {
   Create a new point record for a user.
   """
   createPoint(input: CreatePointInput!): Point @scope(scope: "point:write")
+
+  """
+  Create a new cheat record for a user.
+
+  If userID is not provided, the current user will be used.
+  For this case, you should have "me:write" scope.
+
+  If userID is provided, you should have "cheat_record:write" scope.
+  """
+  createCheatRecord(userID: ID, reason: String!): CheatRecord!
+
+  """
+  Resolve a cheat record.
+  """
+  resolveCheatRecord(cheatRecordID: ID!, reason: String!): Boolean! @scope(scope: "cheat_record:write")
 }

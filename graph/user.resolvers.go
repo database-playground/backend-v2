@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"time"
 
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/ent/cheatrecord"
@@ -21,6 +22,7 @@ import (
 	"github.com/database-playground/backend-v2/graph/model"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/httputils"
+	"github.com/database-playground/backend-v2/internal/scope"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 	otelcodes "go.opentelemetry.io/otel/codes"
 )
@@ -318,6 +320,76 @@ func (r *mutationResolver) CreatePoint(ctx context.Context, input ent.CreatePoin
 
 	span.SetStatus(otelcodes.Ok, "Point created successfully")
 	return point, nil
+}
+
+// CreateCheatRecord is the resolver for the createCheatRecord field.
+func (r *mutationResolver) CreateCheatRecord(ctx context.Context, userID *int, reason string) (*ent.CheatRecord, error) {
+	ctx, span := tracer.Start(ctx, "CreateCheatRecord")
+	defer span.End()
+
+	user, ok := auth.GetUser(ctx)
+	if !ok {
+		span.SetStatus(otelcodes.Error, "Unauthorized")
+		return nil, defs.ErrUnauthorized
+	}
+
+	entClient := r.EntClient(ctx)
+
+	var targetUserID int
+
+	if userID == nil {
+		if !scope.ShouldAllow("me:write", user.Scopes) {
+			span.SetStatus(otelcodes.Error, "You must have 'me:write' scope to write cheat record for yourself")
+			return nil, defs.GqlError{
+				Message: "You must have 'me:write' scope to write cheat record for yourself",
+				Code:    defs.CodeForbidden,
+			}
+		}
+
+		targetUserID = user.UserID
+	} else {
+		if !scope.ShouldAllow("cheat_record:write", user.Scopes) {
+			span.SetStatus(otelcodes.Error, "You must have 'cheat_record:write' scope to write cheat record for other users")
+			return nil, defs.GqlError{
+				Message: "You must have 'cheat_record:write' scope to write cheat record for other users",
+				Code:    defs.CodeForbidden,
+			}
+		}
+
+		targetUserID = *userID
+	}
+
+	cheatRecord, err := entClient.CheatRecord.Create().
+		SetUserID(targetUserID).
+		SetReason(reason).
+		Save(ctx)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to record cheat record")
+		span.RecordError(err)
+		return nil, err
+	}
+
+	return cheatRecord, nil
+}
+
+// ResolveCheatRecord is the resolver for the resolveCheatRecord field.
+func (r *mutationResolver) ResolveCheatRecord(ctx context.Context, cheatRecordID int, reason string) (bool, error) {
+	ctx, span := tracer.Start(ctx, "ResolveCheatRecord")
+	defer span.End()
+
+	entClient := r.EntClient(ctx)
+
+	err := entClient.CheatRecord.UpdateOneID(cheatRecordID).
+		SetResolvedAt(time.Now()).
+		SetResolvedReason(reason).
+		Exec(ctx)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to resolve cheat record")
+		span.RecordError(err)
+		return false, err
+	}
+
+	return true, nil
 }
 
 // Me is the resolver for the me field.
