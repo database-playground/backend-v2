@@ -1956,10 +1956,12 @@ func TestMutationResolver_CreateCheatRecord(t *testing.T) {
 			CreateCheatRecord struct {
 				ID     string
 				Reason string
-				UserID int
+				User   struct {
+					ID string
+				}
 			}
 		}
-		err = c.Post(`mutation { createCheatRecord(reason: "Test cheating reason") { id reason userID } }`, &resp, func(bd *client.Request) {
+		err = c.Post(`mutation { createCheatRecord(reason: "Test cheating reason") { id reason user { id } } }`, &resp, func(bd *client.Request) {
 			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
 				UserID: user.ID,
 				Scopes: []string{"me:write"},
@@ -1970,7 +1972,7 @@ func TestMutationResolver_CreateCheatRecord(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, resp.CreateCheatRecord.ID)
 		require.Equal(t, "Test cheating reason", resp.CreateCheatRecord.Reason)
-		require.Equal(t, user.ID, resp.CreateCheatRecord.UserID)
+		require.Equal(t, strconv.Itoa(user.ID), resp.CreateCheatRecord.User.ID)
 	})
 
 	t.Run("success - create for another user", func(t *testing.T) {
@@ -2004,10 +2006,12 @@ func TestMutationResolver_CreateCheatRecord(t *testing.T) {
 			CreateCheatRecord struct {
 				ID     string
 				Reason string
-				UserID int
+				User   struct {
+					ID string
+				}
 			}
 		}
-		err = c.Post(`mutation { createCheatRecord(userID: `+strconv.Itoa(targetUser.ID)+`, reason: "Test cheating reason") { id reason userID } }`, &resp, func(bd *client.Request) {
+		err = c.Post(`mutation { createCheatRecord(userID: `+strconv.Itoa(targetUser.ID)+`, reason: "Test cheating reason") { id reason user { id } } }`, &resp, func(bd *client.Request) {
 			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
 				UserID: 1,
 				Scopes: []string{"cheat_record:write"},
@@ -2018,7 +2022,7 @@ func TestMutationResolver_CreateCheatRecord(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, resp.CreateCheatRecord.ID)
 		require.Equal(t, "Test cheating reason", resp.CreateCheatRecord.Reason)
-		require.Equal(t, targetUser.ID, resp.CreateCheatRecord.UserID)
+		require.Equal(t, strconv.Itoa(targetUser.ID), resp.CreateCheatRecord.User.ID)
 	})
 
 	t.Run("unauthenticated", func(t *testing.T) {
@@ -2038,10 +2042,14 @@ func TestMutationResolver_CreateCheatRecord(t *testing.T) {
 		// Execute mutation with no auth context
 		var resp struct {
 			CreateCheatRecord struct {
-				ID string
+				ID     string
+				Reason string
+				User   struct {
+					ID string
+				}
 			}
 		}
-		err := c.Post(`mutation { createCheatRecord(reason: "Test reason") { id } }`, &resp)
+		err := c.Post(`mutation { createCheatRecord(reason: "Test reason") { id reason user { id } } }`, &resp)
 
 		// Verify error
 		require.Error(t, err)
@@ -2077,7 +2085,11 @@ func TestMutationResolver_CreateCheatRecord(t *testing.T) {
 		// Execute mutation
 		var resp struct {
 			CreateCheatRecord struct {
-				ID string
+				ID     string
+				Reason string
+				User   struct {
+					ID string
+				}
 			}
 		}
 		err = c.Post(`mutation { createCheatRecord(reason: "Test reason") { id } }`, &resp, func(bd *client.Request) {
