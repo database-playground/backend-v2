@@ -29,20 +29,6 @@ func (_u *CheatRecordUpdate) Where(ps ...predicate.CheatRecord) *CheatRecordUpda
 	return _u
 }
 
-// SetUserID sets the "user_id" field.
-func (_u *CheatRecordUpdate) SetUserID(v int) *CheatRecordUpdate {
-	_u.mutation.SetUserID(v)
-	return _u
-}
-
-// SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (_u *CheatRecordUpdate) SetNillableUserID(v *int) *CheatRecordUpdate {
-	if v != nil {
-		_u.SetUserID(*v)
-	}
-	return _u
-}
-
 // SetReason sets the "reason" field.
 func (_u *CheatRecordUpdate) SetReason(v string) *CheatRecordUpdate {
 	_u.mutation.SetReason(v)
@@ -108,6 +94,12 @@ func (_u *CheatRecordUpdate) SetNillableCheatedAt(v *time.Time) *CheatRecordUpda
 	if v != nil {
 		_u.SetCheatedAt(*v)
 	}
+	return _u
+}
+
+// SetUserID sets the "user" edge to the User entity by ID.
+func (_u *CheatRecordUpdate) SetUserID(id int) *CheatRecordUpdate {
+	_u.mutation.SetUserID(id)
 	return _u
 }
 
@@ -241,20 +233,6 @@ type CheatRecordUpdateOne struct {
 	mutation *CheatRecordMutation
 }
 
-// SetUserID sets the "user_id" field.
-func (_u *CheatRecordUpdateOne) SetUserID(v int) *CheatRecordUpdateOne {
-	_u.mutation.SetUserID(v)
-	return _u
-}
-
-// SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (_u *CheatRecordUpdateOne) SetNillableUserID(v *int) *CheatRecordUpdateOne {
-	if v != nil {
-		_u.SetUserID(*v)
-	}
-	return _u
-}
-
 // SetReason sets the "reason" field.
 func (_u *CheatRecordUpdateOne) SetReason(v string) *CheatRecordUpdateOne {
 	_u.mutation.SetReason(v)
@@ -320,6 +298,12 @@ func (_u *CheatRecordUpdateOne) SetNillableCheatedAt(v *time.Time) *CheatRecordU
 	if v != nil {
 		_u.SetCheatedAt(*v)
 	}
+	return _u
+}
+
+// SetUserID sets the "user" edge to the User entity by ID.
+func (_u *CheatRecordUpdateOne) SetUserID(id int) *CheatRecordUpdateOne {
+	_u.mutation.SetUserID(id)
 	return _u
 }
 

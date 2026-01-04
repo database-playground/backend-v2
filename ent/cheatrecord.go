@@ -18,8 +18,6 @@ type CheatRecord struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// UserID holds the value of the "user_id" field.
-	UserID int `json:"user_id,omitempty"`
 	// Reason holds the value of the "reason" field.
 	Reason string `json:"reason,omitempty"`
 	// ResolvedReason holds the value of the "resolved_reason" field.
@@ -30,8 +28,9 @@ type CheatRecord struct {
 	CheatedAt time.Time `json:"cheated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CheatRecordQuery when eager-loading is set.
-	Edges        CheatRecordEdges `json:"edges"`
-	selectValues sql.SelectValues
+	Edges              CheatRecordEdges `json:"edges"`
+	user_cheat_records *int
+	selectValues       sql.SelectValues
 }
 
 // CheatRecordEdges holds the relations/edges for other nodes in the graph.
@@ -61,12 +60,14 @@ func (*CheatRecord) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case cheatrecord.FieldID, cheatrecord.FieldUserID:
+		case cheatrecord.FieldID:
 			values[i] = new(sql.NullInt64)
 		case cheatrecord.FieldReason, cheatrecord.FieldResolvedReason:
 			values[i] = new(sql.NullString)
 		case cheatrecord.FieldResolvedAt, cheatrecord.FieldCheatedAt:
 			values[i] = new(sql.NullTime)
+		case cheatrecord.ForeignKeys[0]: // user_cheat_records
+			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -88,12 +89,6 @@ func (_m *CheatRecord) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			_m.ID = int(value.Int64)
-		case cheatrecord.FieldUserID:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field user_id", values[i])
-			} else if value.Valid {
-				_m.UserID = int(value.Int64)
-			}
 		case cheatrecord.FieldReason:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field reason", values[i])
@@ -117,6 +112,13 @@ func (_m *CheatRecord) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field cheated_at", values[i])
 			} else if value.Valid {
 				_m.CheatedAt = value.Time
+			}
+		case cheatrecord.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field user_cheat_records", value)
+			} else if value.Valid {
+				_m.user_cheat_records = new(int)
+				*_m.user_cheat_records = int(value.Int64)
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -159,9 +161,6 @@ func (_m *CheatRecord) String() string {
 	var builder strings.Builder
 	builder.WriteString("CheatRecord(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
-	builder.WriteString("user_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.UserID))
-	builder.WriteString(", ")
 	builder.WriteString("reason=")
 	builder.WriteString(_m.Reason)
 	builder.WriteString(", ")

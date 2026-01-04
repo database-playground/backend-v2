@@ -24,7 +24,7 @@ func init() {
 	cheatrecordFields := schema.CheatRecord{}.Fields()
 	_ = cheatrecordFields
 	// cheatrecordDescCheatedAt is the schema descriptor for cheated_at field.
-	cheatrecordDescCheatedAt := cheatrecordFields[4].Descriptor()
+	cheatrecordDescCheatedAt := cheatrecordFields[3].Descriptor()
 	// cheatrecord.DefaultCheatedAt holds the default value on creation for the cheated_at field.
 	cheatrecord.DefaultCheatedAt = cheatrecordDescCheatedAt.Default.(func() time.Time)
 	databaseFields := schema.Database{}.Fields()

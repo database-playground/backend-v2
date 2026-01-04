@@ -2,7 +2,6 @@ directive @goField(forceResolver: Boolean, name: String, omittable: Boolean) on 
 directive @goModel(model: String, models: [String!], forceGenerate: Boolean) on OBJECT | INPUT_OBJECT | SCALAR | ENUM | INTERFACE | UNION
 type CheatRecord implements Node {
   id: ID!
-  userID: ID!
   reason: String!
   resolvedReason: String
   resolvedAt: Time
@@ -58,13 +57,6 @@ input CheatRecordWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
-  """
-  user_id field predicates
-  """
-  userID: ID
-  userIDNEQ: ID
-  userIDIn: [ID!]
-  userIDNotIn: [ID!]
   """
   reason field predicates
   """

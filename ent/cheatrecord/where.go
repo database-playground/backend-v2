@@ -55,11 +55,6 @@ func IDLTE(id int) predicate.CheatRecord {
 	return predicate.CheatRecord(sql.FieldLTE(FieldID, id))
 }
 
-// UserID applies equality check predicate on the "user_id" field. It's identical to UserIDEQ.
-func UserID(v int) predicate.CheatRecord {
-	return predicate.CheatRecord(sql.FieldEQ(FieldUserID, v))
-}
-
 // Reason applies equality check predicate on the "reason" field. It's identical to ReasonEQ.
 func Reason(v string) predicate.CheatRecord {
 	return predicate.CheatRecord(sql.FieldEQ(FieldReason, v))
@@ -78,26 +73,6 @@ func ResolvedAt(v time.Time) predicate.CheatRecord {
 // CheatedAt applies equality check predicate on the "cheated_at" field. It's identical to CheatedAtEQ.
 func CheatedAt(v time.Time) predicate.CheatRecord {
 	return predicate.CheatRecord(sql.FieldEQ(FieldCheatedAt, v))
-}
-
-// UserIDEQ applies the EQ predicate on the "user_id" field.
-func UserIDEQ(v int) predicate.CheatRecord {
-	return predicate.CheatRecord(sql.FieldEQ(FieldUserID, v))
-}
-
-// UserIDNEQ applies the NEQ predicate on the "user_id" field.
-func UserIDNEQ(v int) predicate.CheatRecord {
-	return predicate.CheatRecord(sql.FieldNEQ(FieldUserID, v))
-}
-
-// UserIDIn applies the In predicate on the "user_id" field.
-func UserIDIn(vs ...int) predicate.CheatRecord {
-	return predicate.CheatRecord(sql.FieldIn(FieldUserID, vs...))
-}
-
-// UserIDNotIn applies the NotIn predicate on the "user_id" field.
-func UserIDNotIn(vs ...int) predicate.CheatRecord {
-	return predicate.CheatRecord(sql.FieldNotIn(FieldUserID, vs...))
 }
 
 // ReasonEQ applies the EQ predicate on the "reason" field.

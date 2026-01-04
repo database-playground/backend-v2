@@ -16,7 +16,7 @@ var (
 		{Name: "resolved_reason", Type: field.TypeString, Nullable: true},
 		{Name: "resolved_at", Type: field.TypeTime, Nullable: true},
 		{Name: "cheated_at", Type: field.TypeTime},
-		{Name: "user_id", Type: field.TypeInt},
+		{Name: "user_cheat_records", Type: field.TypeInt},
 	}
 	// CheatRecordsTable holds the schema information for the "cheat_records" table.
 	CheatRecordsTable = &schema.Table{

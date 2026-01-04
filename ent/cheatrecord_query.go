@@ -24,6 +24,7 @@ type CheatRecordQuery struct {
 	inters     []Interceptor
 	predicates []predicate.CheatRecord
 	withUser   *UserQuery
+	withFKs    bool
 	modifiers  []func(*sql.Selector)
 	loadTotal  []func(context.Context, []*CheatRecord) error
 	// intermediate query (i.e. traversal path).
@@ -300,12 +301,12 @@ func (_q *CheatRecordQuery) WithUser(opts ...func(*UserQuery)) *CheatRecordQuery
 // Example:
 //
 //	var v []struct {
-//		UserID int `json:"user_id,omitempty"`
+//		Reason string `json:"reason,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.CheatRecord.Query().
-//		GroupBy(cheatrecord.FieldUserID).
+//		GroupBy(cheatrecord.FieldReason).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *CheatRecordQuery) GroupBy(field string, fields ...string) *CheatRecordGroupBy {
@@ -323,11 +324,11 @@ func (_q *CheatRecordQuery) GroupBy(field string, fields ...string) *CheatRecord
 // Example:
 //
 //	var v []struct {
-//		UserID int `json:"user_id,omitempty"`
+//		Reason string `json:"reason,omitempty"`
 //	}
 //
 //	client.CheatRecord.Query().
-//		Select(cheatrecord.FieldUserID).
+//		Select(cheatrecord.FieldReason).
 //		Scan(ctx, &v)
 func (_q *CheatRecordQuery) Select(fields ...string) *CheatRecordSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
@@ -371,11 +372,18 @@ func (_q *CheatRecordQuery) prepareQuery(ctx context.Context) error {
 func (_q *CheatRecordQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*CheatRecord, error) {
 	var (
 		nodes       = []*CheatRecord{}
+		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
 		loadedTypes = [1]bool{
 			_q.withUser != nil,
 		}
 	)
+	if _q.withUser != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, cheatrecord.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*CheatRecord).scanValues(nil, columns)
 	}
@@ -415,7 +423,10 @@ func (_q *CheatRecordQuery) loadUser(ctx context.Context, query *UserQuery, node
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*CheatRecord)
 	for i := range nodes {
-		fk := nodes[i].UserID
+		if nodes[i].user_cheat_records == nil {
+			continue
+		}
+		fk := *nodes[i].user_cheat_records
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -432,7 +443,7 @@ func (_q *CheatRecordQuery) loadUser(ctx context.Context, query *UserQuery, node
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "user_cheat_records" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -468,9 +479,6 @@ func (_q *CheatRecordQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != cheatrecord.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if _q.withUser != nil {
-			_spec.Node.AddColumnOnce(cheatrecord.FieldUserID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

@@ -53,15 +53,6 @@ func (_q *CheatRecordQuery) collectField(ctx context.Context, oneNode bool, opCt
 				return err
 			}
 			_q.withUser = query
-			if _, ok := fieldSeen[cheatrecord.FieldUserID]; !ok {
-				selectedFields = append(selectedFields, cheatrecord.FieldUserID)
-				fieldSeen[cheatrecord.FieldUserID] = struct{}{}
-			}
-		case "userID":
-			if _, ok := fieldSeen[cheatrecord.FieldUserID]; !ok {
-				selectedFields = append(selectedFields, cheatrecord.FieldUserID)
-				fieldSeen[cheatrecord.FieldUserID] = struct{}{}
-			}
 		case "reason":
 			if _, ok := fieldSeen[cheatrecord.FieldReason]; !ok {
 				selectedFields = append(selectedFields, cheatrecord.FieldReason)
@@ -1310,7 +1301,7 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 							ids[i] = nodes[i].ID
 						}
 						var v []struct {
-							NodeID int `sql:"user_id"`
+							NodeID int `sql:"user_cheat_records"`
 							Count  int `sql:"count"`
 						}
 						query.Where(func(s *sql.Selector) {

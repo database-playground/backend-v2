@@ -21,12 +21,6 @@ type CheatRecordCreate struct {
 	hooks    []Hook
 }
 
-// SetUserID sets the "user_id" field.
-func (_c *CheatRecordCreate) SetUserID(v int) *CheatRecordCreate {
-	_c.mutation.SetUserID(v)
-	return _c
-}
-
 // SetReason sets the "reason" field.
 func (_c *CheatRecordCreate) SetReason(v string) *CheatRecordCreate {
 	_c.mutation.SetReason(v)
@@ -72,6 +66,12 @@ func (_c *CheatRecordCreate) SetNillableCheatedAt(v *time.Time) *CheatRecordCrea
 	if v != nil {
 		_c.SetCheatedAt(*v)
 	}
+	return _c
+}
+
+// SetUserID sets the "user" edge to the User entity by ID.
+func (_c *CheatRecordCreate) SetUserID(id int) *CheatRecordCreate {
+	_c.mutation.SetUserID(id)
 	return _c
 }
 
@@ -123,9 +123,6 @@ func (_c *CheatRecordCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *CheatRecordCreate) check() error {
-	if _, ok := _c.mutation.UserID(); !ok {
-		return &ValidationError{Name: "user_id", err: errors.New(`ent: missing required field "CheatRecord.user_id"`)}
-	}
 	if _, ok := _c.mutation.Reason(); !ok {
 		return &ValidationError{Name: "reason", err: errors.New(`ent: missing required field "CheatRecord.reason"`)}
 	}
@@ -191,7 +188,7 @@ func (_c *CheatRecordCreate) createSpec() (*CheatRecord, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.UserID = nodes[0]
+		_node.user_cheat_records = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

@@ -73,7 +73,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "cheatrecord" package.
 	CheatRecordsInverseTable = "cheat_records"
 	// CheatRecordsColumn is the table column denoting the cheat_records relation/edge.
-	CheatRecordsColumn = "user_id"
+	CheatRecordsColumn = "user_cheat_records"
 )
 
 // Columns holds all SQL columns for user fields.

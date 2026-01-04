@@ -36,12 +36,6 @@ type CheatRecordWhereInput struct {
 	IDLT    *int  `json:"idLT,omitempty"`
 	IDLTE   *int  `json:"idLTE,omitempty"`
 
-	// "user_id" field predicates.
-	UserID      *int  `json:"userID,omitempty"`
-	UserIDNEQ   *int  `json:"userIDNEQ,omitempty"`
-	UserIDIn    []int `json:"userIDIn,omitempty"`
-	UserIDNotIn []int `json:"userIDNotIn,omitempty"`
-
 	// "reason" field predicates.
 	Reason             *string  `json:"reason,omitempty"`
 	ReasonNEQ          *string  `json:"reasonNEQ,omitempty"`
@@ -195,18 +189,6 @@ func (i *CheatRecordWhereInput) P() (predicate.CheatRecord, error) {
 	}
 	if i.IDLTE != nil {
 		predicates = append(predicates, cheatrecord.IDLTE(*i.IDLTE))
-	}
-	if i.UserID != nil {
-		predicates = append(predicates, cheatrecord.UserIDEQ(*i.UserID))
-	}
-	if i.UserIDNEQ != nil {
-		predicates = append(predicates, cheatrecord.UserIDNEQ(*i.UserIDNEQ))
-	}
-	if len(i.UserIDIn) > 0 {
-		predicates = append(predicates, cheatrecord.UserIDIn(i.UserIDIn...))
-	}
-	if len(i.UserIDNotIn) > 0 {
-		predicates = append(predicates, cheatrecord.UserIDNotIn(i.UserIDNotIn...))
 	}
 	if i.Reason != nil {
 		predicates = append(predicates, cheatrecord.ReasonEQ(*i.Reason))

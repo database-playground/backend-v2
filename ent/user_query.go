@@ -762,9 +762,7 @@ func (_q *UserQuery) loadCheatRecords(ctx context.Context, query *CheatRecordQue
 			init(nodes[i])
 		}
 	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(cheatrecord.FieldUserID)
-	}
+	query.withFKs = true
 	query.Where(predicate.CheatRecord(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(user.CheatRecordsColumn), fks...))
 	}))
@@ -773,10 +771,13 @@ func (_q *UserQuery) loadCheatRecords(ctx context.Context, query *CheatRecordQue
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.UserID
-		node, ok := nodeids[fk]
+		fk := n.user_cheat_records
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_cheat_records" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "user_cheat_records" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
