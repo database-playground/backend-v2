@@ -8,6 +8,14 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+func (_m *CheatRecord) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
 func (_m *Database) Questions(ctx context.Context) (result []*Question, err error) {
 	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
 		result, err = _m.NamedQuestions(graphql.GetFieldContext(ctx).Field.Alias)
@@ -174,4 +182,24 @@ func (_m *User) Submissions(
 		return conn, nil
 	}
 	return _m.QuerySubmissions().Paginate(ctx, after, first, before, last, opts...)
+}
+
+func (_m *User) CheatRecords(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, where *CheatRecordWhereInput,
+) (*CheatRecordConnection, error) {
+	opts := []CheatRecordPaginateOption{
+		WithCheatRecordFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[4][alias]
+	if nodes, err := _m.NamedCheatRecords(alias); err == nil || hasTotalCount {
+		pager, err := newCheatRecordPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &CheatRecordConnection{Edges: []*CheatRecordEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryCheatRecords().Paginate(ctx, after, first, before, last, opts...)
 }

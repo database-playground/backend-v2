@@ -35,6 +35,8 @@ const (
 	EdgeEvents = "events"
 	// EdgeSubmissions holds the string denoting the submissions edge name in mutations.
 	EdgeSubmissions = "submissions"
+	// EdgeCheatRecords holds the string denoting the cheat_records edge name in mutations.
+	EdgeCheatRecords = "cheat_records"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// GroupTable is the table that holds the group relation/edge.
@@ -65,6 +67,13 @@ const (
 	SubmissionsInverseTable = "submissions"
 	// SubmissionsColumn is the table column denoting the submissions relation/edge.
 	SubmissionsColumn = "user_submissions"
+	// CheatRecordsTable is the table that holds the cheat_records relation/edge.
+	CheatRecordsTable = "cheat_records"
+	// CheatRecordsInverseTable is the table name for the CheatRecord entity.
+	// It exists in this package in order to avoid circular dependency with the "cheatrecord" package.
+	CheatRecordsInverseTable = "cheat_records"
+	// CheatRecordsColumn is the table column denoting the cheat_records relation/edge.
+	CheatRecordsColumn = "user_id"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -205,6 +214,20 @@ func BySubmissions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newSubmissionsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByCheatRecordsCount orders the results by cheat_records count.
+func ByCheatRecordsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCheatRecordsStep(), opts...)
+	}
+}
+
+// ByCheatRecords orders the results by cheat_records terms.
+func ByCheatRecords(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCheatRecordsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newGroupStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -231,5 +254,12 @@ func newSubmissionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SubmissionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SubmissionsTable, SubmissionsColumn),
+	)
+}
+func newCheatRecordsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CheatRecordsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CheatRecordsTable, CheatRecordsColumn),
 	)
 }

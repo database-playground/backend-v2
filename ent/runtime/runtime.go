@@ -5,6 +5,7 @@ package runtime
 import (
 	"time"
 
+	"github.com/database-playground/backend-v2/ent/cheatrecord"
 	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
@@ -20,6 +21,12 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	cheatrecordFields := schema.CheatRecord{}.Fields()
+	_ = cheatrecordFields
+	// cheatrecordDescCheatedAt is the schema descriptor for cheated_at field.
+	cheatrecordDescCheatedAt := cheatrecordFields[4].Descriptor()
+	// cheatrecord.DefaultCheatedAt holds the default value on creation for the cheated_at field.
+	cheatrecord.DefaultCheatedAt = cheatrecordDescCheatedAt.Default.(func() time.Time)
 	databaseFields := schema.Database{}.Fields()
 	_ = databaseFields
 	// databaseDescSlug is the schema descriptor for slug field.

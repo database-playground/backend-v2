@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
+	"github.com/database-playground/backend-v2/ent/cheatrecord"
 	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
@@ -103,6 +104,255 @@ func paginateLimit(first, last *int) int {
 		limit = *last + 1
 	}
 	return limit
+}
+
+// CheatRecordEdge is the edge representation of CheatRecord.
+type CheatRecordEdge struct {
+	Node   *CheatRecord `json:"node"`
+	Cursor Cursor       `json:"cursor"`
+}
+
+// CheatRecordConnection is the connection containing edges to CheatRecord.
+type CheatRecordConnection struct {
+	Edges      []*CheatRecordEdge `json:"edges"`
+	PageInfo   PageInfo           `json:"pageInfo"`
+	TotalCount int                `json:"totalCount"`
+}
+
+func (c *CheatRecordConnection) build(nodes []*CheatRecord, pager *cheatrecordPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *CheatRecord
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *CheatRecord {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *CheatRecord {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*CheatRecordEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &CheatRecordEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// CheatRecordPaginateOption enables pagination customization.
+type CheatRecordPaginateOption func(*cheatrecordPager) error
+
+// WithCheatRecordOrder configures pagination ordering.
+func WithCheatRecordOrder(order *CheatRecordOrder) CheatRecordPaginateOption {
+	if order == nil {
+		order = DefaultCheatRecordOrder
+	}
+	o := *order
+	return func(pager *cheatrecordPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultCheatRecordOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithCheatRecordFilter configures pagination filter.
+func WithCheatRecordFilter(filter func(*CheatRecordQuery) (*CheatRecordQuery, error)) CheatRecordPaginateOption {
+	return func(pager *cheatrecordPager) error {
+		if filter == nil {
+			return errors.New("CheatRecordQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type cheatrecordPager struct {
+	reverse bool
+	order   *CheatRecordOrder
+	filter  func(*CheatRecordQuery) (*CheatRecordQuery, error)
+}
+
+func newCheatRecordPager(opts []CheatRecordPaginateOption, reverse bool) (*cheatrecordPager, error) {
+	pager := &cheatrecordPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultCheatRecordOrder
+	}
+	return pager, nil
+}
+
+func (p *cheatrecordPager) applyFilter(query *CheatRecordQuery) (*CheatRecordQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *cheatrecordPager) toCursor(_m *CheatRecord) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *cheatrecordPager) applyCursors(query *CheatRecordQuery, after, before *Cursor) (*CheatRecordQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultCheatRecordOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *cheatrecordPager) applyOrder(query *CheatRecordQuery) *CheatRecordQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultCheatRecordOrder.Field {
+		query = query.Order(DefaultCheatRecordOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *cheatrecordPager) orderExpr(query *CheatRecordQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultCheatRecordOrder.Field {
+			b.Comma().Ident(DefaultCheatRecordOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to CheatRecord.
+func (_m *CheatRecordQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...CheatRecordPaginateOption,
+) (*CheatRecordConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newCheatRecordPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &CheatRecordConnection{Edges: []*CheatRecordEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// CheatRecordOrderField defines the ordering field of CheatRecord.
+type CheatRecordOrderField struct {
+	// Value extracts the ordering value from the given CheatRecord.
+	Value    func(*CheatRecord) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) cheatrecord.OrderOption
+	toCursor func(*CheatRecord) Cursor
+}
+
+// CheatRecordOrder defines the ordering of CheatRecord.
+type CheatRecordOrder struct {
+	Direction OrderDirection         `json:"direction"`
+	Field     *CheatRecordOrderField `json:"field"`
+}
+
+// DefaultCheatRecordOrder is the default ordering of CheatRecord.
+var DefaultCheatRecordOrder = &CheatRecordOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &CheatRecordOrderField{
+		Value: func(_m *CheatRecord) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: cheatrecord.FieldID,
+		toTerm: cheatrecord.ByID,
+		toCursor: func(_m *CheatRecord) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts CheatRecord into CheatRecordEdge.
+func (_m *CheatRecord) ToEdge(order *CheatRecordOrder) *CheatRecordEdge {
+	if order == nil {
+		order = DefaultCheatRecordOrder
+	}
+	return &CheatRecordEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
 }
 
 // DatabaseEdge is the edge representation of Database.

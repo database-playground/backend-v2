@@ -8,6 +8,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/ent/cheatrecord"
 	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
@@ -73,6 +74,33 @@ func (f TraverseFunc) Traverse(ctx context.Context, q ent.Query) error {
 		return err
 	}
 	return f(ctx, query)
+}
+
+// The CheatRecordFunc type is an adapter to allow the use of ordinary function as a Querier.
+type CheatRecordFunc func(context.Context, *ent.CheatRecordQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f CheatRecordFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.CheatRecordQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.CheatRecordQuery", q)
+}
+
+// The TraverseCheatRecord type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseCheatRecord func(context.Context, *ent.CheatRecordQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseCheatRecord) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseCheatRecord) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.CheatRecordQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.CheatRecordQuery", q)
 }
 
 // The DatabaseFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -294,6 +322,8 @@ func (f TraverseUser) Traverse(ctx context.Context, q ent.Query) error {
 // NewQuery returns the generic Query interface for the given typed query.
 func NewQuery(q ent.Query) (Query, error) {
 	switch q := q.(type) {
+	case *ent.CheatRecordQuery:
+		return &query[*ent.CheatRecordQuery, predicate.CheatRecord, cheatrecord.OrderOption]{typ: ent.TypeCheatRecord, tq: q}, nil
 	case *ent.DatabaseQuery:
 		return &query[*ent.DatabaseQuery, predicate.Database, database.OrderOption]{typ: ent.TypeDatabase, tq: q}, nil
 	case *ent.EventQuery:

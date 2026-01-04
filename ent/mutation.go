@@ -11,6 +11,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/database-playground/backend-v2/ent/cheatrecord"
 	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
@@ -32,15 +33,656 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeDatabase   = "Database"
-	TypeEvent      = "Event"
-	TypeGroup      = "Group"
-	TypePoint      = "Point"
-	TypeQuestion   = "Question"
-	TypeScopeSet   = "ScopeSet"
-	TypeSubmission = "Submission"
-	TypeUser       = "User"
+	TypeCheatRecord = "CheatRecord"
+	TypeDatabase    = "Database"
+	TypeEvent       = "Event"
+	TypeGroup       = "Group"
+	TypePoint       = "Point"
+	TypeQuestion    = "Question"
+	TypeScopeSet    = "ScopeSet"
+	TypeSubmission  = "Submission"
+	TypeUser        = "User"
 )
+
+// CheatRecordMutation represents an operation that mutates the CheatRecord nodes in the graph.
+type CheatRecordMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *int
+	reason          *string
+	resolved_reason *string
+	resolved_at     *time.Time
+	cheated_at      *time.Time
+	clearedFields   map[string]struct{}
+	user            *int
+	cleareduser     bool
+	done            bool
+	oldValue        func(context.Context) (*CheatRecord, error)
+	predicates      []predicate.CheatRecord
+}
+
+var _ ent.Mutation = (*CheatRecordMutation)(nil)
+
+// cheatrecordOption allows management of the mutation configuration using functional options.
+type cheatrecordOption func(*CheatRecordMutation)
+
+// newCheatRecordMutation creates new mutation for the CheatRecord entity.
+func newCheatRecordMutation(c config, op Op, opts ...cheatrecordOption) *CheatRecordMutation {
+	m := &CheatRecordMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCheatRecord,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCheatRecordID sets the ID field of the mutation.
+func withCheatRecordID(id int) cheatrecordOption {
+	return func(m *CheatRecordMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CheatRecord
+		)
+		m.oldValue = func(ctx context.Context) (*CheatRecord, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CheatRecord.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCheatRecord sets the old CheatRecord of the mutation.
+func withCheatRecord(node *CheatRecord) cheatrecordOption {
+	return func(m *CheatRecordMutation) {
+		m.oldValue = func(context.Context) (*CheatRecord, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CheatRecordMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CheatRecordMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CheatRecordMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CheatRecordMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CheatRecord.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetUserID sets the "user_id" field.
+func (m *CheatRecordMutation) SetUserID(i int) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *CheatRecordMutation) UserID() (r int, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the CheatRecord entity.
+// If the CheatRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CheatRecordMutation) OldUserID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *CheatRecordMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetReason sets the "reason" field.
+func (m *CheatRecordMutation) SetReason(s string) {
+	m.reason = &s
+}
+
+// Reason returns the value of the "reason" field in the mutation.
+func (m *CheatRecordMutation) Reason() (r string, exists bool) {
+	v := m.reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReason returns the old "reason" field's value of the CheatRecord entity.
+// If the CheatRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CheatRecordMutation) OldReason(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReason: %w", err)
+	}
+	return oldValue.Reason, nil
+}
+
+// ResetReason resets all changes to the "reason" field.
+func (m *CheatRecordMutation) ResetReason() {
+	m.reason = nil
+}
+
+// SetResolvedReason sets the "resolved_reason" field.
+func (m *CheatRecordMutation) SetResolvedReason(s string) {
+	m.resolved_reason = &s
+}
+
+// ResolvedReason returns the value of the "resolved_reason" field in the mutation.
+func (m *CheatRecordMutation) ResolvedReason() (r string, exists bool) {
+	v := m.resolved_reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResolvedReason returns the old "resolved_reason" field's value of the CheatRecord entity.
+// If the CheatRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CheatRecordMutation) OldResolvedReason(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResolvedReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResolvedReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResolvedReason: %w", err)
+	}
+	return oldValue.ResolvedReason, nil
+}
+
+// ClearResolvedReason clears the value of the "resolved_reason" field.
+func (m *CheatRecordMutation) ClearResolvedReason() {
+	m.resolved_reason = nil
+	m.clearedFields[cheatrecord.FieldResolvedReason] = struct{}{}
+}
+
+// ResolvedReasonCleared returns if the "resolved_reason" field was cleared in this mutation.
+func (m *CheatRecordMutation) ResolvedReasonCleared() bool {
+	_, ok := m.clearedFields[cheatrecord.FieldResolvedReason]
+	return ok
+}
+
+// ResetResolvedReason resets all changes to the "resolved_reason" field.
+func (m *CheatRecordMutation) ResetResolvedReason() {
+	m.resolved_reason = nil
+	delete(m.clearedFields, cheatrecord.FieldResolvedReason)
+}
+
+// SetResolvedAt sets the "resolved_at" field.
+func (m *CheatRecordMutation) SetResolvedAt(t time.Time) {
+	m.resolved_at = &t
+}
+
+// ResolvedAt returns the value of the "resolved_at" field in the mutation.
+func (m *CheatRecordMutation) ResolvedAt() (r time.Time, exists bool) {
+	v := m.resolved_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResolvedAt returns the old "resolved_at" field's value of the CheatRecord entity.
+// If the CheatRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CheatRecordMutation) OldResolvedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResolvedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResolvedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResolvedAt: %w", err)
+	}
+	return oldValue.ResolvedAt, nil
+}
+
+// ClearResolvedAt clears the value of the "resolved_at" field.
+func (m *CheatRecordMutation) ClearResolvedAt() {
+	m.resolved_at = nil
+	m.clearedFields[cheatrecord.FieldResolvedAt] = struct{}{}
+}
+
+// ResolvedAtCleared returns if the "resolved_at" field was cleared in this mutation.
+func (m *CheatRecordMutation) ResolvedAtCleared() bool {
+	_, ok := m.clearedFields[cheatrecord.FieldResolvedAt]
+	return ok
+}
+
+// ResetResolvedAt resets all changes to the "resolved_at" field.
+func (m *CheatRecordMutation) ResetResolvedAt() {
+	m.resolved_at = nil
+	delete(m.clearedFields, cheatrecord.FieldResolvedAt)
+}
+
+// SetCheatedAt sets the "cheated_at" field.
+func (m *CheatRecordMutation) SetCheatedAt(t time.Time) {
+	m.cheated_at = &t
+}
+
+// CheatedAt returns the value of the "cheated_at" field in the mutation.
+func (m *CheatRecordMutation) CheatedAt() (r time.Time, exists bool) {
+	v := m.cheated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCheatedAt returns the old "cheated_at" field's value of the CheatRecord entity.
+// If the CheatRecord object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CheatRecordMutation) OldCheatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCheatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCheatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCheatedAt: %w", err)
+	}
+	return oldValue.CheatedAt, nil
+}
+
+// ResetCheatedAt resets all changes to the "cheated_at" field.
+func (m *CheatRecordMutation) ResetCheatedAt() {
+	m.cheated_at = nil
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *CheatRecordMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[cheatrecord.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *CheatRecordMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *CheatRecordMutation) UserIDs() (ids []int) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *CheatRecordMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the CheatRecordMutation builder.
+func (m *CheatRecordMutation) Where(ps ...predicate.CheatRecord) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CheatRecordMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CheatRecordMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CheatRecord, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CheatRecordMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CheatRecordMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CheatRecord).
+func (m *CheatRecordMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CheatRecordMutation) Fields() []string {
+	fields := make([]string, 0, 5)
+	if m.user != nil {
+		fields = append(fields, cheatrecord.FieldUserID)
+	}
+	if m.reason != nil {
+		fields = append(fields, cheatrecord.FieldReason)
+	}
+	if m.resolved_reason != nil {
+		fields = append(fields, cheatrecord.FieldResolvedReason)
+	}
+	if m.resolved_at != nil {
+		fields = append(fields, cheatrecord.FieldResolvedAt)
+	}
+	if m.cheated_at != nil {
+		fields = append(fields, cheatrecord.FieldCheatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CheatRecordMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case cheatrecord.FieldUserID:
+		return m.UserID()
+	case cheatrecord.FieldReason:
+		return m.Reason()
+	case cheatrecord.FieldResolvedReason:
+		return m.ResolvedReason()
+	case cheatrecord.FieldResolvedAt:
+		return m.ResolvedAt()
+	case cheatrecord.FieldCheatedAt:
+		return m.CheatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CheatRecordMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case cheatrecord.FieldUserID:
+		return m.OldUserID(ctx)
+	case cheatrecord.FieldReason:
+		return m.OldReason(ctx)
+	case cheatrecord.FieldResolvedReason:
+		return m.OldResolvedReason(ctx)
+	case cheatrecord.FieldResolvedAt:
+		return m.OldResolvedAt(ctx)
+	case cheatrecord.FieldCheatedAt:
+		return m.OldCheatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown CheatRecord field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CheatRecordMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case cheatrecord.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case cheatrecord.FieldReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReason(v)
+		return nil
+	case cheatrecord.FieldResolvedReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResolvedReason(v)
+		return nil
+	case cheatrecord.FieldResolvedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResolvedAt(v)
+		return nil
+	case cheatrecord.FieldCheatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCheatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CheatRecord field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CheatRecordMutation) AddedFields() []string {
+	var fields []string
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CheatRecordMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CheatRecordMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown CheatRecord numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CheatRecordMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(cheatrecord.FieldResolvedReason) {
+		fields = append(fields, cheatrecord.FieldResolvedReason)
+	}
+	if m.FieldCleared(cheatrecord.FieldResolvedAt) {
+		fields = append(fields, cheatrecord.FieldResolvedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CheatRecordMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CheatRecordMutation) ClearField(name string) error {
+	switch name {
+	case cheatrecord.FieldResolvedReason:
+		m.ClearResolvedReason()
+		return nil
+	case cheatrecord.FieldResolvedAt:
+		m.ClearResolvedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown CheatRecord nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CheatRecordMutation) ResetField(name string) error {
+	switch name {
+	case cheatrecord.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case cheatrecord.FieldReason:
+		m.ResetReason()
+		return nil
+	case cheatrecord.FieldResolvedReason:
+		m.ResetResolvedReason()
+		return nil
+	case cheatrecord.FieldResolvedAt:
+		m.ResetResolvedAt()
+		return nil
+	case cheatrecord.FieldCheatedAt:
+		m.ResetCheatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown CheatRecord field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CheatRecordMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, cheatrecord.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CheatRecordMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case cheatrecord.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CheatRecordMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CheatRecordMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CheatRecordMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, cheatrecord.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CheatRecordMutation) EdgeCleared(name string) bool {
+	switch name {
+	case cheatrecord.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CheatRecordMutation) ClearEdge(name string) error {
+	switch name {
+	case cheatrecord.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown CheatRecord unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CheatRecordMutation) ResetEdge(name string) error {
+	switch name {
+	case cheatrecord.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown CheatRecord edge %s", name)
+}
 
 // DatabaseMutation represents an operation that mutates the Database nodes in the graph.
 type DatabaseMutation struct {
@@ -4494,30 +5136,33 @@ func (m *SubmissionMutation) ResetEdge(name string) error {
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op                 Op
-	typ                string
-	id                 *int
-	created_at         *time.Time
-	updated_at         *time.Time
-	deleted_at         *time.Time
-	name               *string
-	email              *string
-	avatar             *string
-	clearedFields      map[string]struct{}
-	group              *int
-	clearedgroup       bool
-	points             map[int]struct{}
-	removedpoints      map[int]struct{}
-	clearedpoints      bool
-	events             map[int]struct{}
-	removedevents      map[int]struct{}
-	clearedevents      bool
-	submissions        map[int]struct{}
-	removedsubmissions map[int]struct{}
-	clearedsubmissions bool
-	done               bool
-	oldValue           func(context.Context) (*User, error)
-	predicates         []predicate.User
+	op                   Op
+	typ                  string
+	id                   *int
+	created_at           *time.Time
+	updated_at           *time.Time
+	deleted_at           *time.Time
+	name                 *string
+	email                *string
+	avatar               *string
+	clearedFields        map[string]struct{}
+	group                *int
+	clearedgroup         bool
+	points               map[int]struct{}
+	removedpoints        map[int]struct{}
+	clearedpoints        bool
+	events               map[int]struct{}
+	removedevents        map[int]struct{}
+	clearedevents        bool
+	submissions          map[int]struct{}
+	removedsubmissions   map[int]struct{}
+	clearedsubmissions   bool
+	cheat_records        map[int]struct{}
+	removedcheat_records map[int]struct{}
+	clearedcheat_records bool
+	done                 bool
+	oldValue             func(context.Context) (*User, error)
+	predicates           []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -5061,6 +5706,60 @@ func (m *UserMutation) ResetSubmissions() {
 	m.removedsubmissions = nil
 }
 
+// AddCheatRecordIDs adds the "cheat_records" edge to the CheatRecord entity by ids.
+func (m *UserMutation) AddCheatRecordIDs(ids ...int) {
+	if m.cheat_records == nil {
+		m.cheat_records = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.cheat_records[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCheatRecords clears the "cheat_records" edge to the CheatRecord entity.
+func (m *UserMutation) ClearCheatRecords() {
+	m.clearedcheat_records = true
+}
+
+// CheatRecordsCleared reports if the "cheat_records" edge to the CheatRecord entity was cleared.
+func (m *UserMutation) CheatRecordsCleared() bool {
+	return m.clearedcheat_records
+}
+
+// RemoveCheatRecordIDs removes the "cheat_records" edge to the CheatRecord entity by IDs.
+func (m *UserMutation) RemoveCheatRecordIDs(ids ...int) {
+	if m.removedcheat_records == nil {
+		m.removedcheat_records = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.cheat_records, ids[i])
+		m.removedcheat_records[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCheatRecords returns the removed IDs of the "cheat_records" edge to the CheatRecord entity.
+func (m *UserMutation) RemovedCheatRecordsIDs() (ids []int) {
+	for id := range m.removedcheat_records {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CheatRecordsIDs returns the "cheat_records" edge IDs in the mutation.
+func (m *UserMutation) CheatRecordsIDs() (ids []int) {
+	for id := range m.cheat_records {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCheatRecords resets all changes to the "cheat_records" edge.
+func (m *UserMutation) ResetCheatRecords() {
+	m.cheat_records = nil
+	m.clearedcheat_records = false
+	m.removedcheat_records = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -5294,7 +5993,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.group != nil {
 		edges = append(edges, user.EdgeGroup)
 	}
@@ -5306,6 +6005,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.submissions != nil {
 		edges = append(edges, user.EdgeSubmissions)
+	}
+	if m.cheat_records != nil {
+		edges = append(edges, user.EdgeCheatRecords)
 	}
 	return edges
 }
@@ -5336,13 +6038,19 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeCheatRecords:
+		ids := make([]ent.Value, 0, len(m.cheat_records))
+		for id := range m.cheat_records {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.removedpoints != nil {
 		edges = append(edges, user.EdgePoints)
 	}
@@ -5351,6 +6059,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedsubmissions != nil {
 		edges = append(edges, user.EdgeSubmissions)
+	}
+	if m.removedcheat_records != nil {
+		edges = append(edges, user.EdgeCheatRecords)
 	}
 	return edges
 }
@@ -5377,13 +6088,19 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeCheatRecords:
+		ids := make([]ent.Value, 0, len(m.removedcheat_records))
+		for id := range m.removedcheat_records {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.clearedgroup {
 		edges = append(edges, user.EdgeGroup)
 	}
@@ -5395,6 +6112,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearedsubmissions {
 		edges = append(edges, user.EdgeSubmissions)
+	}
+	if m.clearedcheat_records {
+		edges = append(edges, user.EdgeCheatRecords)
 	}
 	return edges
 }
@@ -5411,6 +6131,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedevents
 	case user.EdgeSubmissions:
 		return m.clearedsubmissions
+	case user.EdgeCheatRecords:
+		return m.clearedcheat_records
 	}
 	return false
 }
@@ -5441,6 +6163,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeSubmissions:
 		m.ResetSubmissions()
+		return nil
+	case user.EdgeCheatRecords:
+		m.ResetCheatRecords()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

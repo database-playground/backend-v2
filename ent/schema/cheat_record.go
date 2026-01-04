@@ -39,5 +39,6 @@ func (CheatRecord) Annotations() []schema.Annotation {
 		entgql.QueryField().Directives(
 			ScopeDirective("cheat_record:read"),
 		),
+		entgql.RelayConnection(),
 	}
 }

@@ -7,6 +7,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 
 	"entgo.io/contrib/entgql"
 	"github.com/database-playground/backend-v2/ent"
@@ -34,6 +35,11 @@ func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, erro
 	// since we can't do scope check in the node resolver.
 	span.SetStatus(otelcodes.Error, "Nodes resolver not implemented")
 	return nil, defs.ErrNotImplemented
+}
+
+// CheatRecords is the resolver for the cheatRecords field.
+func (r *queryResolver) CheatRecords(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.CheatRecordWhereInput) (*ent.CheatRecordConnection, error) {
+	panic(fmt.Errorf("not implemented: CheatRecords - cheatRecords"))
 }
 
 // Databases is the resolver for the databases field.

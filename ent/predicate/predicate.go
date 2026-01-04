@@ -6,6 +6,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// CheatRecord is the predicate function for cheatrecord builders.
+type CheatRecord func(*sql.Selector)
+
 // Database is the predicate function for database builders.
 type Database func(*sql.Selector)
 
