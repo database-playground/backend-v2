@@ -228,7 +228,7 @@ func TestSeedUsers(t *testing.T) {
 		}
 	})
 
-	t.Run("should return error when duplicate user email", func(t *testing.T) {
+	t.Run("should skip when user already exists", func(t *testing.T) {
 		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
 		cliCtx := cli.NewContext(entClient)
@@ -239,7 +239,7 @@ func TestSeedUsers(t *testing.T) {
 			t.Fatalf("Setup failed: %v", err)
 		}
 
-		// Create a user first
+		// Create a user first with a specific name and group
 		studentGroup, err := entClient.Group.Query().
 			Where(group.NameEQ(useraccount.StudentGroupSlug)).
 			Only(ctx)
@@ -256,19 +256,151 @@ func TestSeedUsers(t *testing.T) {
 			t.Fatalf("Failed to create existing user: %v", err)
 		}
 
-		// Try to seed a user with the same email
+		// Query the user with group to get the original values
+		existingUser, err := entClient.User.Query().
+			Where(user.EmailEQ("existing@example.com")).
+			WithGroup().
+			Only(ctx)
+		if err != nil {
+			t.Fatalf("Failed to query existing user: %v", err)
+		}
+
+		originalName := existingUser.Name
+		originalGroupID := existingUser.Edges.Group.ID
+
+		// Try to seed a user with the same email (should skip, not error)
 		records := []cli.UserSeedRecord{
-			{Email: "existing@example.com", Group: "student"},
+			{Email: "existing@example.com", Group: "admin"}, // Different group, but should be skipped
 		}
 
 		err = cliCtx.SeedUsers(ctx, records)
-		if err == nil {
-			t.Fatal("Expected error when duplicate email")
+		if err != nil {
+			t.Fatalf("SeedUsers should not error when user already exists, got: %v", err)
 		}
 
-		// The error should be a constraint violation
-		if err.Error() == "" {
-			t.Error("Expected non-empty error message")
+		// Verify the existing user was not modified
+		queriedUser, err := entClient.User.Query().
+			Where(user.EmailEQ("existing@example.com")).
+			WithGroup().
+			Only(ctx)
+		if err != nil {
+			t.Fatalf("Failed to query existing user: %v", err)
+		}
+
+		// Verify name was not changed
+		if queriedUser.Name != originalName {
+			t.Errorf("Expected name to remain %q, got %q", originalName, queriedUser.Name)
+		}
+
+		// Verify group was not changed
+		if queriedUser.Edges.Group.ID != originalGroupID {
+			t.Errorf("Expected group ID to remain %d, got %d", originalGroupID, queriedUser.Edges.Group.ID)
+		}
+
+		// Verify only one user with this email exists
+		count, err := entClient.User.Query().
+			Where(user.EmailEQ("existing@example.com")).
+			Count(ctx)
+		if err != nil {
+			t.Fatalf("Failed to count users: %v", err)
+		}
+		if count != 1 {
+			t.Errorf("Expected exactly 1 user with email existing@example.com, got %d", count)
+		}
+	})
+
+	t.Run("should handle mixed existing and new users in batch", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+		ctx := context.Background()
+		cliCtx := cli.NewContext(entClient)
+
+		// First run setup to create groups
+		_, err := cliCtx.Setup(ctx)
+		if err != nil {
+			t.Fatalf("Setup failed: %v", err)
+		}
+
+		// Create an existing user
+		studentGroup, err := entClient.Group.Query().
+			Where(group.NameEQ(useraccount.StudentGroupSlug)).
+			Only(ctx)
+		if err != nil {
+			t.Fatalf("Failed to get student group: %v", err)
+		}
+
+		existingUser, err := entClient.User.Create().
+			SetEmail("existing@example.com").
+			SetName("Existing User").
+			SetGroup(studentGroup).
+			Save(ctx)
+		if err != nil {
+			t.Fatalf("Failed to create existing user: %v", err)
+		}
+
+		originalName := existingUser.Name
+
+		// Seed a batch with both existing and new users
+		records := []cli.UserSeedRecord{
+			{Email: "existing@example.com", Group: "student"}, // existing - should skip
+			{Email: "newuser1@example.com", Group: "student"}, // new - should create
+			{Email: "newuser2@example.com", Group: "admin"},   // new - should create
+		}
+
+		err = cliCtx.SeedUsers(ctx, records)
+		if err != nil {
+			t.Fatalf("SeedUsers should succeed with mixed existing/new users, got: %v", err)
+		}
+
+		// Verify existing user was not modified
+		queriedExistingUser, err := entClient.User.Query().
+			Where(user.EmailEQ("existing@example.com")).
+			WithGroup().
+			Only(ctx)
+		if err != nil {
+			t.Fatalf("Failed to query existing user: %v", err)
+		}
+		if queriedExistingUser.Name != originalName {
+			t.Errorf("Expected existing user name to remain %q, got %q", originalName, queriedExistingUser.Name)
+		}
+
+		// Verify new users were created
+		newUser1, err := entClient.User.Query().
+			Where(user.EmailEQ("newuser1@example.com")).
+			WithGroup().
+			Only(ctx)
+		if err != nil {
+			t.Fatalf("Failed to query newuser1: %v", err)
+		}
+		if newUser1.Name != "newuser1@example.com" {
+			t.Errorf("Expected newuser1 name to be email, got %q", newUser1.Name)
+		}
+		if newUser1.Edges.Group == nil || newUser1.Edges.Group.Name != "student" {
+			t.Errorf("Expected newuser1 to be in student group, got %v", newUser1.Edges.Group)
+		}
+
+		newUser2, err := entClient.User.Query().
+			Where(user.EmailEQ("newuser2@example.com")).
+			WithGroup().
+			Only(ctx)
+		if err != nil {
+			t.Fatalf("Failed to query newuser2: %v", err)
+		}
+		if newUser2.Name != "newuser2@example.com" {
+			t.Errorf("Expected newuser2 name to be email, got %q", newUser2.Name)
+		}
+		if newUser2.Edges.Group == nil || newUser2.Edges.Group.Name != "admin" {
+			t.Errorf("Expected newuser2 to be in admin group, got %v", newUser2.Edges.Group)
+		}
+
+		// Verify total count
+		count, err := entClient.User.Query().Count(ctx)
+		if err != nil {
+			t.Fatalf("Failed to count users: %v", err)
+		}
+		// Should have: existing user + 2 new users = 3 total
+		// (setup doesn't create users, only groups)
+		if count != 3 {
+			t.Errorf("Expected 3 users total, got %d", count)
 		}
 	})
 

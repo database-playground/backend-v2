@@ -8,6 +8,7 @@ import (
 
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/ent/group"
+	"github.com/database-playground/backend-v2/ent/user"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 )
 
@@ -40,9 +41,16 @@ func (c *Context) SeedUsers(ctx context.Context, userSeedRecords []UserSeedRecor
 			return fmt.Errorf("user record %q: group %q not found", record.GetEmail(), record.GetGroup())
 		}
 
-		user, err := c.entClient.User.Create().
-			SetEmail(record.Email).
-			SetName(record.Email). // Use email as name for seeded users
+		// check if user already exists
+		user, err := c.entClient.User.Query().Where(user.EmailEQ(record.Email)).First(ctx)
+		if err == nil {
+			log.Printf("⚠️ User %q already exists, skipping creation", record.Email)
+			continue
+		}
+
+		user, err = c.entClient.User.Create().
+			SetEmail(record.GetEmail()).
+			SetName(record.GetEmail()). // Use email as name for seeded users
 			SetGroup(group).
 			Save(ctx)
 		if err != nil {
