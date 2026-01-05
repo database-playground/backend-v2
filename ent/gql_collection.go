@@ -10,6 +10,7 @@ import (
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/database-playground/backend-v2/ent/cheatrecord"
 	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
@@ -19,6 +20,99 @@ import (
 	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
 )
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *CheatRecordQuery) CollectFields(ctx context.Context, satisfies ...string) (*CheatRecordQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *CheatRecordQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(cheatrecord.Columns))
+		selectedFields = []string{cheatrecord.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "reason":
+			if _, ok := fieldSeen[cheatrecord.FieldReason]; !ok {
+				selectedFields = append(selectedFields, cheatrecord.FieldReason)
+				fieldSeen[cheatrecord.FieldReason] = struct{}{}
+			}
+		case "resolvedReason":
+			if _, ok := fieldSeen[cheatrecord.FieldResolvedReason]; !ok {
+				selectedFields = append(selectedFields, cheatrecord.FieldResolvedReason)
+				fieldSeen[cheatrecord.FieldResolvedReason] = struct{}{}
+			}
+		case "resolvedAt":
+			if _, ok := fieldSeen[cheatrecord.FieldResolvedAt]; !ok {
+				selectedFields = append(selectedFields, cheatrecord.FieldResolvedAt)
+				fieldSeen[cheatrecord.FieldResolvedAt] = struct{}{}
+			}
+		case "cheatedAt":
+			if _, ok := fieldSeen[cheatrecord.FieldCheatedAt]; !ok {
+				selectedFields = append(selectedFields, cheatrecord.FieldCheatedAt)
+				fieldSeen[cheatrecord.FieldCheatedAt] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type cheatrecordPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []CheatRecordPaginateOption
+}
+
+func newCheatRecordPaginateArgs(rv map[string]any) *cheatrecordPaginateArgs {
+	args := &cheatrecordPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*CheatRecordWhereInput); ok {
+		args.opts = append(args.opts, WithCheatRecordFilter(v.Filter))
+	}
+	return args
+}
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *DatabaseQuery) CollectFields(ctx context.Context, satisfies ...string) (*DatabaseQuery, error) {
@@ -1176,6 +1270,95 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				query = pager.applyOrder(query)
 			}
 			_q.WithNamedSubmissions(alias, func(wq *SubmissionQuery) {
+				*wq = *query
+			})
+
+		case "cheatRecords":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CheatRecordClient{config: _q.config}).Query()
+			)
+			args := newCheatRecordPaginateArgs(fieldArgs(ctx, new(CheatRecordWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newCheatRecordPager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*User) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"user_cheat_records"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							s.Where(sql.InValues(s.C(user.CheatRecordsColumn), ids...))
+						})
+						if err := query.GroupBy(user.CheatRecordsColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[4] == nil {
+								nodes[i].Edges.totalCount[4] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[4][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*User) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.CheatRecords)
+							if nodes[i].Edges.totalCount[4] == nil {
+								nodes[i].Edges.totalCount[4] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[4][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, cheatrecordImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(user.CheatRecordsColumn, limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedCheatRecords(alias, func(wq *CheatRecordQuery) {
 				*wq = *query
 			})
 		case "createdAt":

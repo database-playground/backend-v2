@@ -9,6 +9,18 @@ import (
 	"github.com/database-playground/backend-v2/ent"
 )
 
+// The CheatRecordFunc type is an adapter to allow the use of ordinary
+// function as CheatRecord mutator.
+type CheatRecordFunc func(context.Context, *ent.CheatRecordMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CheatRecordFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CheatRecordMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CheatRecordMutation", m)
+}
+
 // The DatabaseFunc type is an adapter to allow the use of ordinary
 // function as Database mutator.
 type DatabaseFunc func(context.Context, *ent.DatabaseMutation) (ent.Value, error)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/99designs/gqlgen/client"
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -1574,5 +1575,758 @@ func TestUserResolver_TotalPoints(t *testing.T) {
 		totalPoints2, err := userResolver.TotalPoints(context.Background(), user2)
 		require.NoError(t, err)
 		require.Equal(t, 200, totalPoints2)
+	})
+}
+
+func TestUserResolver_Cheating(t *testing.T) {
+	t.Run("user with no cheat records", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user with no cheat records
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Setup test resolver
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		gqlClient := client.New(srv)
+
+		// Execute query
+		var resp struct {
+			User struct {
+				Cheating bool
+			}
+		}
+		err = gqlClient.Post(`query { user(id: `+strconv.Itoa(user.ID)+`) { cheating } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read"},
+			}))
+		})
+
+		// Verify response
+		require.NoError(t, err)
+		require.False(t, resp.User.Cheating)
+	})
+
+	t.Run("user with unresolved cheat record", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create an unresolved cheat record
+		_, err = entClient.CheatRecord.Create().
+			SetUser(user).
+			SetReason("Suspected cheating").
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Setup test resolver
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		gqlClient := client.New(srv)
+
+		// Execute query
+		var resp struct {
+			User struct {
+				Cheating bool
+			}
+		}
+		err = gqlClient.Post(`query { user(id: `+strconv.Itoa(user.ID)+`) { cheating } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read"},
+			}))
+		})
+
+		// Verify response
+		require.NoError(t, err)
+		require.True(t, resp.User.Cheating)
+	})
+
+	t.Run("user with only resolved cheat records", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create a resolved cheat record
+		_, err = entClient.CheatRecord.Create().
+			SetUser(user).
+			SetReason("Suspected cheating").
+			SetResolvedAt(time.Now()).
+			SetResolvedReason("False alarm").
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Setup test resolver
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		gqlClient := client.New(srv)
+
+		// Execute query
+		var resp struct {
+			User struct {
+				Cheating bool
+			}
+		}
+		err = gqlClient.Post(`query { user(id: `+strconv.Itoa(user.ID)+`) { cheating } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read"},
+			}))
+		})
+
+		// Verify response
+		require.NoError(t, err)
+		require.False(t, resp.User.Cheating)
+	})
+
+	t.Run("user with multiple unresolved cheat records", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create multiple unresolved cheat records
+		reasons := []string{"First violation", "Second violation", "Third violation"}
+		for _, reason := range reasons {
+			_, err = entClient.CheatRecord.Create().
+				SetUser(user).
+				SetReason(reason).
+				Save(context.Background())
+			require.NoError(t, err)
+		}
+
+		// Setup test resolver
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		gqlClient := client.New(srv)
+
+		// Execute query
+		var resp struct {
+			User struct {
+				Cheating bool
+			}
+		}
+		err = gqlClient.Post(`query { user(id: `+strconv.Itoa(user.ID)+`) { cheating } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read"},
+			}))
+		})
+
+		// Verify response
+		require.NoError(t, err)
+		require.True(t, resp.User.Cheating)
+	})
+
+	t.Run("user with mixed resolved and unresolved cheat records", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create a resolved cheat record
+		_, err = entClient.CheatRecord.Create().
+			SetUser(user).
+			SetReason("Resolved violation").
+			SetResolvedAt(time.Now()).
+			SetResolvedReason("False alarm").
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create an unresolved cheat record
+		_, err = entClient.CheatRecord.Create().
+			SetUser(user).
+			SetReason("Unresolved violation").
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Setup test resolver
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		gqlClient := client.New(srv)
+
+		// Execute query
+		var resp struct {
+			User struct {
+				Cheating bool
+			}
+		}
+		err = gqlClient.Post(`query { user(id: `+strconv.Itoa(user.ID)+`) { cheating } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read"},
+			}))
+		})
+
+		// Verify response - should be true because there's at least one unresolved record
+		require.NoError(t, err)
+		require.True(t, resp.User.Cheating)
+	})
+
+	t.Run("direct resolver method call", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create an unresolved cheat record
+		_, err = entClient.CheatRecord.Create().
+			SetUser(user).
+			SetReason("Direct test violation").
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Test the resolver method directly
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+		userResolver := &userResolver{resolver}
+
+		cheating, err := userResolver.Cheating(context.Background(), user)
+		require.NoError(t, err)
+		require.True(t, cheating)
+	})
+
+	t.Run("user isolation - cheating status doesn't leak between users", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create two test users
+		user1, err := entClient.User.Create().
+			SetName("user1").
+			SetEmail("user1@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		user2, err := entClient.User.Create().
+			SetName("user2").
+			SetEmail("user2@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create unresolved cheat record for user1
+		_, err = entClient.CheatRecord.Create().
+			SetUser(user1).
+			SetReason("User 1 violation").
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// user2 has no cheat records
+
+		// Test the resolver method directly for both users
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+		userResolver := &userResolver{resolver}
+
+		// Check user1 cheating status
+		cheating1, err := userResolver.Cheating(context.Background(), user1)
+		require.NoError(t, err)
+		require.True(t, cheating1)
+
+		// Check user2 cheating status
+		cheating2, err := userResolver.Cheating(context.Background(), user2)
+		require.NoError(t, err)
+		require.False(t, cheating2)
+	})
+}
+
+func TestMutationResolver_CreateCheatRecord(t *testing.T) {
+	t.Run("success - create for self", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Execute mutation
+		var resp struct {
+			CreateCheatRecord struct {
+				ID     string
+				Reason string
+				User   struct {
+					ID string
+				}
+			}
+		}
+		err = c.Post(`mutation { createCheatRecord(reason: "Test cheating reason") { id reason user { id } } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: user.ID,
+				Scopes: []string{"me:write"},
+			}))
+		})
+
+		// Verify response
+		require.NoError(t, err)
+		require.NotEmpty(t, resp.CreateCheatRecord.ID)
+		require.Equal(t, "Test cheating reason", resp.CreateCheatRecord.Reason)
+		require.Equal(t, strconv.Itoa(user.ID), resp.CreateCheatRecord.User.ID)
+	})
+
+	t.Run("success - create for another user", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user
+		targetUser, err := entClient.User.Create().
+			SetName("targetuser").
+			SetEmail("target@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Execute mutation
+		var resp struct {
+			CreateCheatRecord struct {
+				ID     string
+				Reason string
+				User   struct {
+					ID string
+				}
+			}
+		}
+		err = c.Post(`mutation { createCheatRecord(userID: `+strconv.Itoa(targetUser.ID)+`, reason: "Test cheating reason") { id reason user { id } } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"cheat_record:write"},
+			}))
+		})
+
+		// Verify response
+		require.NoError(t, err)
+		require.NotEmpty(t, resp.CreateCheatRecord.ID)
+		require.Equal(t, "Test cheating reason", resp.CreateCheatRecord.Reason)
+		require.Equal(t, strconv.Itoa(targetUser.ID), resp.CreateCheatRecord.User.ID)
+	})
+
+	t.Run("unauthenticated", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Execute mutation with no auth context
+		var resp struct {
+			CreateCheatRecord struct {
+				ID     string
+				Reason string
+				User   struct {
+					ID string
+				}
+			}
+		}
+		err := c.Post(`mutation { createCheatRecord(reason: "Test reason") { id reason user { id } } }`, &resp)
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+	})
+
+	t.Run("insufficient scope - create for self without me:write", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Execute mutation
+		var resp struct {
+			CreateCheatRecord struct {
+				ID     string
+				Reason string
+				User   struct {
+					ID string
+				}
+			}
+		}
+		err = c.Post(`mutation { createCheatRecord(reason: "Test reason") { id } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: user.ID,
+				Scopes: []string{"user:read"},
+			}))
+		})
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeForbidden)
+		require.Contains(t, err.Error(), "me:write")
+	})
+
+	t.Run("insufficient scope - create for another user without cheat_record:write", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user
+		targetUser, err := entClient.User.Create().
+			SetName("targetuser").
+			SetEmail("target@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Execute mutation
+		var resp struct {
+			CreateCheatRecord struct {
+				ID string
+			}
+		}
+		err = c.Post(`mutation { createCheatRecord(userID: `+strconv.Itoa(targetUser.ID)+`, reason: "Test reason") { id } }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read"},
+			}))
+		})
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeForbidden)
+		require.Contains(t, err.Error(), "cheat_record:write")
+	})
+}
+
+func TestMutationResolver_ResolveCheatRecord(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create a cheat record
+		cheatRecord, err := entClient.CheatRecord.Create().
+			SetUser(user).
+			SetReason("Initial cheating reason").
+			Save(context.Background())
+		require.NoError(t, err)
+
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Execute mutation
+		var resp struct {
+			ResolveCheatRecord bool
+		}
+		err = c.Post(`mutation { resolveCheatRecord(cheatRecordID: `+strconv.Itoa(cheatRecord.ID)+`, reason: "Resolved - false alarm") }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"cheat_record:write"},
+			}))
+		})
+
+		// Verify response
+		require.NoError(t, err)
+		require.True(t, resp.ResolveCheatRecord)
+
+		// Verify the cheat record was actually resolved
+		resolvedRecord, err := entClient.CheatRecord.Get(context.Background(), cheatRecord.ID)
+		require.NoError(t, err)
+		require.NotNil(t, resolvedRecord.ResolvedAt)
+		require.Equal(t, "Resolved - false alarm", resolvedRecord.ResolvedReason)
+	})
+
+	t.Run("unauthenticated", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create a cheat record
+		cheatRecord, err := entClient.CheatRecord.Create().
+			SetUser(user).
+			SetReason("Initial cheating reason").
+			Save(context.Background())
+		require.NoError(t, err)
+
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Execute mutation with no auth context
+		var resp struct {
+			ResolveCheatRecord bool
+		}
+		err = c.Post(`mutation { resolveCheatRecord(cheatRecordID: `+strconv.Itoa(cheatRecord.ID)+`, reason: "Resolved") }`, &resp)
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.CodeUnauthorized)
+	})
+
+	t.Run("insufficient scope", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		// Create test group
+		group, err := createTestGroup(t, entClient)
+		require.NoError(t, err)
+
+		// Create a test user
+		user, err := entClient.User.Create().
+			SetName("testuser").
+			SetEmail("test@example.com").
+			SetGroup(group).
+			Save(context.Background())
+		require.NoError(t, err)
+
+		// Create a cheat record
+		cheatRecord, err := entClient.CheatRecord.Create().
+			SetUser(user).
+			SetReason("Initial cheating reason").
+			Save(context.Background())
+		require.NoError(t, err)
+
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Execute mutation
+		var resp struct {
+			ResolveCheatRecord bool
+		}
+		err = c.Post(`mutation { resolveCheatRecord(cheatRecordID: `+strconv.Itoa(cheatRecord.ID)+`, reason: "Resolved") }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"user:read"},
+			}))
+		})
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), defs.NewErrNoSufficientScope("cheat_record:write").Error())
+	})
+
+	t.Run("cheat record not found", func(t *testing.T) {
+		entClient := testhelper.NewEntSqliteClient(t)
+
+		resolver := NewTestResolver(t, entClient, &mockAuthStorage{})
+
+		// Create test server with scope directive
+		cfg := Config{
+			Resolvers:  resolver,
+			Directives: DirectiveRoot{Scope: directive.ScopeDirective},
+		}
+		srv := handler.New(NewExecutableSchema(cfg))
+		srv.AddTransport(transport.POST{})
+		c := client.New(srv)
+
+		// Execute mutation with non-existent cheat record ID
+		var resp struct {
+			ResolveCheatRecord bool
+		}
+		err := c.Post(`mutation { resolveCheatRecord(cheatRecordID: 99999, reason: "Resolved") }`, &resp, func(bd *client.Request) {
+			bd.HTTP = bd.HTTP.WithContext(auth.WithUser(bd.HTTP.Context(), auth.TokenInfo{
+				UserID: 1,
+				Scopes: []string{"cheat_record:write"},
+			}))
+		})
+
+		// Verify error
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "not found")
 	})
 }

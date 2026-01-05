@@ -47,15 +47,18 @@ type UserEdges struct {
 	Events []*Event `json:"events,omitempty"`
 	// Submissions holds the value of the submissions edge.
 	Submissions []*Submission `json:"submissions,omitempty"`
+	// CheatRecords holds the value of the cheat_records edge.
+	CheatRecords []*CheatRecord `json:"cheat_records,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 	// totalCount holds the count of the edges above.
-	totalCount [4]map[string]int
+	totalCount [5]map[string]int
 
-	namedPoints      map[string][]*Point
-	namedEvents      map[string][]*Event
-	namedSubmissions map[string][]*Submission
+	namedPoints       map[string][]*Point
+	namedEvents       map[string][]*Event
+	namedSubmissions  map[string][]*Submission
+	namedCheatRecords map[string][]*CheatRecord
 }
 
 // GroupOrErr returns the Group value or an error if the edge
@@ -94,6 +97,15 @@ func (e UserEdges) SubmissionsOrErr() ([]*Submission, error) {
 		return e.Submissions, nil
 	}
 	return nil, &NotLoadedError{edge: "submissions"}
+}
+
+// CheatRecordsOrErr returns the CheatRecords value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) CheatRecordsOrErr() ([]*CheatRecord, error) {
+	if e.loadedTypes[4] {
+		return e.CheatRecords, nil
+	}
+	return nil, &NotLoadedError{edge: "cheat_records"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -204,6 +216,11 @@ func (_m *User) QueryEvents() *EventQuery {
 // QuerySubmissions queries the "submissions" edge of the User entity.
 func (_m *User) QuerySubmissions() *SubmissionQuery {
 	return NewUserClient(_m.config).QuerySubmissions(_m)
+}
+
+// QueryCheatRecords queries the "cheat_records" edge of the User entity.
+func (_m *User) QueryCheatRecords() *CheatRecordQuery {
+	return NewUserClient(_m.config).QueryCheatRecords(_m)
 }
 
 // Update returns a builder for updating this User.
@@ -319,6 +336,30 @@ func (_m *User) appendNamedSubmissions(name string, edges ...*Submission) {
 		_m.Edges.namedSubmissions[name] = []*Submission{}
 	} else {
 		_m.Edges.namedSubmissions[name] = append(_m.Edges.namedSubmissions[name], edges...)
+	}
+}
+
+// NamedCheatRecords returns the CheatRecords named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedCheatRecords(name string) ([]*CheatRecord, error) {
+	if _m.Edges.namedCheatRecords == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedCheatRecords[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedCheatRecords(name string, edges ...*CheatRecord) {
+	if _m.Edges.namedCheatRecords == nil {
+		_m.Edges.namedCheatRecords = make(map[string][]*CheatRecord)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedCheatRecords[name] = []*CheatRecord{}
+	} else {
+		_m.Edges.namedCheatRecords[name] = append(_m.Edges.namedCheatRecords[name], edges...)
 	}
 }
 

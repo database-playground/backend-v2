@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/database-playground/backend-v2/ent/cheatrecord"
 	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
@@ -30,6 +31,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// CheatRecord is the client for interacting with the CheatRecord builders.
+	CheatRecord *CheatRecordClient
 	// Database is the client for interacting with the Database builders.
 	Database *DatabaseClient
 	// Event is the client for interacting with the Event builders.
@@ -57,6 +60,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.CheatRecord = NewCheatRecordClient(c.config)
 	c.Database = NewDatabaseClient(c.config)
 	c.Event = NewEventClient(c.config)
 	c.Group = NewGroupClient(c.config)
@@ -155,16 +159,17 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:        ctx,
-		config:     cfg,
-		Database:   NewDatabaseClient(cfg),
-		Event:      NewEventClient(cfg),
-		Group:      NewGroupClient(cfg),
-		Point:      NewPointClient(cfg),
-		Question:   NewQuestionClient(cfg),
-		ScopeSet:   NewScopeSetClient(cfg),
-		Submission: NewSubmissionClient(cfg),
-		User:       NewUserClient(cfg),
+		ctx:         ctx,
+		config:      cfg,
+		CheatRecord: NewCheatRecordClient(cfg),
+		Database:    NewDatabaseClient(cfg),
+		Event:       NewEventClient(cfg),
+		Group:       NewGroupClient(cfg),
+		Point:       NewPointClient(cfg),
+		Question:    NewQuestionClient(cfg),
+		ScopeSet:    NewScopeSetClient(cfg),
+		Submission:  NewSubmissionClient(cfg),
+		User:        NewUserClient(cfg),
 	}, nil
 }
 
@@ -182,23 +187,24 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:        ctx,
-		config:     cfg,
-		Database:   NewDatabaseClient(cfg),
-		Event:      NewEventClient(cfg),
-		Group:      NewGroupClient(cfg),
-		Point:      NewPointClient(cfg),
-		Question:   NewQuestionClient(cfg),
-		ScopeSet:   NewScopeSetClient(cfg),
-		Submission: NewSubmissionClient(cfg),
-		User:       NewUserClient(cfg),
+		ctx:         ctx,
+		config:      cfg,
+		CheatRecord: NewCheatRecordClient(cfg),
+		Database:    NewDatabaseClient(cfg),
+		Event:       NewEventClient(cfg),
+		Group:       NewGroupClient(cfg),
+		Point:       NewPointClient(cfg),
+		Question:    NewQuestionClient(cfg),
+		ScopeSet:    NewScopeSetClient(cfg),
+		Submission:  NewSubmissionClient(cfg),
+		User:        NewUserClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Database.
+//		CheatRecord.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -221,8 +227,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Database, c.Event, c.Group, c.Point, c.Question, c.ScopeSet, c.Submission,
-		c.User,
+		c.CheatRecord, c.Database, c.Event, c.Group, c.Point, c.Question, c.ScopeSet,
+		c.Submission, c.User,
 	} {
 		n.Use(hooks...)
 	}
@@ -232,8 +238,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Database, c.Event, c.Group, c.Point, c.Question, c.ScopeSet, c.Submission,
-		c.User,
+		c.CheatRecord, c.Database, c.Event, c.Group, c.Point, c.Question, c.ScopeSet,
+		c.Submission, c.User,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -242,6 +248,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *CheatRecordMutation:
+		return c.CheatRecord.mutate(ctx, m)
 	case *DatabaseMutation:
 		return c.Database.mutate(ctx, m)
 	case *EventMutation:
@@ -260,6 +268,155 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.User.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// CheatRecordClient is a client for the CheatRecord schema.
+type CheatRecordClient struct {
+	config
+}
+
+// NewCheatRecordClient returns a client for the CheatRecord from the given config.
+func NewCheatRecordClient(c config) *CheatRecordClient {
+	return &CheatRecordClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `cheatrecord.Hooks(f(g(h())))`.
+func (c *CheatRecordClient) Use(hooks ...Hook) {
+	c.hooks.CheatRecord = append(c.hooks.CheatRecord, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `cheatrecord.Intercept(f(g(h())))`.
+func (c *CheatRecordClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CheatRecord = append(c.inters.CheatRecord, interceptors...)
+}
+
+// Create returns a builder for creating a CheatRecord entity.
+func (c *CheatRecordClient) Create() *CheatRecordCreate {
+	mutation := newCheatRecordMutation(c.config, OpCreate)
+	return &CheatRecordCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CheatRecord entities.
+func (c *CheatRecordClient) CreateBulk(builders ...*CheatRecordCreate) *CheatRecordCreateBulk {
+	return &CheatRecordCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CheatRecordClient) MapCreateBulk(slice any, setFunc func(*CheatRecordCreate, int)) *CheatRecordCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CheatRecordCreateBulk{err: fmt.Errorf("calling to CheatRecordClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CheatRecordCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CheatRecordCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CheatRecord.
+func (c *CheatRecordClient) Update() *CheatRecordUpdate {
+	mutation := newCheatRecordMutation(c.config, OpUpdate)
+	return &CheatRecordUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CheatRecordClient) UpdateOne(_m *CheatRecord) *CheatRecordUpdateOne {
+	mutation := newCheatRecordMutation(c.config, OpUpdateOne, withCheatRecord(_m))
+	return &CheatRecordUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CheatRecordClient) UpdateOneID(id int) *CheatRecordUpdateOne {
+	mutation := newCheatRecordMutation(c.config, OpUpdateOne, withCheatRecordID(id))
+	return &CheatRecordUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CheatRecord.
+func (c *CheatRecordClient) Delete() *CheatRecordDelete {
+	mutation := newCheatRecordMutation(c.config, OpDelete)
+	return &CheatRecordDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CheatRecordClient) DeleteOne(_m *CheatRecord) *CheatRecordDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CheatRecordClient) DeleteOneID(id int) *CheatRecordDeleteOne {
+	builder := c.Delete().Where(cheatrecord.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CheatRecordDeleteOne{builder}
+}
+
+// Query returns a query builder for CheatRecord.
+func (c *CheatRecordClient) Query() *CheatRecordQuery {
+	return &CheatRecordQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCheatRecord},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CheatRecord entity by its id.
+func (c *CheatRecordClient) Get(ctx context.Context, id int) (*CheatRecord, error) {
+	return c.Query().Where(cheatrecord.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CheatRecordClient) GetX(ctx context.Context, id int) *CheatRecord {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a CheatRecord.
+func (c *CheatRecordClient) QueryUser(_m *CheatRecord) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cheatrecord.Table, cheatrecord.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, cheatrecord.UserTable, cheatrecord.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CheatRecordClient) Hooks() []Hook {
+	return c.hooks.CheatRecord
+}
+
+// Interceptors returns the client interceptors.
+func (c *CheatRecordClient) Interceptors() []Interceptor {
+	return c.inters.CheatRecord
+}
+
+func (c *CheatRecordClient) mutate(ctx context.Context, m *CheatRecordMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CheatRecordCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CheatRecordUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CheatRecordUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CheatRecordDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CheatRecord mutation op: %q", m.Op())
 	}
 }
 
@@ -1512,6 +1669,22 @@ func (c *UserClient) QuerySubmissions(_m *User) *SubmissionQuery {
 	return query
 }
 
+// QueryCheatRecords queries the cheat_records edge of a User.
+func (c *UserClient) QueryCheatRecords(_m *User) *CheatRecordQuery {
+	query := (&CheatRecordClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(cheatrecord.Table, cheatrecord.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CheatRecordsTable, user.CheatRecordsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	hooks := c.hooks.User
@@ -1542,10 +1715,11 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Database, Event, Group, Point, Question, ScopeSet, Submission, User []ent.Hook
+		CheatRecord, Database, Event, Group, Point, Question, ScopeSet, Submission,
+		User []ent.Hook
 	}
 	inters struct {
-		Database, Event, Group, Point, Question, ScopeSet, Submission,
+		CheatRecord, Database, Event, Group, Point, Question, ScopeSet, Submission,
 		User []ent.Interceptor
 	}
 )

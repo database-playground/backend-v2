@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/database-playground/backend-v2/ent/cheatrecord"
 	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/point"
@@ -162,6 +163,21 @@ func (_u *UserUpdate) AddSubmissions(v ...*Submission) *UserUpdate {
 	return _u.AddSubmissionIDs(ids...)
 }
 
+// AddCheatRecordIDs adds the "cheat_records" edge to the CheatRecord entity by IDs.
+func (_u *UserUpdate) AddCheatRecordIDs(ids ...int) *UserUpdate {
+	_u.mutation.AddCheatRecordIDs(ids...)
+	return _u
+}
+
+// AddCheatRecords adds the "cheat_records" edges to the CheatRecord entity.
+func (_u *UserUpdate) AddCheatRecords(v ...*CheatRecord) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCheatRecordIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdate) Mutation() *UserMutation {
 	return _u.mutation
@@ -234,6 +250,27 @@ func (_u *UserUpdate) RemoveSubmissions(v ...*Submission) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSubmissionIDs(ids...)
+}
+
+// ClearCheatRecords clears all "cheat_records" edges to the CheatRecord entity.
+func (_u *UserUpdate) ClearCheatRecords() *UserUpdate {
+	_u.mutation.ClearCheatRecords()
+	return _u
+}
+
+// RemoveCheatRecordIDs removes the "cheat_records" edge to CheatRecord entities by IDs.
+func (_u *UserUpdate) RemoveCheatRecordIDs(ids ...int) *UserUpdate {
+	_u.mutation.RemoveCheatRecordIDs(ids...)
+	return _u
+}
+
+// RemoveCheatRecords removes "cheat_records" edges to CheatRecord entities.
+func (_u *UserUpdate) RemoveCheatRecords(v ...*CheatRecord) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCheatRecordIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -488,6 +525,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.CheatRecordsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CheatRecordsTable,
+			Columns: []string{user.CheatRecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cheatrecord.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCheatRecordsIDs(); len(nodes) > 0 && !_u.mutation.CheatRecordsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CheatRecordsTable,
+			Columns: []string{user.CheatRecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cheatrecord.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CheatRecordsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CheatRecordsTable,
+			Columns: []string{user.CheatRecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cheatrecord.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -638,6 +720,21 @@ func (_u *UserUpdateOne) AddSubmissions(v ...*Submission) *UserUpdateOne {
 	return _u.AddSubmissionIDs(ids...)
 }
 
+// AddCheatRecordIDs adds the "cheat_records" edge to the CheatRecord entity by IDs.
+func (_u *UserUpdateOne) AddCheatRecordIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.AddCheatRecordIDs(ids...)
+	return _u
+}
+
+// AddCheatRecords adds the "cheat_records" edges to the CheatRecord entity.
+func (_u *UserUpdateOne) AddCheatRecords(v ...*CheatRecord) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCheatRecordIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdateOne) Mutation() *UserMutation {
 	return _u.mutation
@@ -710,6 +807,27 @@ func (_u *UserUpdateOne) RemoveSubmissions(v ...*Submission) *UserUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSubmissionIDs(ids...)
+}
+
+// ClearCheatRecords clears all "cheat_records" edges to the CheatRecord entity.
+func (_u *UserUpdateOne) ClearCheatRecords() *UserUpdateOne {
+	_u.mutation.ClearCheatRecords()
+	return _u
+}
+
+// RemoveCheatRecordIDs removes the "cheat_records" edge to CheatRecord entities by IDs.
+func (_u *UserUpdateOne) RemoveCheatRecordIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.RemoveCheatRecordIDs(ids...)
+	return _u
+}
+
+// RemoveCheatRecords removes "cheat_records" edges to CheatRecord entities.
+func (_u *UserUpdateOne) RemoveCheatRecords(v ...*CheatRecord) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCheatRecordIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -987,6 +1105,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(submission.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CheatRecordsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CheatRecordsTable,
+			Columns: []string{user.CheatRecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cheatrecord.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCheatRecordsIDs(); len(nodes) > 0 && !_u.mutation.CheatRecordsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CheatRecordsTable,
+			Columns: []string{user.CheatRecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cheatrecord.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CheatRecordsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CheatRecordsTable,
+			Columns: []string{user.CheatRecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cheatrecord.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

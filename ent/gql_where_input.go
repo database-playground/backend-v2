@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/database-playground/backend-v2/ent/cheatrecord"
 	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
@@ -17,6 +18,344 @@ import (
 	"github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/ent/user"
 )
+
+// CheatRecordWhereInput represents a where input for filtering CheatRecord queries.
+type CheatRecordWhereInput struct {
+	Predicates []predicate.CheatRecord  `json:"-"`
+	Not        *CheatRecordWhereInput   `json:"not,omitempty"`
+	Or         []*CheatRecordWhereInput `json:"or,omitempty"`
+	And        []*CheatRecordWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "reason" field predicates.
+	Reason             *string  `json:"reason,omitempty"`
+	ReasonNEQ          *string  `json:"reasonNEQ,omitempty"`
+	ReasonIn           []string `json:"reasonIn,omitempty"`
+	ReasonNotIn        []string `json:"reasonNotIn,omitempty"`
+	ReasonGT           *string  `json:"reasonGT,omitempty"`
+	ReasonGTE          *string  `json:"reasonGTE,omitempty"`
+	ReasonLT           *string  `json:"reasonLT,omitempty"`
+	ReasonLTE          *string  `json:"reasonLTE,omitempty"`
+	ReasonContains     *string  `json:"reasonContains,omitempty"`
+	ReasonHasPrefix    *string  `json:"reasonHasPrefix,omitempty"`
+	ReasonHasSuffix    *string  `json:"reasonHasSuffix,omitempty"`
+	ReasonEqualFold    *string  `json:"reasonEqualFold,omitempty"`
+	ReasonContainsFold *string  `json:"reasonContainsFold,omitempty"`
+
+	// "resolved_reason" field predicates.
+	ResolvedReason             *string  `json:"resolvedReason,omitempty"`
+	ResolvedReasonNEQ          *string  `json:"resolvedReasonNEQ,omitempty"`
+	ResolvedReasonIn           []string `json:"resolvedReasonIn,omitempty"`
+	ResolvedReasonNotIn        []string `json:"resolvedReasonNotIn,omitempty"`
+	ResolvedReasonGT           *string  `json:"resolvedReasonGT,omitempty"`
+	ResolvedReasonGTE          *string  `json:"resolvedReasonGTE,omitempty"`
+	ResolvedReasonLT           *string  `json:"resolvedReasonLT,omitempty"`
+	ResolvedReasonLTE          *string  `json:"resolvedReasonLTE,omitempty"`
+	ResolvedReasonContains     *string  `json:"resolvedReasonContains,omitempty"`
+	ResolvedReasonHasPrefix    *string  `json:"resolvedReasonHasPrefix,omitempty"`
+	ResolvedReasonHasSuffix    *string  `json:"resolvedReasonHasSuffix,omitempty"`
+	ResolvedReasonIsNil        bool     `json:"resolvedReasonIsNil,omitempty"`
+	ResolvedReasonNotNil       bool     `json:"resolvedReasonNotNil,omitempty"`
+	ResolvedReasonEqualFold    *string  `json:"resolvedReasonEqualFold,omitempty"`
+	ResolvedReasonContainsFold *string  `json:"resolvedReasonContainsFold,omitempty"`
+
+	// "resolved_at" field predicates.
+	ResolvedAt       *time.Time  `json:"resolvedAt,omitempty"`
+	ResolvedAtNEQ    *time.Time  `json:"resolvedAtNEQ,omitempty"`
+	ResolvedAtIn     []time.Time `json:"resolvedAtIn,omitempty"`
+	ResolvedAtNotIn  []time.Time `json:"resolvedAtNotIn,omitempty"`
+	ResolvedAtGT     *time.Time  `json:"resolvedAtGT,omitempty"`
+	ResolvedAtGTE    *time.Time  `json:"resolvedAtGTE,omitempty"`
+	ResolvedAtLT     *time.Time  `json:"resolvedAtLT,omitempty"`
+	ResolvedAtLTE    *time.Time  `json:"resolvedAtLTE,omitempty"`
+	ResolvedAtIsNil  bool        `json:"resolvedAtIsNil,omitempty"`
+	ResolvedAtNotNil bool        `json:"resolvedAtNotNil,omitempty"`
+
+	// "cheated_at" field predicates.
+	CheatedAt      *time.Time  `json:"cheatedAt,omitempty"`
+	CheatedAtNEQ   *time.Time  `json:"cheatedAtNEQ,omitempty"`
+	CheatedAtIn    []time.Time `json:"cheatedAtIn,omitempty"`
+	CheatedAtNotIn []time.Time `json:"cheatedAtNotIn,omitempty"`
+	CheatedAtGT    *time.Time  `json:"cheatedAtGT,omitempty"`
+	CheatedAtGTE   *time.Time  `json:"cheatedAtGTE,omitempty"`
+	CheatedAtLT    *time.Time  `json:"cheatedAtLT,omitempty"`
+	CheatedAtLTE   *time.Time  `json:"cheatedAtLTE,omitempty"`
+
+	// "user" edge predicates.
+	HasUser     *bool             `json:"hasUser,omitempty"`
+	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *CheatRecordWhereInput) AddPredicates(predicates ...predicate.CheatRecord) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the CheatRecordWhereInput filter on the CheatRecordQuery builder.
+func (i *CheatRecordWhereInput) Filter(q *CheatRecordQuery) (*CheatRecordQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyCheatRecordWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyCheatRecordWhereInput is returned in case the CheatRecordWhereInput is empty.
+var ErrEmptyCheatRecordWhereInput = errors.New("ent: empty predicate CheatRecordWhereInput")
+
+// P returns a predicate for filtering cheatrecords.
+// An error is returned if the input is empty or invalid.
+func (i *CheatRecordWhereInput) P() (predicate.CheatRecord, error) {
+	var predicates []predicate.CheatRecord
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, cheatrecord.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.CheatRecord, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, cheatrecord.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.CheatRecord, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, cheatrecord.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, cheatrecord.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, cheatrecord.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, cheatrecord.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, cheatrecord.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, cheatrecord.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, cheatrecord.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, cheatrecord.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, cheatrecord.IDLTE(*i.IDLTE))
+	}
+	if i.Reason != nil {
+		predicates = append(predicates, cheatrecord.ReasonEQ(*i.Reason))
+	}
+	if i.ReasonNEQ != nil {
+		predicates = append(predicates, cheatrecord.ReasonNEQ(*i.ReasonNEQ))
+	}
+	if len(i.ReasonIn) > 0 {
+		predicates = append(predicates, cheatrecord.ReasonIn(i.ReasonIn...))
+	}
+	if len(i.ReasonNotIn) > 0 {
+		predicates = append(predicates, cheatrecord.ReasonNotIn(i.ReasonNotIn...))
+	}
+	if i.ReasonGT != nil {
+		predicates = append(predicates, cheatrecord.ReasonGT(*i.ReasonGT))
+	}
+	if i.ReasonGTE != nil {
+		predicates = append(predicates, cheatrecord.ReasonGTE(*i.ReasonGTE))
+	}
+	if i.ReasonLT != nil {
+		predicates = append(predicates, cheatrecord.ReasonLT(*i.ReasonLT))
+	}
+	if i.ReasonLTE != nil {
+		predicates = append(predicates, cheatrecord.ReasonLTE(*i.ReasonLTE))
+	}
+	if i.ReasonContains != nil {
+		predicates = append(predicates, cheatrecord.ReasonContains(*i.ReasonContains))
+	}
+	if i.ReasonHasPrefix != nil {
+		predicates = append(predicates, cheatrecord.ReasonHasPrefix(*i.ReasonHasPrefix))
+	}
+	if i.ReasonHasSuffix != nil {
+		predicates = append(predicates, cheatrecord.ReasonHasSuffix(*i.ReasonHasSuffix))
+	}
+	if i.ReasonEqualFold != nil {
+		predicates = append(predicates, cheatrecord.ReasonEqualFold(*i.ReasonEqualFold))
+	}
+	if i.ReasonContainsFold != nil {
+		predicates = append(predicates, cheatrecord.ReasonContainsFold(*i.ReasonContainsFold))
+	}
+	if i.ResolvedReason != nil {
+		predicates = append(predicates, cheatrecord.ResolvedReasonEQ(*i.ResolvedReason))
+	}
+	if i.ResolvedReasonNEQ != nil {
+		predicates = append(predicates, cheatrecord.ResolvedReasonNEQ(*i.ResolvedReasonNEQ))
+	}
+	if len(i.ResolvedReasonIn) > 0 {
+		predicates = append(predicates, cheatrecord.ResolvedReasonIn(i.ResolvedReasonIn...))
+	}
+	if len(i.ResolvedReasonNotIn) > 0 {
+		predicates = append(predicates, cheatrecord.ResolvedReasonNotIn(i.ResolvedReasonNotIn...))
+	}
+	if i.ResolvedReasonGT != nil {
+		predicates = append(predicates, cheatrecord.ResolvedReasonGT(*i.ResolvedReasonGT))
+	}
+	if i.ResolvedReasonGTE != nil {
+		predicates = append(predicates, cheatrecord.ResolvedReasonGTE(*i.ResolvedReasonGTE))
+	}
+	if i.ResolvedReasonLT != nil {
+		predicates = append(predicates, cheatrecord.ResolvedReasonLT(*i.ResolvedReasonLT))
+	}
+	if i.ResolvedReasonLTE != nil {
+		predicates = append(predicates, cheatrecord.ResolvedReasonLTE(*i.ResolvedReasonLTE))
+	}
+	if i.ResolvedReasonContains != nil {
+		predicates = append(predicates, cheatrecord.ResolvedReasonContains(*i.ResolvedReasonContains))
+	}
+	if i.ResolvedReasonHasPrefix != nil {
+		predicates = append(predicates, cheatrecord.ResolvedReasonHasPrefix(*i.ResolvedReasonHasPrefix))
+	}
+	if i.ResolvedReasonHasSuffix != nil {
+		predicates = append(predicates, cheatrecord.ResolvedReasonHasSuffix(*i.ResolvedReasonHasSuffix))
+	}
+	if i.ResolvedReasonIsNil {
+		predicates = append(predicates, cheatrecord.ResolvedReasonIsNil())
+	}
+	if i.ResolvedReasonNotNil {
+		predicates = append(predicates, cheatrecord.ResolvedReasonNotNil())
+	}
+	if i.ResolvedReasonEqualFold != nil {
+		predicates = append(predicates, cheatrecord.ResolvedReasonEqualFold(*i.ResolvedReasonEqualFold))
+	}
+	if i.ResolvedReasonContainsFold != nil {
+		predicates = append(predicates, cheatrecord.ResolvedReasonContainsFold(*i.ResolvedReasonContainsFold))
+	}
+	if i.ResolvedAt != nil {
+		predicates = append(predicates, cheatrecord.ResolvedAtEQ(*i.ResolvedAt))
+	}
+	if i.ResolvedAtNEQ != nil {
+		predicates = append(predicates, cheatrecord.ResolvedAtNEQ(*i.ResolvedAtNEQ))
+	}
+	if len(i.ResolvedAtIn) > 0 {
+		predicates = append(predicates, cheatrecord.ResolvedAtIn(i.ResolvedAtIn...))
+	}
+	if len(i.ResolvedAtNotIn) > 0 {
+		predicates = append(predicates, cheatrecord.ResolvedAtNotIn(i.ResolvedAtNotIn...))
+	}
+	if i.ResolvedAtGT != nil {
+		predicates = append(predicates, cheatrecord.ResolvedAtGT(*i.ResolvedAtGT))
+	}
+	if i.ResolvedAtGTE != nil {
+		predicates = append(predicates, cheatrecord.ResolvedAtGTE(*i.ResolvedAtGTE))
+	}
+	if i.ResolvedAtLT != nil {
+		predicates = append(predicates, cheatrecord.ResolvedAtLT(*i.ResolvedAtLT))
+	}
+	if i.ResolvedAtLTE != nil {
+		predicates = append(predicates, cheatrecord.ResolvedAtLTE(*i.ResolvedAtLTE))
+	}
+	if i.ResolvedAtIsNil {
+		predicates = append(predicates, cheatrecord.ResolvedAtIsNil())
+	}
+	if i.ResolvedAtNotNil {
+		predicates = append(predicates, cheatrecord.ResolvedAtNotNil())
+	}
+	if i.CheatedAt != nil {
+		predicates = append(predicates, cheatrecord.CheatedAtEQ(*i.CheatedAt))
+	}
+	if i.CheatedAtNEQ != nil {
+		predicates = append(predicates, cheatrecord.CheatedAtNEQ(*i.CheatedAtNEQ))
+	}
+	if len(i.CheatedAtIn) > 0 {
+		predicates = append(predicates, cheatrecord.CheatedAtIn(i.CheatedAtIn...))
+	}
+	if len(i.CheatedAtNotIn) > 0 {
+		predicates = append(predicates, cheatrecord.CheatedAtNotIn(i.CheatedAtNotIn...))
+	}
+	if i.CheatedAtGT != nil {
+		predicates = append(predicates, cheatrecord.CheatedAtGT(*i.CheatedAtGT))
+	}
+	if i.CheatedAtGTE != nil {
+		predicates = append(predicates, cheatrecord.CheatedAtGTE(*i.CheatedAtGTE))
+	}
+	if i.CheatedAtLT != nil {
+		predicates = append(predicates, cheatrecord.CheatedAtLT(*i.CheatedAtLT))
+	}
+	if i.CheatedAtLTE != nil {
+		predicates = append(predicates, cheatrecord.CheatedAtLTE(*i.CheatedAtLTE))
+	}
+
+	if i.HasUser != nil {
+		p := cheatrecord.HasUser()
+		if !*i.HasUser {
+			p = cheatrecord.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasUserWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasUserWith))
+		for _, w := range i.HasUserWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasUserWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, cheatrecord.HasUserWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyCheatRecordWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return cheatrecord.And(predicates...), nil
+	}
+}
 
 // DatabaseWhereInput represents a where input for filtering Database queries.
 type DatabaseWhereInput struct {
@@ -2461,6 +2800,10 @@ type UserWhereInput struct {
 	// "submissions" edge predicates.
 	HasSubmissions     *bool                   `json:"hasSubmissions,omitempty"`
 	HasSubmissionsWith []*SubmissionWhereInput `json:"hasSubmissionsWith,omitempty"`
+
+	// "cheat_records" edge predicates.
+	HasCheatRecords     *bool                    `json:"hasCheatRecords,omitempty"`
+	HasCheatRecordsWith []*CheatRecordWhereInput `json:"hasCheatRecordsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -2831,6 +3174,24 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasSubmissionsWith(with...))
+	}
+	if i.HasCheatRecords != nil {
+		p := user.HasCheatRecords()
+		if !*i.HasCheatRecords {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasCheatRecordsWith) > 0 {
+		with := make([]predicate.CheatRecord, 0, len(i.HasCheatRecordsWith))
+		for _, w := range i.HasCheatRecordsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasCheatRecordsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasCheatRecordsWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

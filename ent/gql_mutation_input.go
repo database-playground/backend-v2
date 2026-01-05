@@ -358,13 +358,14 @@ func (c *ScopeSetUpdateOne) SetInput(i UpdateScopeSetInput) *ScopeSetUpdateOne {
 
 // CreateUserInput represents a mutation input for creating users.
 type CreateUserInput struct {
-	Name          string
-	Email         string
-	Avatar        *string
-	GroupID       int
-	PointIDs      []int
-	EventIDs      []int
-	SubmissionIDs []int
+	Name           string
+	Email          string
+	Avatar         *string
+	GroupID        int
+	PointIDs       []int
+	EventIDs       []int
+	SubmissionIDs  []int
+	CheatRecordIDs []int
 }
 
 // Mutate applies the CreateUserInput on the UserMutation builder.
@@ -384,6 +385,9 @@ func (i *CreateUserInput) Mutate(m *UserMutation) {
 	if v := i.SubmissionIDs; len(v) > 0 {
 		m.AddSubmissionIDs(v...)
 	}
+	if v := i.CheatRecordIDs; len(v) > 0 {
+		m.AddCheatRecordIDs(v...)
+	}
 }
 
 // SetInput applies the change-set in the CreateUserInput on the UserCreate builder.
@@ -394,19 +398,22 @@ func (c *UserCreate) SetInput(i CreateUserInput) *UserCreate {
 
 // UpdateUserInput represents a mutation input for updating users.
 type UpdateUserInput struct {
-	Name                *string
-	ClearAvatar         bool
-	Avatar              *string
-	GroupID             *int
-	ClearPoints         bool
-	AddPointIDs         []int
-	RemovePointIDs      []int
-	ClearEvents         bool
-	AddEventIDs         []int
-	RemoveEventIDs      []int
-	ClearSubmissions    bool
-	AddSubmissionIDs    []int
-	RemoveSubmissionIDs []int
+	Name                 *string
+	ClearAvatar          bool
+	Avatar               *string
+	GroupID              *int
+	ClearPoints          bool
+	AddPointIDs          []int
+	RemovePointIDs       []int
+	ClearEvents          bool
+	AddEventIDs          []int
+	RemoveEventIDs       []int
+	ClearSubmissions     bool
+	AddSubmissionIDs     []int
+	RemoveSubmissionIDs  []int
+	ClearCheatRecords    bool
+	AddCheatRecordIDs    []int
+	RemoveCheatRecordIDs []int
 }
 
 // Mutate applies the UpdateUserInput on the UserMutation builder.
@@ -449,6 +456,15 @@ func (i *UpdateUserInput) Mutate(m *UserMutation) {
 	}
 	if v := i.RemoveSubmissionIDs; len(v) > 0 {
 		m.RemoveSubmissionIDs(v...)
+	}
+	if i.ClearCheatRecords {
+		m.ClearCheatRecords()
+	}
+	if v := i.AddCheatRecordIDs; len(v) > 0 {
+		m.AddCheatRecordIDs(v...)
+	}
+	if v := i.RemoveCheatRecordIDs; len(v) > 0 {
+		m.RemoveCheatRecordIDs(v...)
 	}
 }
 

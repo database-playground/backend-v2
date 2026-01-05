@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/database-playground/backend-v2/ent/cheatrecord"
 	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/point"
@@ -146,6 +147,21 @@ func (_c *UserCreate) AddSubmissions(v ...*Submission) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddSubmissionIDs(ids...)
+}
+
+// AddCheatRecordIDs adds the "cheat_records" edge to the CheatRecord entity by IDs.
+func (_c *UserCreate) AddCheatRecordIDs(ids ...int) *UserCreate {
+	_c.mutation.AddCheatRecordIDs(ids...)
+	return _c
+}
+
+// AddCheatRecords adds the "cheat_records" edges to the CheatRecord entity.
+func (_c *UserCreate) AddCheatRecords(v ...*CheatRecord) *UserCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCheatRecordIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -337,6 +353,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(submission.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CheatRecordsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CheatRecordsTable,
+			Columns: []string{user.CheatRecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cheatrecord.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

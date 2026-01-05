@@ -9,8 +9,10 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"time"
 
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/ent/cheatrecord"
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/point"
 	"github.com/database-playground/backend-v2/ent/predicate"
@@ -20,6 +22,7 @@ import (
 	"github.com/database-playground/backend-v2/graph/model"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/httputils"
+	"github.com/database-playground/backend-v2/internal/scope"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 	otelcodes "go.opentelemetry.io/otel/codes"
 )
@@ -319,6 +322,76 @@ func (r *mutationResolver) CreatePoint(ctx context.Context, input ent.CreatePoin
 	return point, nil
 }
 
+// CreateCheatRecord is the resolver for the createCheatRecord field.
+func (r *mutationResolver) CreateCheatRecord(ctx context.Context, userID *int, reason string) (*ent.CheatRecord, error) {
+	ctx, span := tracer.Start(ctx, "CreateCheatRecord")
+	defer span.End()
+
+	user, ok := auth.GetUser(ctx)
+	if !ok {
+		span.SetStatus(otelcodes.Error, "Unauthorized")
+		return nil, defs.ErrUnauthorized
+	}
+
+	entClient := r.EntClient(ctx)
+
+	var targetUserID int
+
+	if userID == nil {
+		if !scope.ShouldAllow("me:write", user.Scopes) {
+			span.SetStatus(otelcodes.Error, "You must have 'me:write' scope to write cheat record for yourself")
+			return nil, defs.GqlError{
+				Message: "You must have 'me:write' scope to write cheat record for yourself",
+				Code:    defs.CodeForbidden,
+			}
+		}
+
+		targetUserID = user.UserID
+	} else {
+		if !scope.ShouldAllow("cheat_record:write", user.Scopes) {
+			span.SetStatus(otelcodes.Error, "You must have 'cheat_record:write' scope to write cheat record for other users")
+			return nil, defs.GqlError{
+				Message: "You must have 'cheat_record:write' scope to write cheat record for other users",
+				Code:    defs.CodeForbidden,
+			}
+		}
+
+		targetUserID = *userID
+	}
+
+	cheatRecord, err := entClient.CheatRecord.Create().
+		SetUserID(targetUserID).
+		SetReason(reason).
+		Save(ctx)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to record cheat record")
+		span.RecordError(err)
+		return nil, err
+	}
+
+	return cheatRecord, nil
+}
+
+// ResolveCheatRecord is the resolver for the resolveCheatRecord field.
+func (r *mutationResolver) ResolveCheatRecord(ctx context.Context, cheatRecordID int, reason string) (bool, error) {
+	ctx, span := tracer.Start(ctx, "ResolveCheatRecord")
+	defer span.End()
+
+	entClient := r.EntClient(ctx)
+
+	err := entClient.CheatRecord.UpdateOneID(cheatRecordID).
+		SetResolvedAt(time.Now()).
+		SetResolvedReason(reason).
+		Exec(ctx)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to resolve cheat record")
+		span.RecordError(err)
+		return false, err
+	}
+
+	return true, nil
+}
+
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
 	ctx, span := tracer.Start(ctx, "Me")
@@ -428,6 +501,28 @@ func (r *queryResolver) ScopeSet(ctx context.Context, filter model.ScopeSetFilte
 	return scopeSet, nil
 }
 
+// CheatRecord is the resolver for the cheatRecord field.
+func (r *queryResolver) CheatRecord(ctx context.Context, id int) (*ent.CheatRecord, error) {
+	ctx, span := tracer.Start(ctx, "CheatRecord")
+	defer span.End()
+
+	entClient := r.EntClient(ctx)
+
+	cheatRecord, err := entClient.CheatRecord.Get(ctx, id)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			span.SetStatus(otelcodes.Error, "Cheat record not found")
+			return nil, defs.ErrNotFound
+		}
+		span.SetStatus(otelcodes.Error, "Failed to query cheat record")
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.SetStatus(otelcodes.Ok, "Cheat record retrieved successfully")
+	return cheatRecord, nil
+}
+
 // ImpersonatedBy is the resolver for the impersonatedBy field.
 func (r *userResolver) ImpersonatedBy(ctx context.Context, obj *ent.User) (*ent.User, error) {
 	ctx, span := tracer.Start(ctx, "ImpersonatedBy")
@@ -483,4 +578,23 @@ func (r *userResolver) TotalPoints(ctx context.Context, obj *ent.User) (int, err
 
 	span.SetStatus(otelcodes.Ok, "Total points calculated successfully")
 	return totalPoints, nil
+}
+
+// Cheating is the resolver for the cheating field.
+func (r *userResolver) Cheating(ctx context.Context, obj *ent.User) (bool, error) {
+	ctx, span := tracer.Start(ctx, "Cheating")
+	defer span.End()
+
+	cheatRecordsCount, err := obj.QueryCheatRecords().Where(cheatrecord.ResolvedAtIsNil()).Count(ctx)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "Failed to query cheat records")
+		span.RecordError(err)
+		return false, err
+	}
+	if cheatRecordsCount > 0 {
+		span.SetStatus(otelcodes.Ok, "User has existing unresolved cheat records")
+		return true, nil
+	}
+	span.SetStatus(otelcodes.Ok, "User has no existing unresolved cheat records")
+	return false, nil
 }

@@ -9,6 +9,29 @@ import (
 )
 
 var (
+	// CheatRecordsColumns holds the columns for the "cheat_records" table.
+	CheatRecordsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "reason", Type: field.TypeString},
+		{Name: "resolved_reason", Type: field.TypeString, Nullable: true},
+		{Name: "resolved_at", Type: field.TypeTime, Nullable: true},
+		{Name: "cheated_at", Type: field.TypeTime},
+		{Name: "user_cheat_records", Type: field.TypeInt},
+	}
+	// CheatRecordsTable holds the schema information for the "cheat_records" table.
+	CheatRecordsTable = &schema.Table{
+		Name:       "cheat_records",
+		Columns:    CheatRecordsColumns,
+		PrimaryKey: []*schema.Column{CheatRecordsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "cheat_records_users_cheat_records",
+				Columns:    []*schema.Column{CheatRecordsColumns[5]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// DatabasesColumns holds the columns for the "databases" table.
 	DatabasesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -227,6 +250,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		CheatRecordsTable,
 		DatabasesTable,
 		EventsTable,
 		GroupsTable,
@@ -240,6 +264,10 @@ var (
 )
 
 func init() {
+	CheatRecordsTable.ForeignKeys[0].RefTable = UsersTable
+	CheatRecordsTable.Annotation = &entsql.Annotation{
+		IncrementStart: func(i int) *int { return &i }(34359738368),
+	}
 	DatabasesTable.Annotation = &entsql.Annotation{
 		IncrementStart: func(i int) *int { return &i }(12884901888),
 	}

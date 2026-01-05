@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/database-playground/backend-v2/ent/cheatrecord"
 	"github.com/database-playground/backend-v2/ent/database"
 	"github.com/database-playground/backend-v2/ent/event"
 	"github.com/database-playground/backend-v2/ent/group"
@@ -25,6 +26,11 @@ import (
 type Noder interface {
 	IsNode()
 }
+
+var cheatrecordImplementors = []string{"CheatRecord", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*CheatRecord) IsNode() {}
 
 var databaseImplementors = []string{"Database", "Node"}
 
@@ -143,6 +149,15 @@ func (c *Client) Noder(ctx context.Context, id int, opts ...NodeOption) (_ Noder
 
 func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error) {
 	switch table {
+	case cheatrecord.Table:
+		query := c.CheatRecord.Query().
+			Where(cheatrecord.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, cheatrecordImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case database.Table:
 		query := c.Database.Query().
 			Where(database.ID(id))
@@ -288,6 +303,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		idmap[id] = append(idmap[id], &noders[i])
 	}
 	switch table {
+	case cheatrecord.Table:
+		query := c.CheatRecord.Query().
+			Where(cheatrecord.IDIn(ids...))
+		query, err := query.CollectFields(ctx, cheatrecordImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case database.Table:
 		query := c.Database.Query().
 			Where(database.IDIn(ids...))

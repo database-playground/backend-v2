@@ -36,6 +36,8 @@ func (User) Edges() []ent.Edge {
 			Annotations(entgql.RelayConnection()),
 		edge.To("submissions", Submission.Type).
 			Annotations(entgql.RelayConnection()),
+		edge.To("cheat_records", CheatRecord.Type).
+			Annotations(entgql.RelayConnection()),
 	}
 }
 
