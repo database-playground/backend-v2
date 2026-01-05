@@ -6,13 +6,13 @@ import (
 )
 
 var (
-	// SubmissionTotal tracks the total number of submissions with result label (correct/failed)
+	// SubmissionTotal tracks the total number of submissions with status label (success, failed, or pending)
 	SubmissionTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "dbplay_submission_total",
-			Help: "Total number of submissions by result (correct or failed)",
+			Help: "Total number of submissions by status (success, failed, or pending)",
 		},
-		[]string{"result"},
+		[]string{"status"},
 	)
 
 	// QuestionAttemptedTotal tracks the total number of questions attempted
@@ -57,9 +57,9 @@ var (
 	)
 )
 
-// RecordSubmission records a submission with the given result
-func RecordSubmission(result string) {
-	SubmissionTotal.WithLabelValues(result).Inc()
+// RecordSubmission records a submission with the given status
+func RecordSubmission(status string) {
+	SubmissionTotal.WithLabelValues(status).Inc()
 }
 
 // RecordQuestionAttempted records a question attempt
