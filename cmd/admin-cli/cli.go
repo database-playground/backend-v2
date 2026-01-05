@@ -28,8 +28,9 @@ func main() {
 	promoteAdminCommand := newPromoteAdminCommand(c)
 	setupCommand := newSetupCommand(c)
 	migrateCommand := newMigrateCommand(c)
+	seedUsersCommand := newSeedUsersCommand(c)
 
-	rootCommand := newRootCommand(promoteAdminCommand, setupCommand, migrateCommand)
+	rootCommand := newRootCommand(promoteAdminCommand, setupCommand, migrateCommand, seedUsersCommand)
 
 	if err := rootCommand.Run(context.Background(), os.Args); err != nil {
 		log.Fatal(err)
