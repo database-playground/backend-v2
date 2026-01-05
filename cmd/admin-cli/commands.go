@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 
 	dpcli "github.com/database-playground/backend-v2/cli"
 	"github.com/urfave/cli/v3"
@@ -72,6 +74,41 @@ func newPromoteAdminCommand(dpcli *dpcli.Context) *cli.Command {
 
 			fmt.Println("✅ User", email, "has been promoted to an administrator.")
 
+			return nil
+		},
+	}
+}
+
+func newSeedUsersCommand(clictx *dpcli.Context) *cli.Command {
+	return &cli.Command{
+		Name:        "seed-users",
+		Usage:       "Seed the users table from a JSON file",
+		Description: "Seed the users table from a JSON file. It should be a list with `{email: string, group?: string}` pairs. If group is omitted, the user will be added to the `student` group.",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     "file",
+				Usage:    "The JSON file to seed the database with users from.",
+				Required: true,
+			},
+		},
+		Action: func(ctx context.Context, c *cli.Command) error {
+			content, err := os.ReadFile(c.String("file"))
+			if err != nil {
+				return fmt.Errorf("read file: %w", err)
+			}
+
+			fmt.Printf("Seeding the database with users from %q…\n", c.String("file"))
+
+			var userSeedRecords []dpcli.UserSeedRecord
+			if err := json.Unmarshal(content, &userSeedRecords); err != nil {
+				return fmt.Errorf("unmarshal users seed records: %w", err)
+			}
+
+			if err := clictx.SeedUsers(ctx, userSeedRecords); err != nil {
+				return err
+			}
+
+			fmt.Println("✅ Users seeded!")
 			return nil
 		},
 	}
