@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/database-playground/backend-v2/ent"
+	"github.com/database-playground/backend-v2/internal/metrics"
 	"github.com/posthog/posthog-go"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -107,6 +108,10 @@ func (s *EventService) triggerEvent(ctx context.Context, event Event) error {
 	}
 
 	span.SetAttributes(attribute.Int("event.id", eventEntity.ID))
+
+	// Record metrics
+	metrics.RecordEvent(string(event.Type))
+
 	span.AddEvent("handlers.processing", trace.WithAttributes(
 		attribute.Int("handlers.count", len(s.handlers)),
 	))

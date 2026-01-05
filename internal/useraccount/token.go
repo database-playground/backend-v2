@@ -7,6 +7,7 @@ import (
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/events"
+	"github.com/database-playground/backend-v2/internal/metrics"
 	"go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -94,6 +95,7 @@ func (c *Context) GrantToken(ctx context.Context, user *ent.User, machine string
 				"machine": machine,
 			},
 		})
+		metrics.RecordLogin()
 	}
 
 	span.AddEvent("token.create.started")
