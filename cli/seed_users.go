@@ -59,22 +59,25 @@ func (c *Context) SeedUsers(ctx context.Context, userSeedRecords []UserSeedRecor
 		group := groups[record.GetGroup()]
 
 		// check if user already exists
-		user, err := c.entClient.User.Query().Where(user.EmailEQ(record.Email)).First(ctx)
-		if err == nil {
+		count, err := c.entClient.User.Query().Where(user.EmailEQ(record.Email)).Count(ctx)
+		if err != nil {
+			return fmt.Errorf("count users %q: %w", record.Email, err)
+		}
+		if count > 0 {
 			log.Printf("⚠️ User %q already exists, skipping creation", record.Email)
 			continue
 		}
 
-		user, err = c.entClient.User.Create().
+		newUser, err := c.entClient.User.Create().
 			SetEmail(record.GetEmail()).
 			SetName(record.GetEmail()). // Use email as name for seeded users
 			SetGroup(group).
 			Save(ctx)
 		if err != nil {
-			return err
+			return fmt.Errorf("create user %q: %w", record.Email, err)
 		}
 
-		log.Printf("✅ User %q (Group %q, %d) is created", user.Email, group.Name, group.ID)
+		log.Printf("✅ User %q (Group %q, %d) is created", newUser.Email, group.Name, group.ID)
 	}
 
 	return nil
