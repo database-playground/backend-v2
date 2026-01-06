@@ -4,7 +4,6 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/database-playground/backend-v2/internal/deps"
-	_ "github.com/database-playground/backend-v2/internal/metrics" // Initialize metrics
 
 	_ "github.com/database-playground/backend-v2/ent/runtime"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -12,25 +11,39 @@ import (
 
 func main() {
 	app := fx.New(
-		deps.FxSlogOption,
-		deps.FxCommonModule,
 		fx.Provide(
-			AuthStorage,
+			// Config
+			BackendConfig,
+
+			// Database
+			EntClient,
+			RedisClient,
+
+			// External Services
 			SqlRunner,
-			UserAccountContext,
+
+			// Internal Services
+			AuthStorage,
 			EventService,
+			UserAccountContext,
 			SubmissionService,
-			ApqCache,
 			RankingService,
-			PostHogClient,
 			AnnotateService(AuthService),
+
+			// Statistics
+			PostHogClient,
+
+			// GraphQL
+			ApqCache,
 			GqlgenHandler,
+
+			// HTTP
 			fx.Annotate(
 				GinEngine,
 				fx.ParamTags(`group:"services"`),
 			),
 		),
-		fx.Invoke(OTelSDK),
+		fx.Invoke(deps.OTelSDK),
 		fx.Invoke(GinLifecycle),
 	)
 

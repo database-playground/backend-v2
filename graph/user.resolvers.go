@@ -22,7 +22,6 @@ import (
 	"github.com/database-playground/backend-v2/graph/model"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/httputils"
-	"github.com/database-playground/backend-v2/internal/metrics"
 	"github.com/database-playground/backend-v2/internal/scope"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 	otelcodes "go.opentelemetry.io/otel/codes"
@@ -369,8 +368,6 @@ func (r *mutationResolver) CreateCheatRecord(ctx context.Context, userID *int, r
 		span.RecordError(err)
 		return nil, err
 	}
-
-	metrics.RecordCheat()
 
 	span.SetStatus(otelcodes.Ok, "Cheat record created successfully")
 	return cheatRecord, nil

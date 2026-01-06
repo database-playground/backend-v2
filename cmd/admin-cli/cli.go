@@ -6,6 +6,7 @@ import (
 	"os"
 
 	dpcli "github.com/database-playground/backend-v2/cli"
+	"github.com/database-playground/backend-v2/internal/config"
 	"github.com/database-playground/backend-v2/internal/deps"
 
 	_ "github.com/database-playground/backend-v2/ent/runtime"
@@ -13,12 +14,12 @@ import (
 )
 
 func main() {
-	cfg, err := deps.Config()
+	cfg, err := config.LoadAdminCLIConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	entClient, err := deps.EntClient(cfg)
+	entClient, err := deps.EntClient(cfg.Database)
 	if err != nil {
 		log.Fatal(err)
 	}

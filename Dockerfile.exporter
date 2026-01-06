@@ -22,8 +22,7 @@ ENV GOEXPERIMENT="greenteagc,jsonv2" CGO_ENABLED=0
 # Build the applications with cache mount for build cache
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    go build -ldflags="-w -s" -trimpath -o backend ./cmd/backend && \
-    go build -ldflags="-w -s" -trimpath -o admin-cli ./cmd/admin-cli
+    go build -ldflags="-w -s" -trimpath -o exporter ./cmd/exporter
 
 # Final stage with minimal runtime image
 FROM alpine:3.23 AS runtime
@@ -38,8 +37,7 @@ RUN addgroup -g 1001 -S appgroup && \
 WORKDIR /app
 
 # Copy binaries from builder stage
-COPY --from=builder --chown=appuser:appgroup /src/backend /app/backend
-COPY --from=builder --chown=appuser:appgroup /src/admin-cli /app/admin-cli
+COPY --from=builder --chown=appuser:appgroup /src/exporter /app/exporter
 
 # Switch to non-root user
 USER appuser
@@ -50,4 +48,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080 || exit 1
 
-CMD ["/app/backend"]
+CMD ["/app/exporter"]

@@ -10,40 +10,18 @@ import (
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/internal/config"
+	"github.com/database-playground/backend-v2/internal/otelprovider"
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
-	"github.com/joho/godotenv"
 	"github.com/redis/rueidis"
 	"github.com/redis/rueidis/rueidisotel"
 	"go.uber.org/fx"
-	"go.uber.org/fx/fxevent"
 )
 
-// Config loads the environment variables from the .env file and returns a config.Config.
-func Config() (config.Config, error) {
-	err := godotenv.Load()
-	if err != nil {
-		slog.Warn("error loading .env file", "error", err)
-	}
-
-	cfg, err := config.Load()
-	if err != nil {
-		slog.Error("error creating config", "error", err)
-		return config.Config{}, err
-	}
-
-	if err := cfg.Validate(); err != nil {
-		slog.Error("error validating config", "error", err)
-		return config.Config{}, err
-	}
-
-	return cfg, nil
-}
-
-// EntClient creates an ent.Client.
-func EntClient(cfg config.Config) (*ent.Client, error) {
-	pgxConfig, err := pgxpool.ParseConfig(cfg.Database.URI)
+// EntClient creates an ent.Client from a DatabaseConfig.
+func EntClient(cfg config.DatabaseConfig) (*ent.Client, error) {
+	pgxConfig, err := pgxpool.ParseConfig(cfg.URI)
 	if err != nil {
 		return nil, fmt.Errorf("create connection pool: %w", err)
 	}
@@ -61,31 +39,33 @@ func EntClient(cfg config.Config) (*ent.Client, error) {
 	return ent.NewClient(ent.Driver(drv)), nil
 }
 
-// RedisClient creates a rueidis.Client.
-func RedisClient(cfg config.Config) (rueidis.Client, error) {
+// RedisClient creates a rueidis.Client from a RedisConfig.
+func RedisClient(cfg config.RedisConfig) (rueidis.Client, error) {
 	client, err := rueidisotel.NewClient(rueidis.ClientOption{
 		InitAddress: []string{
-			fmt.Sprintf("%s:%d", cfg.Redis.Host, cfg.Redis.Port),
+			fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
 		},
-		Username: cfg.Redis.Username,
-		Password: cfg.Redis.Password,
+		Username: cfg.Username,
+		Password: cfg.Password,
 	})
 	if err != nil {
-		slog.Error("error creating redis client", "error", err)
-		return nil, err
+		return nil, fmt.Errorf("create redis client: %w", err)
 	}
 
 	return client, nil
 }
 
-var FxCommonModule = fx.Module("common",
-	fx.Provide(Config),
-	fx.Provide(EntClient),
-	fx.Provide(RedisClient),
-)
+func OTelSDK(lifecycle fx.Lifecycle) error {
+	shutdown, err := otelprovider.SetupOTelSDK(context.Background())
+	if err != nil {
+		return fmt.Errorf("setup OTel SDK: %w", err)
+	}
 
-var FxSlogOption = fx.Options(
-	fx.WithLogger(func() fxevent.Logger {
-		return &fxevent.SlogLogger{Logger: slog.Default()}
-	}),
-)
+	lifecycle.Append(fx.StopHook(func() {
+		if err := shutdown(context.Background()); err != nil {
+			slog.Error("failed to shutdown OTel SDK", "error", err)
+		}
+	}))
+
+	return nil
+}

@@ -53,7 +53,7 @@ func setupTestAuthServiceWithDatabase(t *testing.T) (*AuthService, *mockAuthStor
 	require.NoError(t, err)
 
 	storage := newMockAuthStorageForIntrospect()
-	cfg := config.Config{}
+	cfg := config.BackendConfig{}
 	eventService := events.NewEventService(entClient, nil)
 	useraccount := useraccount.NewContext(entClient, storage, eventService)
 
