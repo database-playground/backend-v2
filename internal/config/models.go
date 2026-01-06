@@ -50,10 +50,6 @@ type ExporterConfig struct {
 }
 
 func (c ExporterConfig) Validate() error {
-	if c.Port == 0 {
-		return errors.New("EXPORTER_PORT is required")
-	}
-
 	if err := c.Database.Validate(); err != nil {
 		return fmt.Errorf("DATABASE: %w", err)
 	}
