@@ -213,9 +213,7 @@ func (r *Resolver) Question() QuestionResolver { return &questionResolver{r} }
 // User returns UserResolver implementation.
 func (r *Resolver) User() UserResolver { return &userResolver{r} }
 
-type (
-	databaseResolver struct{ *Resolver }
-	queryResolver    struct{ *Resolver }
-	questionResolver struct{ *Resolver }
-	userResolver     struct{ *Resolver }
-)
+type databaseResolver struct{ *Resolver }
+type queryResolver struct{ *Resolver }
+type questionResolver struct{ *Resolver }
+type userResolver struct{ *Resolver }
