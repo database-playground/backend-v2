@@ -18,6 +18,10 @@ func LoadBackendConfig() (BackendConfig, error) {
 		return BackendConfig{}, err
 	}
 
+	if err := cfg.Validate(); err != nil {
+		return BackendConfig{}, err
+	}
+
 	return cfg, nil
 }
 
@@ -32,6 +36,10 @@ func LoadExporterConfig() (ExporterConfig, error) {
 		return ExporterConfig{}, err
 	}
 
+	if err := cfg.Validate(); err != nil {
+		return ExporterConfig{}, err
+	}
+
 	return cfg, nil
 }
 
@@ -43,6 +51,10 @@ func LoadAdminCLIConfig() (AdminCLIConfig, error) {
 	}
 
 	if err := env.Parse(&cfg); err != nil {
+		return AdminCLIConfig{}, err
+	}
+
+	if err := cfg.Validate(); err != nil {
 		return AdminCLIConfig{}, err
 	}
 

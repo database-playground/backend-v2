@@ -32,7 +32,6 @@ import (
 	"github.com/database-playground/backend-v2/internal/workers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"github.com/posthog/posthog-go"
 	"github.com/ravilushqa/otelgqlgen"
 	"github.com/redis/rueidis"
@@ -48,23 +47,7 @@ import (
 
 // BackendConfig loads the environment variables from the .env file and returns a config.BackendConfig.
 func BackendConfig() (config.BackendConfig, error) {
-	err := godotenv.Load()
-	if err != nil {
-		slog.Warn("error loading .env file", "error", err)
-	}
-
-	cfg, err := config.LoadBackendConfig()
-	if err != nil {
-		slog.Error("error creating config", "error", err)
-		return config.BackendConfig{}, err
-	}
-
-	if err := cfg.Validate(); err != nil {
-		slog.Error("error validating config", "error", err)
-		return config.BackendConfig{}, err
-	}
-
-	return cfg, nil
+	return config.LoadBackendConfig()
 }
 
 // EntClient creates an ent.Client.
