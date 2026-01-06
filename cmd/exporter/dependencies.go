@@ -35,6 +35,7 @@ func PrometheusMetrics(entClient *ent.Client) prometheus.Gatherer {
 
 		metrics.NewEventCollector(entClient),
 		metrics.NewSubmissionCollector(entClient),
+		metrics.NewCheatRecordCollector(entClient),
 	)
 
 	return registry
