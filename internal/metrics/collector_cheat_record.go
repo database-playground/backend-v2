@@ -37,10 +37,13 @@ func (c *CheatRecordCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c *CheatRecordCollector) Collect(ch chan<- prometheus.Metric) {
-	_, span := tracer.Start(context.Background(), "CheatRecordCollector.Collect")
+	ctx, cancel := context.WithTimeout(context.Background(), ScrapeTimeout)
+	defer cancel()
+
+	_, span := tracer.Start(ctx, "CheatRecordCollector.Collect")
 	defer span.End()
 
-	total, err := c.entClient.CheatRecord.Query().Count(context.Background())
+	total, err := c.entClient.CheatRecord.Query().Count(ctx)
 	if err != nil {
 		span.SetStatus(otelcodes.Error, "Failed to collect cheat records")
 		span.RecordError(err)
@@ -50,7 +53,7 @@ func (c *CheatRecordCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 	ch <- prometheus.MustNewConstMetric(dbplayCheatRecordsTotalDesc, prometheus.GaugeValue, float64(total))
 
-	resolvedTotal, err := c.entClient.CheatRecord.Query().Where(cheatrecord.ResolvedAtNotNil()).Count(context.Background())
+	resolvedTotal, err := c.entClient.CheatRecord.Query().Where(cheatrecord.ResolvedAtNotNil()).Count(ctx)
 	if err != nil {
 		span.SetStatus(otelcodes.Error, "Failed to collect resolved cheat records")
 		span.RecordError(err)

@@ -29,7 +29,10 @@ func (c *SubmissionCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c *SubmissionCollector) Collect(ch chan<- prometheus.Metric) {
-	_, span := tracer.Start(context.Background(), "SubmissionCollector.Collect")
+	ctx, cancel := context.WithTimeout(context.Background(), ScrapeTimeout)
+	defer cancel()
+
+	_, span := tracer.Start(ctx, "SubmissionCollector.Collect")
 	defer span.End()
 
 	var results []struct {
@@ -41,7 +44,7 @@ func (c *SubmissionCollector) Collect(ch chan<- prometheus.Metric) {
 		Query().
 		GroupBy(submission.FieldStatus).
 		Aggregate(ent.Count()).
-		Scan(context.Background(), &results)
+		Scan(ctx, &results)
 	if err != nil {
 		span.SetStatus(otelcodes.Error, "Failed to collect submissions")
 		span.RecordError(err)

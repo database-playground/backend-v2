@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/internal/config"
@@ -54,8 +53,7 @@ func PrometheusHTTPHandler(cfg config.ExporterConfig, gatherer prometheus.Gather
 			http.Handle("GET /metrics", promhttp.HandlerFor(
 				gatherer,
 				promhttp.HandlerOpts{
-					MaxRequestsInFlight:                 100,
-					Timeout:                             10 * time.Second,
+					Timeout:                             metrics.ScrapeTimeout,
 					EnableOpenMetrics:                   true,
 					EnableOpenMetricsTextCreatedSamples: true,
 				},

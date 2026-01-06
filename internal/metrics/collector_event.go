@@ -29,7 +29,10 @@ func (c *EventCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c *EventCollector) Collect(ch chan<- prometheus.Metric) {
-	_, span := tracer.Start(context.Background(), "EventCollector.Collect")
+	ctx, cancel := context.WithTimeout(context.Background(), ScrapeTimeout)
+	defer cancel()
+
+	_, span := tracer.Start(ctx, "EventCollector.Collect")
 	defer span.End()
 
 	var results []struct {
@@ -41,7 +44,7 @@ func (c *EventCollector) Collect(ch chan<- prometheus.Metric) {
 		Query().
 		GroupBy(event.FieldType).
 		Aggregate(ent.Count()).
-		Scan(context.Background(), &results)
+		Scan(ctx, &results)
 	if err != nil {
 		span.SetStatus(otelcodes.Error, "Failed to collect events")
 		span.RecordError(err)
