@@ -9,9 +9,10 @@ import (
 	"github.com/database-playground/backend-v2/ent"
 	entsubmission "github.com/database-playground/backend-v2/ent/submission"
 	"github.com/database-playground/backend-v2/internal/events"
-	"github.com/database-playground/backend-v2/internal/metrics"
 	"github.com/database-playground/backend-v2/internal/sqlrunner"
 	"github.com/database-playground/backend-v2/models"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
@@ -19,6 +20,14 @@ import (
 )
 
 var tracer = otel.Tracer("dbplay.submission")
+
+// ReferenceAnswerExecutionErrorTotal tracks errors when executing reference answers
+var ReferenceAnswerExecutionErrorTotal = promauto.NewCounter(
+	prometheus.CounterOpts{
+		Name: "dbplay_reference_answer_execution_error_total",
+		Help: "Total number of errors when executing reference answer",
+	},
+)
 
 type SubmissionService struct {
 	entClient    *ent.Client
@@ -107,10 +116,6 @@ func (ss *SubmissionService) SubmitAnswer(ctx context.Context, input SubmitAnswe
 		attribute.String("submission.status", string(submission.Status)),
 	)
 
-	// Record metrics
-	metrics.RecordSubmission(string(submission.Status))
-	metrics.RecordQuestionAttempted()
-
 	// Write event to database
 	span.AddEvent("event.triggering")
 	ss.eventService.TriggerEvent(ctx, events.Event{
@@ -142,7 +147,7 @@ func (ss *SubmissionService) runAnswer(ctx context.Context, schema, answer, refe
 	if err != nil {
 		span.SetStatus(otelcodes.Error, "Failed to run reference answer")
 		span.RecordError(err)
-		metrics.RecordReferenceAnswerExecutionError()
+		ReferenceAnswerExecutionErrorTotal.Inc()
 		return nil, fmt.Errorf("run reference answer: %w", err)
 	}
 
