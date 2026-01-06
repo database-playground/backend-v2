@@ -46,6 +46,11 @@ func PrometheusHTTPHandler(cfg config.ExporterConfig, gatherer prometheus.Gather
 
 	lifecycle.Append(fx.Hook{
 		OnStart: func(_ context.Context) error {
+			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte("OK"))
+			})
+
 			http.Handle("GET /metrics", promhttp.HandlerFor(
 				gatherer,
 				promhttp.HandlerOpts{
