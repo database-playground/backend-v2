@@ -30,7 +30,6 @@ func main() {
 				fx.ParamTags(`group:"services"`),
 			),
 		),
-		fx.Invoke(OTelSDK),
 		fx.Invoke(GinLifecycle),
 	)
 

@@ -10,6 +10,7 @@ import (
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/database-playground/backend-v2/ent"
 	"github.com/database-playground/backend-v2/internal/config"
+	"github.com/database-playground/backend-v2/internal/otelprovider"
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -78,10 +79,23 @@ func RedisClient(cfg config.Config) (rueidis.Client, error) {
 	return client, nil
 }
 
+func OTelSDK(lifecycle fx.Lifecycle) {
+	shutdown, err := otelprovider.SetupOTelSDK(context.Background())
+	if err != nil {
+		slog.Error("failed to setup OTel SDK", "error", err)
+	}
+	lifecycle.Append(fx.StopHook(func() {
+		if err := shutdown(context.Background()); err != nil {
+			slog.Error("failed to shutdown OTel SDK", "error", err)
+		}
+	}))
+}
+
 var FxCommonModule = fx.Module("common",
 	fx.Provide(Config),
 	fx.Provide(EntClient),
 	fx.Provide(RedisClient),
+	fx.Invoke(OTelSDK),
 )
 
 var FxSlogOption = fx.Options(
