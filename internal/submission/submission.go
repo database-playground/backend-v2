@@ -25,7 +25,7 @@ var tracer = otel.Tracer("dbplay.submission")
 var ReferenceAnswerExecutionErrorTotal = promauto.NewCounter(
 	prometheus.CounterOpts{
 		Name: "dbplay_reference_answer_execution_error_total",
-		Help: "Total number of errors when executing reference answer",
+		Help: "Total number of reference answer execution errors",
 	},
 )
 
