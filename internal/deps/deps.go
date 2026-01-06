@@ -55,14 +55,17 @@ func RedisClient(cfg config.RedisConfig) (rueidis.Client, error) {
 	return client, nil
 }
 
-func OTelSDK(lifecycle fx.Lifecycle) {
+func OTelSDK(lifecycle fx.Lifecycle) error {
 	shutdown, err := otelprovider.SetupOTelSDK(context.Background())
 	if err != nil {
-		slog.Error("failed to setup OTel SDK", "error", err)
+		return fmt.Errorf("setup OTel SDK: %w", err)
 	}
+
 	lifecycle.Append(fx.StopHook(func() {
 		if err := shutdown(context.Background()); err != nil {
 			slog.Error("failed to shutdown OTel SDK", "error", err)
 		}
 	}))
+
+	return nil
 }
