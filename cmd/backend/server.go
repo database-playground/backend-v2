@@ -4,7 +4,6 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/database-playground/backend-v2/internal/deps"
-	_ "github.com/database-playground/backend-v2/internal/metrics" // Initialize metrics
 
 	_ "github.com/database-playground/backend-v2/ent/runtime"
 	_ "github.com/jackc/pgx/v5/stdlib"
