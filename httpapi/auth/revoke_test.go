@@ -75,7 +75,7 @@ func (m *mockAuthStorage) DeleteByUser(ctx context.Context, userID int) error {
 func setupTestAuthService(t *testing.T) (*AuthService, *mockAuthStorage) {
 	entClient := testhelper.NewEntSqliteClient(t)
 	storage := newMockAuthStorage()
-	cfg := config.Config{}
+	cfg := config.BackendConfig{}
 	eventService := events.NewEventService(entClient, nil)
 	useraccount := useraccount.NewContext(entClient, storage, eventService)
 

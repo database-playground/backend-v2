@@ -11,23 +11,39 @@ import (
 
 func main() {
 	app := fx.New(
-		deps.FxCommonModule,
 		fx.Provide(
-			AuthStorage,
+			// Config
+			BackendConfig,
+
+			// Database
+			EntClient,
+			RedisClient,
+
+			// External Services
 			SqlRunner,
-			UserAccountContext,
+
+			// Internal Services
+			AuthStorage,
 			EventService,
+			UserAccountContext,
 			SubmissionService,
-			ApqCache,
 			RankingService,
-			PostHogClient,
 			AnnotateService(AuthService),
+
+			// Statistics
+			PostHogClient,
+
+			// GraphQL
+			ApqCache,
 			GqlgenHandler,
+
+			// HTTP
 			fx.Annotate(
 				GinEngine,
 				fx.ParamTags(`group:"services"`),
 			),
 		),
+		fx.Invoke(deps.OTelSDK),
 		fx.Invoke(GinLifecycle),
 	)
 

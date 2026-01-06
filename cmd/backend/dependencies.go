@@ -21,6 +21,7 @@ import (
 	authservice "github.com/database-playground/backend-v2/httpapi/auth"
 	"github.com/database-playground/backend-v2/internal/auth"
 	"github.com/database-playground/backend-v2/internal/config"
+	"github.com/database-playground/backend-v2/internal/deps"
 	"github.com/database-playground/backend-v2/internal/events"
 	"github.com/database-playground/backend-v2/internal/graphql/apq"
 	"github.com/database-playground/backend-v2/internal/httputils"
@@ -31,6 +32,7 @@ import (
 	"github.com/database-playground/backend-v2/internal/workers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/posthog/posthog-go"
 	"github.com/ravilushqa/otelgqlgen"
 	"github.com/redis/rueidis"
@@ -44,12 +46,43 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// BackendConfig loads the environment variables from the .env file and returns a config.BackendConfig.
+func BackendConfig() (config.BackendConfig, error) {
+	err := godotenv.Load()
+	if err != nil {
+		slog.Warn("error loading .env file", "error", err)
+	}
+
+	cfg, err := config.LoadBackendConfig()
+	if err != nil {
+		slog.Error("error creating config", "error", err)
+		return config.BackendConfig{}, err
+	}
+
+	if err := cfg.Validate(); err != nil {
+		slog.Error("error validating config", "error", err)
+		return config.BackendConfig{}, err
+	}
+
+	return cfg, nil
+}
+
+// EntClient creates an ent.Client.
+func EntClient(cfg config.BackendConfig) (*ent.Client, error) {
+	return deps.EntClient(cfg.Database)
+}
+
+// RedisClient creates a rueidis.Client.
+func RedisClient(cfg config.BackendConfig) (rueidis.Client, error) {
+	return deps.RedisClient(cfg.Redis)
+}
+
 // AuthStorage creates an auth.Storage.
 func AuthStorage(redisClient rueidis.Client) auth.Storage {
 	return auth.NewRedisStorage(redisClient)
 }
 
-func SqlRunner(cfg config.Config) *sqlrunner.SqlRunner {
+func SqlRunner(cfg config.BackendConfig) *sqlrunner.SqlRunner {
 	return sqlrunner.NewSqlRunner(cfg.SqlRunner)
 }
 
@@ -57,7 +90,7 @@ func ApqCache(redisClient rueidis.Client) graphql.Cache[string] {
 	return apq.NewCache(redisClient, 24*time.Hour)
 }
 
-func PostHogClient(lifecycle fx.Lifecycle, cfg config.Config) (posthog.Client, error) {
+func PostHogClient(lifecycle fx.Lifecycle, cfg config.BackendConfig) (posthog.Client, error) {
 	if cfg.PostHog.APIKey == nil || cfg.PostHog.Host == nil {
 		slog.Warn("PostHog client is not initialized, because you did not configure a PostHog API key and a host.")
 		return nil, nil
@@ -134,7 +167,7 @@ func RankingService(entClient *ent.Client) *ranking.Service {
 }
 
 // AuthService creates an auth service.
-func AuthService(entClient *ent.Client, storage auth.Storage, config config.Config, useraccount *useraccount.Context) httpapi.Service {
+func AuthService(entClient *ent.Client, storage auth.Storage, config config.BackendConfig, useraccount *useraccount.Context) httpapi.Service {
 	return authservice.NewAuthService(entClient, storage, config, useraccount)
 }
 
@@ -143,7 +176,7 @@ func GinEngine(
 	services []httpapi.Service,
 	authStorage auth.Storage,
 	gqlgenHandler *handler.Server,
-	cfg config.Config,
+	cfg config.BackendConfig,
 ) *gin.Engine {
 	engine := gin.New()
 
@@ -197,7 +230,7 @@ func GinEngine(
 }
 
 // GinLifecycle starts the gin engine.
-func GinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Config) {
+func GinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.BackendConfig) {
 	httpCtx, cancel := context.WithCancel(context.Background())
 
 	lifecycle.Append(fx.Hook{
@@ -207,7 +240,7 @@ func GinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Config)
 				Handler: engine,
 			}
 
-			go func() {
+			workers.Global.Go(func() {
 				slog.Info("gin engine starting", "address", srv.Addr, "proto", cfg.Server.GetProto())
 
 				if cfg.Server.CertFile != nil && cfg.Server.KeyFile != nil {
@@ -227,7 +260,7 @@ func GinLifecycle(lifecycle fx.Lifecycle, engine *gin.Engine, cfg config.Config)
 						slog.Error("error running gin engine", "error", err)
 					}
 				}
-			}()
+			})
 
 			workers.Global.Go(func() {
 				<-httpCtx.Done()

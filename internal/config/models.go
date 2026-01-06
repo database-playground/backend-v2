@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-type Config struct {
+type BackendConfig struct {
 	Port           int      `env:"PORT" envDefault:"8080"`
 	AllowedOrigins []string `env:"ALLOWED_ORIGINS"`
 	TrustProxies   []string `env:"TRUST_PROXIES"`
@@ -20,7 +20,7 @@ type Config struct {
 	PostHog   PostHogConfig   `envPrefix:"POSTHOG_"`
 }
 
-func (c Config) Validate() error {
+func (c BackendConfig) Validate() error {
 	if err := c.Database.Validate(); err != nil {
 		return fmt.Errorf("DATABASE: %w", err)
 	}
@@ -38,6 +38,36 @@ func (c Config) Validate() error {
 	}
 	if err := c.PostHog.Validate(); err != nil {
 		return fmt.Errorf("POSTHOG: %w", err)
+	}
+
+	return nil
+}
+
+type ExporterConfig struct {
+	Port int `env:"PORT" envDefault:"8080"`
+
+	Database DatabaseConfig `envPrefix:"DATABASE_"`
+}
+
+func (c ExporterConfig) Validate() error {
+	if c.Port == 0 {
+		return errors.New("EXPORTER_PORT is required")
+	}
+
+	if err := c.Database.Validate(); err != nil {
+		return fmt.Errorf("DATABASE: %w", err)
+	}
+
+	return nil
+}
+
+type AdminCLIConfig struct {
+	Database DatabaseConfig `envPrefix:"DATABASE_"`
+}
+
+func (c AdminCLIConfig) Validate() error {
+	if err := c.Database.Validate(); err != nil {
+		return fmt.Errorf("DATABASE: %w", err)
 	}
 
 	return nil

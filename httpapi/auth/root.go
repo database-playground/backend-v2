@@ -15,11 +15,11 @@ import (
 type AuthService struct {
 	entClient   *ent.Client
 	storage     auth.Storage
-	config      config.Config
+	config      config.BackendConfig
 	useraccount *useraccount.Context
 }
 
-func NewAuthService(entClient *ent.Client, storage auth.Storage, config config.Config, useraccount *useraccount.Context) *AuthService {
+func NewAuthService(entClient *ent.Client, storage auth.Storage, config config.BackendConfig, useraccount *useraccount.Context) *AuthService {
 	return &AuthService{
 		entClient:   entClient,
 		storage:     storage,
