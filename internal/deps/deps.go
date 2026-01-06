@@ -18,7 +18,6 @@ import (
 	"github.com/redis/rueidis"
 	"github.com/redis/rueidis/rueidisotel"
 	"go.uber.org/fx"
-	"go.uber.org/fx/fxevent"
 )
 
 // Config loads the environment variables from the .env file and returns a config.Config.
@@ -96,10 +95,4 @@ var FxCommonModule = fx.Module("common",
 	fx.Provide(EntClient),
 	fx.Provide(RedisClient),
 	fx.Invoke(OTelSDK),
-)
-
-var FxSlogOption = fx.Options(
-	fx.WithLogger(func() fxevent.Logger {
-		return &fxevent.SlogLogger{Logger: slog.Default()}
-	}),
 )

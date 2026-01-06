@@ -21,7 +21,6 @@ import (
 
 func main() {
 	app := fx.New(
-		deps.FxSlogOption,
 		deps.FxCommonModule,
 		fx.Provide(PrometheusMetrics),
 		fx.Invoke(PrometheusHTTPHandler),
