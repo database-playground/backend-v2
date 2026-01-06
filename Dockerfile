@@ -26,7 +26,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     go build -ldflags="-w -s" -trimpath -o admin-cli ./cmd/admin-cli
 
 # Final stage with minimal runtime image
-FROM alpine:latest AS runtime
+FROM alpine:3.23 AS runtime
 
 # Install ca-certificates for HTTPS requests
 RUN apk --no-cache add ca-certificates
