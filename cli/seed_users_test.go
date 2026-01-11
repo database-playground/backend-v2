@@ -7,7 +7,6 @@ import (
 	"github.com/database-playground/backend-v2/cli"
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/user"
-	"github.com/database-playground/backend-v2/internal/testhelper"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -15,15 +14,13 @@ import (
 
 func TestSeedUsers(t *testing.T) {
 	t.Run("should successfully seed users with valid records", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
 
-		// First run setup to create groups
-		_, err := cliCtx.Setup(ctx)
-		if err != nil {
-			t.Fatalf("Setup failed: %v", err)
-		}
+		entClient := tc.GetEntClient(t)
+		cliCtx := tc.GetContext(t)
+
+		tc.Setup(t)
 
 		// Seed users
 		records := []cli.UserSeedRecord{
@@ -31,7 +28,7 @@ func TestSeedUsers(t *testing.T) {
 			{Email: "user2@example.com", Group: "admin"},
 		}
 
-		err = cliCtx.SeedUsers(ctx, records)
+		err := cliCtx.SeedUsers(ctx, records)
 		if err != nil {
 			t.Fatalf("SeedUsers failed: %v", err)
 		}
@@ -67,22 +64,20 @@ func TestSeedUsers(t *testing.T) {
 	})
 
 	t.Run("should default to student group when group is empty", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
 
-		// First run setup to create groups
-		_, err := cliCtx.Setup(ctx)
-		if err != nil {
-			t.Fatalf("Setup failed: %v", err)
-		}
+		entClient := tc.GetEntClient(t)
+		cliCtx := tc.GetContext(t)
+
+		tc.Setup(t)
 
 		// Seed user with empty group
 		records := []cli.UserSeedRecord{
 			{Email: "user@example.com", Group: ""},
 		}
 
-		err = cliCtx.SeedUsers(ctx, records)
+		err := cliCtx.SeedUsers(ctx, records)
 		if err != nil {
 			t.Fatalf("SeedUsers failed: %v", err)
 		}
@@ -101,15 +96,13 @@ func TestSeedUsers(t *testing.T) {
 	})
 
 	t.Run("should handle multiple users with same group efficiently", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
 
-		// First run setup to create groups
-		_, err := cliCtx.Setup(ctx)
-		if err != nil {
-			t.Fatalf("Setup failed: %v", err)
-		}
+		entClient := tc.GetEntClient(t)
+		cliCtx := tc.GetContext(t)
+
+		tc.Setup(t)
 
 		// Seed multiple users with same group
 		records := []cli.UserSeedRecord{
@@ -118,7 +111,7 @@ func TestSeedUsers(t *testing.T) {
 			{Email: "user3@example.com", Group: "student"},
 		}
 
-		err = cliCtx.SeedUsers(ctx, records)
+		err := cliCtx.SeedUsers(ctx, records)
 		if err != nil {
 			t.Fatalf("SeedUsers failed: %v", err)
 		}
@@ -146,22 +139,19 @@ func TestSeedUsers(t *testing.T) {
 	})
 
 	t.Run("should return error when email is empty", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
 
-		// First run setup to create groups
-		_, err := cliCtx.Setup(ctx)
-		if err != nil {
-			t.Fatalf("Setup failed: %v", err)
-		}
+		cliCtx := tc.GetContext(t)
+
+		tc.Setup(t)
 
 		// Seed user with empty email
 		records := []cli.UserSeedRecord{
 			{Email: "", Group: "student"},
 		}
 
-		err = cliCtx.SeedUsers(ctx, records)
+		err := cliCtx.SeedUsers(ctx, records)
 		if err == nil {
 			t.Fatal("Expected error when email is empty")
 		}
@@ -173,22 +163,19 @@ func TestSeedUsers(t *testing.T) {
 	})
 
 	t.Run("should return error when group not found", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
 
-		// First run setup to create groups
-		_, err := cliCtx.Setup(ctx)
-		if err != nil {
-			t.Fatalf("Setup failed: %v", err)
-		}
+		cliCtx := tc.GetContext(t)
+
+		tc.Setup(t)
 
 		// Seed user with non-existent group
 		records := []cli.UserSeedRecord{
 			{Email: "user@example.com", Group: "nonexistent-group"},
 		}
 
-		err = cliCtx.SeedUsers(ctx, records)
+		err := cliCtx.SeedUsers(ctx, records)
 		if err == nil {
 			t.Fatal("Expected error when group not found")
 		}
@@ -200,15 +187,12 @@ func TestSeedUsers(t *testing.T) {
 	})
 
 	t.Run("should return error for multiple validation errors", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
 
-		// First run setup to create groups
-		_, err := cliCtx.Setup(ctx)
-		if err != nil {
-			t.Fatalf("Setup failed: %v", err)
-		}
+		cliCtx := tc.GetContext(t)
+
+		tc.Setup(t)
 
 		// Seed users with multiple invalid records
 		records := []cli.UserSeedRecord{
@@ -217,7 +201,7 @@ func TestSeedUsers(t *testing.T) {
 			{Email: "", Group: "admin"},                    // invalid: empty email
 		}
 
-		err = cliCtx.SeedUsers(ctx, records)
+		err := cliCtx.SeedUsers(ctx, records)
 		if err == nil {
 			t.Fatal("Expected error when validation fails")
 		}
@@ -229,15 +213,13 @@ func TestSeedUsers(t *testing.T) {
 	})
 
 	t.Run("should skip when user already exists", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
 
-		// First run setup to create groups
-		_, err := cliCtx.Setup(ctx)
-		if err != nil {
-			t.Fatalf("Setup failed: %v", err)
-		}
+		entClient := tc.GetEntClient(t)
+		cliCtx := tc.GetContext(t)
+
+		tc.Setup(t)
 
 		// Create a user first with a specific name and group
 		studentGroup, err := entClient.Group.Query().
@@ -310,15 +292,13 @@ func TestSeedUsers(t *testing.T) {
 	})
 
 	t.Run("should handle mixed existing and new users in batch", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
 
-		// First run setup to create groups
-		_, err := cliCtx.Setup(ctx)
-		if err != nil {
-			t.Fatalf("Setup failed: %v", err)
-		}
+		entClient := tc.GetEntClient(t)
+		cliCtx := tc.GetContext(t)
+
+		tc.Setup(t)
 
 		// Create an existing user
 		studentGroup, err := entClient.Group.Query().
@@ -405,35 +385,30 @@ func TestSeedUsers(t *testing.T) {
 	})
 
 	t.Run("should handle empty records array", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
 
-		// First run setup to create groups
-		_, err := cliCtx.Setup(ctx)
-		if err != nil {
-			t.Fatalf("Setup failed: %v", err)
-		}
+		cliCtx := tc.GetContext(t)
+
+		tc.Setup(t)
 
 		// Seed with empty records
 		records := []cli.UserSeedRecord{}
 
-		err = cliCtx.SeedUsers(ctx, records)
+		err := cliCtx.SeedUsers(ctx, records)
 		if err != nil {
 			t.Fatalf("SeedUsers should succeed with empty records, got error: %v", err)
 		}
 	})
 
 	t.Run("should handle database connection errors gracefully", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
 
-		// First run setup to create groups
-		_, err := cliCtx.Setup(ctx)
-		if err != nil {
-			t.Fatalf("Setup failed: %v", err)
-		}
+		entClient := tc.GetEntClient(t)
+		cliCtx := tc.GetContext(t)
+
+		tc.Setup(t)
 
 		// Close the client to simulate database connection issues
 		if err := entClient.Close(); err != nil {
@@ -445,22 +420,20 @@ func TestSeedUsers(t *testing.T) {
 			{Email: "user@example.com", Group: "student"},
 		}
 
-		err = cliCtx.SeedUsers(ctx, records)
+		err := cliCtx.SeedUsers(ctx, records)
 		if err == nil {
 			t.Fatal("Expected error when database is closed")
 		}
 	})
 
 	t.Run("should handle mixed valid and invalid groups", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
 
-		// First run setup to create groups
-		_, err := cliCtx.Setup(ctx)
-		if err != nil {
-			t.Fatalf("Setup failed: %v", err)
-		}
+		entClient := tc.GetEntClient(t)
+		cliCtx := tc.GetContext(t)
+
+		tc.Setup(t)
 
 		// Seed users with one valid and one invalid group
 		records := []cli.UserSeedRecord{
@@ -468,7 +441,7 @@ func TestSeedUsers(t *testing.T) {
 			{Email: "user2@example.com", Group: "invalid"}, // invalid
 		}
 
-		err = cliCtx.SeedUsers(ctx, records)
+		err := cliCtx.SeedUsers(ctx, records)
 		if err == nil {
 			t.Fatal("Expected error when one group is invalid")
 		}

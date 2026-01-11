@@ -114,6 +114,26 @@ func newSeedUsersCommand(clictx *dpcli.Context) *cli.Command {
 	}
 }
 
+func newRerunAllSubmissionsCommand(clictx *dpcli.Context) *cli.Command {
+	return &cli.Command{
+		Name:  "rerun-all-submissions",
+		Usage: "Rerun all latest submissions for each user and question combination",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:  "dry-run",
+				Usage: "Preview what would be executed without actually running submissions",
+			},
+		},
+		Action: func(ctx context.Context, c *cli.Command) error {
+			dryRun := c.Bool("dry-run")
+			if err := clictx.RerunAllSubmissions(ctx, dryRun); err != nil {
+				return err
+			}
+			return nil
+		},
+	}
+}
+
 func newRootCommand(subcommands ...*cli.Command) *cli.Command {
 	return &cli.Command{
 		Name:     "admin-cli",

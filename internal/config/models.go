@@ -58,12 +58,16 @@ func (c ExporterConfig) Validate() error {
 }
 
 type AdminCLIConfig struct {
-	Database DatabaseConfig `envPrefix:"DATABASE_"`
+	Database  DatabaseConfig  `envPrefix:"DATABASE_"`
+	SqlRunner SqlRunnerConfig `envPrefix:"SQL_RUNNER_"`
 }
 
 func (c AdminCLIConfig) Validate() error {
 	if err := c.Database.Validate(); err != nil {
 		return fmt.Errorf("DATABASE: %w", err)
+	}
+	if err := c.SqlRunner.Validate(); err != nil {
+		return fmt.Errorf("SQL_RUNNER: %w", err)
 	}
 
 	return nil

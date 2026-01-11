@@ -4,10 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/database-playground/backend-v2/cli"
 	"github.com/database-playground/backend-v2/ent/group"
 	"github.com/database-playground/backend-v2/ent/user"
-	"github.com/database-playground/backend-v2/internal/testhelper"
 	"github.com/database-playground/backend-v2/internal/useraccount"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -15,15 +13,13 @@ import (
 
 func TestPromoteAdmin(t *testing.T) {
 	t.Run("should successfully promote user to admin", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
 
-		// First run setup to create admin group
-		_, err := cliCtx.Setup(ctx)
-		if err != nil {
-			t.Fatalf("Setup failed: %v", err)
-		}
+		entClient := tc.GetEntClient(t)
+		cliCtx := tc.GetContext(t)
+
+		tc.Setup(t)
 
 		// Get the student group to assign to the user initially
 		studentGroup, err := entClient.Group.Query().Where(group.Name(useraccount.StudentGroupSlug)).Only(ctx)
@@ -79,18 +75,15 @@ func TestPromoteAdmin(t *testing.T) {
 	})
 
 	t.Run("should return error when user not found", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
 
-		// Run setup to create admin group
-		_, err := cliCtx.Setup(ctx)
-		if err != nil {
-			t.Fatalf("Setup failed: %v", err)
-		}
+		cliCtx := tc.GetContext(t)
+
+		tc.Setup(t)
 
 		// Try to promote non-existent user
-		err = cliCtx.PromoteAdmin(ctx, "nonexistent@example.com")
+		err := cliCtx.PromoteAdmin(ctx, "nonexistent@example.com")
 		if err == nil {
 			t.Fatal("Expected error when promoting non-existent user")
 		}
@@ -102,9 +95,11 @@ func TestPromoteAdmin(t *testing.T) {
 	})
 
 	t.Run("should return error when admin group not found", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
+
+		entClient := tc.GetEntClient(t)
+		cliCtx := tc.GetContext(t)
 
 		// Create a test user without running setup (so no admin group exists)
 		// We need to create a group first since User requires a group
@@ -138,16 +133,13 @@ func TestPromoteAdmin(t *testing.T) {
 	})
 
 	t.Run("should handle database errors gracefully", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
-
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
 
-		// Run setup to create admin group
-		_, err := cliCtx.Setup(ctx)
-		if err != nil {
-			t.Fatalf("Setup failed: %v", err)
-		}
+		entClient := tc.GetEntClient(t)
+		cliCtx := tc.GetContext(t)
+
+		tc.Setup(t)
 
 		// Get the student group to assign to the user initially
 		studentGroup, err := entClient.Group.Query().Where(group.Name(useraccount.StudentGroupSlug)).Only(ctx)
@@ -178,16 +170,13 @@ func TestPromoteAdmin(t *testing.T) {
 	})
 
 	t.Run("should work with multiple users", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
-
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
 
-		// Run setup to create admin group
-		_, err := cliCtx.Setup(ctx)
-		if err != nil {
-			t.Fatalf("Setup failed: %v", err)
-		}
+		entClient := tc.GetEntClient(t)
+		cliCtx := tc.GetContext(t)
+
+		tc.Setup(t)
 
 		// Get the student group to assign to users initially
 		studentGroup, err := entClient.Group.Query().Where(group.Name(useraccount.StudentGroupSlug)).Only(ctx)
@@ -262,15 +251,13 @@ func TestPromoteAdmin(t *testing.T) {
 	})
 
 	t.Run("should handle case sensitivity in email", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
 
-		// Run setup to create admin group
-		_, err := cliCtx.Setup(ctx)
-		if err != nil {
-			t.Fatalf("Setup failed: %v", err)
-		}
+		entClient := tc.GetEntClient(t)
+		cliCtx := tc.GetContext(t)
+
+		tc.Setup(t)
 
 		// Get the student group to assign to the user initially
 		studentGroup, err := entClient.Group.Query().Where(group.Name(useraccount.StudentGroupSlug)).Only(ctx)
@@ -307,18 +294,15 @@ func TestPromoteAdmin(t *testing.T) {
 	})
 
 	t.Run("should handle empty email", func(t *testing.T) {
-		entClient := testhelper.NewEntSqliteClient(t)
 		ctx := context.Background()
-		cliCtx := cli.NewContext(entClient)
+		tc := NewTestContext(t)
 
-		// Run setup to create admin group
-		_, err := cliCtx.Setup(ctx)
-		if err != nil {
-			t.Fatalf("Setup failed: %v", err)
-		}
+		cliCtx := tc.GetContext(t)
+
+		tc.Setup(t)
 
 		// Try to promote with empty email
-		err = cliCtx.PromoteAdmin(ctx, "")
+		err := cliCtx.PromoteAdmin(ctx, "")
 		if err == nil {
 			t.Fatal("Expected error when using empty email")
 		}
